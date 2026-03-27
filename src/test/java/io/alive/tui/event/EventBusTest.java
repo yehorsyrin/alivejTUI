@@ -1,0 +1,110 @@
+package io.alive.tui.event;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+
+class EventBusTest {
+
+    private EventBus bus;
+
+    @BeforeEach
+    void setUp() { bus = new EventBus(); }
+
+    @Test
+    void dispatchFiresRegisteredHandler() {
+        int[] count = {0};
+        bus.register(KeyType.ENTER, () -> count[0]++);
+        bus.dispatch(KeyEvent.of(KeyType.ENTER));
+        assertEquals(1, count[0]);
+    }
+
+    @Test
+    void dispatchFiresMultipleHandlers() {
+        int[] count = {0};
+        bus.register(KeyType.ENTER, () -> count[0]++);
+        bus.register(KeyType.ENTER, () -> count[0]++);
+        bus.dispatch(KeyEvent.of(KeyType.ENTER));
+        assertEquals(2, count[0]);
+    }
+
+    @Test
+    void dispatchDoesNotFireUnrelatedKey() {
+        int[] count = {0};
+        bus.register(KeyType.ENTER, () -> count[0]++);
+        bus.dispatch(KeyEvent.of(KeyType.ESCAPE));
+        assertEquals(0, count[0]);
+    }
+
+    @Test
+    void unregisterRemovesHandler() {
+        int[] count = {0};
+        Runnable h = () -> count[0]++;
+        bus.register(KeyType.ENTER, h);
+        bus.unregister(KeyType.ENTER, h);
+        bus.dispatch(KeyEvent.of(KeyType.ENTER));
+        assertEquals(0, count[0]);
+    }
+
+    @Test
+    void characterHandlerFired() {
+        char[] captured = {'\0'};
+        bus.registerCharacter(c -> captured[0] = c);
+        bus.dispatch(KeyEvent.ofCharacter('x'));
+        assertEquals('x', captured[0]);
+    }
+
+    @Test
+    void characterHandlerUnregistered() {
+        char[] captured = {'\0'};
+        EventBus.CharacterHandler h = c -> captured[0] = c;
+        bus.registerCharacter(h);
+        bus.unregisterCharacter(h);
+        bus.dispatch(KeyEvent.ofCharacter('x'));
+        assertEquals('\0', captured[0]);
+    }
+
+    @Test
+    void nonCharacterEventDoesNotFireCharacterHandlers() {
+        char[] captured = {'\0'};
+        bus.registerCharacter(c -> captured[0] = c);
+        bus.dispatch(KeyEvent.of(KeyType.ENTER));
+        assertEquals('\0', captured[0]);
+    }
+
+    @Test
+    void clearRemovesAll() {
+        int[] count = {0};
+        bus.register(KeyType.ENTER, () -> count[0]++);
+        bus.registerCharacter(c -> count[0]++);
+        bus.clear();
+        bus.dispatch(KeyEvent.of(KeyType.ENTER));
+        bus.dispatch(KeyEvent.ofCharacter('a'));
+        assertEquals(0, count[0]);
+    }
+
+    @Test
+    void nullHandlerIgnored() {
+        assertDoesNotThrow(() -> bus.register(KeyType.ENTER, null));
+        assertDoesNotThrow(() -> bus.registerCharacter(null));
+        assertEquals(0, bus.handlerCount(KeyType.ENTER));
+    }
+
+    @Test
+    void nullKeyIgnored() {
+        assertDoesNotThrow(() -> bus.register(null, () -> {}));
+    }
+
+    @Test
+    void nullEventIgnored() {
+        assertDoesNotThrow(() -> bus.dispatch(null));
+    }
+
+    @Test
+    void handlerCountAccurate() {
+        bus.register(KeyType.ARROW_UP, () -> {});
+        bus.register(KeyType.ARROW_UP, () -> {});
+        assertEquals(2, bus.handlerCount(KeyType.ARROW_UP));
+        assertEquals(0, bus.handlerCount(KeyType.ARROW_DOWN));
+    }
+}
