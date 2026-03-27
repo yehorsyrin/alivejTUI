@@ -74,7 +74,6 @@
                 </executions>
             </plugin>
 
-            <!-- Uncomment when TASK-10 (example app) is complete:
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>exec-maven-plugin</artifactId>
@@ -83,7 +82,6 @@
                     <mainClass>io.alive.tui.example.TodoApp</mainClass>
                 </configuration>
             </plugin>
-            -->
         </plugins>
     </build>
 </project>
