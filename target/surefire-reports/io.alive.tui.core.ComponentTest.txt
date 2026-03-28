@@ -1,4 +1,0 @@
--------------------------------------------------------------------------------
-Test set: io.alive.tui.core.ComponentTest
--------------------------------------------------------------------------------
-Tests run: 22, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.343 s -- in io.alive.tui.core.ComponentTest

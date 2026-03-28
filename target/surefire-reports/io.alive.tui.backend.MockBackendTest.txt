@@ -1,4 +1,0 @@
--------------------------------------------------------------------------------
-Test set: io.alive.tui.backend.MockBackendTest
--------------------------------------------------------------------------------
-Tests run: 21, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.019 s -- in io.alive.tui.backend.MockBackendTest

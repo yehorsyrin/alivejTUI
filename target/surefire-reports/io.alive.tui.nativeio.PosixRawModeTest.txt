@@ -1,4 +1,0 @@
--------------------------------------------------------------------------------
-Test set: io.alive.tui.nativeio.PosixRawModeTest
--------------------------------------------------------------------------------
-Tests run: 9, Failures: 0, Errors: 0, Skipped: 5, Time elapsed: 0.004 s -- in io.alive.tui.nativeio.PosixRawModeTest

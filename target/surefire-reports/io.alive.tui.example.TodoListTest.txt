@@ -1,4 +1,0 @@
--------------------------------------------------------------------------------
-Test set: io.alive.tui.example.TodoListTest
--------------------------------------------------------------------------------
-Tests run: 11, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.009 s -- in io.alive.tui.example.TodoListTest
