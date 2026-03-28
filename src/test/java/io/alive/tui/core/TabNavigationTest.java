@@ -51,8 +51,9 @@ class TabNavigationTest {
         final List<String> focusLog = new ArrayList<>();
 
         @Override
-        public void mount(Runnable onStateChange, io.alive.tui.event.EventBus eventBus, FocusManager focusManager) {
-            super.mount(onStateChange, eventBus, focusManager);
+        public void mount(Runnable onStateChange, io.alive.tui.event.EventBus eventBus) {
+            super.mount(onStateChange, eventBus);
+            // focusManager is set by the framework before this 2-arg mount is called
             btn1 = new ButtonNode("B1", null); btn1.setKey("btn1");
             btn2 = new ButtonNode("B2", null); btn2.setKey("btn2");
             btn3 = new ButtonNode("B3", null); btn3.setKey("btn3");

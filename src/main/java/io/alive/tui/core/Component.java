@@ -97,24 +97,28 @@ public abstract class Component {
     /**
      * Called by the framework when the component is mounted into the UI tree.
      *
+     * <p>Subclasses may override this to register key handlers or perform other setup.
+     * Always call {@code super.mount(onStateChange, eventBus)} first.
+     *
      * @param onStateChange callback to invoke when {@link #setState} is called
      * @param eventBus      the application-wide event bus
      */
     public void mount(Runnable onStateChange, EventBus eventBus) {
-        mount(onStateChange, eventBus, null);
+        this.onStateChange = onStateChange;
+        this.eventBus = eventBus;
     }
 
     /**
-     * Called by the framework when the component is mounted into the UI tree.
+     * Called by the framework when the component is mounted with a {@link FocusManager}.
+     * Delegates to {@link #mount(Runnable, EventBus)} so that subclass overrides are honoured.
      *
      * @param onStateChange callback to invoke when {@link #setState} is called
      * @param eventBus      the application-wide event bus
      * @param focusManager  the application-wide focus manager (may be {@code null})
      */
-    public void mount(Runnable onStateChange, EventBus eventBus, FocusManager focusManager) {
-        this.onStateChange = onStateChange;
-        this.eventBus = eventBus;
+    public final void mount(Runnable onStateChange, EventBus eventBus, FocusManager focusManager) {
         this.focusManager = focusManager;
+        mount(onStateChange, eventBus);
     }
 
     /**

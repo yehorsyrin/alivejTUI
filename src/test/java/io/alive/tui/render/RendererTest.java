@@ -2,8 +2,11 @@ package io.alive.tui.render;
 
 import io.alive.tui.backend.TerminalBackend;
 import io.alive.tui.event.KeyEvent;
+import io.alive.tui.node.Input;
+import io.alive.tui.node.InputNode;
 import io.alive.tui.node.Text;
 import io.alive.tui.node.TextNode;
+import io.alive.tui.node.VBox;
 import io.alive.tui.style.Style;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -20,6 +23,7 @@ class RendererTest {
         final List<String> putChars = new ArrayList<>(); // "col,row=char"
         int flushCount = 0;
         boolean cursorHidden = false;
+        int cursorCol = -1, cursorRow = -1;
         int width = 80, height = 24;
         Runnable resizeListener;
 
@@ -36,7 +40,7 @@ class RendererTest {
         @Override public void flush()       { flushCount++; }
         @Override public void hideCursor()  { cursorHidden = true; }
         @Override public void showCursor()  { cursorHidden = false; }
-        @Override public void setCursor(int col, int row) {}
+        @Override public void setCursor(int col, int row) { cursorCol = col; cursorRow = row; }
         @Override public void clear() { putChars.clear(); }
         @Override public KeyEvent readKey() { return KeyEvent.of(io.alive.tui.event.KeyType.EOF); }
         @Override public void setResizeListener(Runnable r) { this.resizeListener = r; }
@@ -122,5 +126,60 @@ class RendererTest {
         TextNode t = Text.of("A");
         renderer.render(t);
         assertSame(t, renderer.getPreviousTree());
+    }
+
+    // --- Cursor positioning (TASK-13) ---
+
+    @Test
+    void focusedInputNode_cursorPositionedAtCursor() {
+        InputNode input = Input.of("abc", null);
+        input.setFocused(true);
+        input.setCursorPos(2);   // cursor after 'b'
+
+        renderer.render(input);
+
+        // x=0 (node at col 0), cursorPos=2 → cursor at col 2, row 0
+        assertEquals(2, backend.cursorCol);
+        assertEquals(0, backend.cursorRow);
+    }
+
+    @Test
+    void focusedInputNode_atNonZeroPosition_cursorOffset() {
+        // Place input inside a VBox so it gets a non-zero y
+        InputNode input = Input.of("hi", null);
+        input.setFocused(true);
+        input.setCursorPos(1);
+
+        var tree = VBox.of(Text.of("header"), input);
+        renderer.render(tree);
+
+        // input appears on row 1 (below "header"), cursorPos=1 → col=0+1=1
+        assertEquals(1, backend.cursorCol);
+        assertEquals(1, backend.cursorRow);
+    }
+
+    @Test
+    void noFocusedInput_cursorNotMoved() {
+        InputNode input = Input.of("abc", null);
+        input.setFocused(false);  // not focused
+
+        renderer.render(input);
+
+        // setCursor never called — stays at -1
+        assertEquals(-1, backend.cursorCol);
+        assertEquals(-1, backend.cursorRow);
+    }
+
+    @Test
+    void focusedInputInNestedTree_cursorFound() {
+        InputNode input = Input.of("x", null);
+        input.setFocused(true);
+        input.setCursorPos(0);
+
+        var tree = VBox.of(Text.of("row0"), VBox.of(Text.of("row1"), input));
+        renderer.render(tree);
+
+        assertEquals(2, backend.cursorRow);  // input is on row 2
+        assertEquals(0, backend.cursorCol);
     }
 }

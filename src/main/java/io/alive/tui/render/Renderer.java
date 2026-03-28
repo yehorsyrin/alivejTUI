@@ -5,6 +5,7 @@ import io.alive.tui.core.Node;
 import io.alive.tui.diff.CellChange;
 import io.alive.tui.diff.Differ;
 import io.alive.tui.layout.LayoutEngine;
+import io.alive.tui.node.InputNode;
 
 import java.util.List;
 
@@ -52,8 +53,14 @@ public class Renderer {
         for (CellChange change : changes) {
             backend.putChar(change.col(), change.row(), change.character(), change.style());
         }
+
+        // 4. Cursor: position at focused InputNode's cursor, or hide if none
+        InputNode focused = findFocusedInput(newTree);
+        if (focused != null) {
+            backend.setCursor(focused.getX() + focused.getCursorPos(), focused.getY());
+        }
+
         backend.flush();
-        backend.showCursor();
 
         previousTree = newTree;
     }
@@ -77,5 +84,19 @@ public class Renderer {
     /** Returns the most recently rendered tree (may be {@code null} before first render). */
     public Node getPreviousTree() {
         return previousTree;
+    }
+
+    /**
+     * Walks the node tree depth-first and returns the first {@link InputNode} that is focused,
+     * or {@code null} if none is found.
+     */
+    private InputNode findFocusedInput(Node root) {
+        if (root == null) return null;
+        if (root instanceof InputNode in && in.isFocused()) return in;
+        for (Node child : root.getChildren()) {
+            InputNode found = findFocusedInput(child);
+            if (found != null) return found;
+        }
+        return null;
     }
 }
