@@ -17,6 +17,6 @@ import io.alive.tui.core.AliveJTUI;
 public class TodoApp {
 
     public static void main(String[] args) {
-        AliveJTUI.run(new TodoList());
+        AliveJTUI.run(new Showcase());
     }
 }
