@@ -1,3 +1,19 @@
+```
+╔══════════════════════════════════════════════════════════════════════════╗
+║                                                                          ║
+║   █████╗ ██╗     ██╗██╗   ██╗███████╗      ██╗████████╗██╗   ██╗██╗    ║
+║  ██╔══██╗██║     ██║╚██╗ ██╔╝██╔════╝      ██║╚══██╔══╝██║   ██║██║    ║
+║  ███████║██║     ██║ ╚████╔╝ █████╗        ██║   ██║   ██║   ██║██║    ║
+║  ██╔══██║██║     ██║  ╚██╔╝  ██╔══╝   ██   ██║   ██║   ██║   ██║██║    ║
+║  ██║  ██║███████╗██║   ██║   ███████╗ ╚█████╔╝   ██║   ╚██████╔╝██║    ║
+║  ╚═╝  ╚═╝╚══════╝╚═╝   ╚═╝   ╚══════╝  ╚════╝    ╚═╝    ╚═════╝ ╚═╝    ║
+║                                                                          ║
+║          Declarative TUI library for Java              v0.1.0           ║
+║          ──────────────────────────────────────────────────────         ║
+║                    crafted with pride by  J A R V I S  (AI)            ║
+╚══════════════════════════════════════════════════════════════════════════╝
+```
+
 # AliveJTUI
 
 A declarative TUI (Terminal User Interface) library for Java.
@@ -97,8 +113,17 @@ public class CounterApp extends Component {
 
 ### 3. Run the demo jar
 
+Three flavours — same app, different backends:
+
 ```bash
-java -jar alivejTUI-demo.jar
+# Lanterna: opens a Swing window — works everywhere, including IDE
+java -jar alivejTUI-demo-lanterna.jar
+
+# ANSI: raw escape codes — run from Windows Terminal / xterm / iTerm2
+java -jar alivejTUI-demo-ansi.jar
+
+# Native: JNA raw terminal, no Lanterna — run from a real terminal (not IDE console)
+java -jar alivejTUI-demo-native.jar
 ```
 
 ---
@@ -622,7 +647,9 @@ String cell = backend.getCell(0, 0); // character at col=0, row=0
 Run the bundled demo to explore all features:
 
 ```bash
-java -jar alivejTUI-demo.jar
+java -jar alivejTUI-demo-lanterna.jar   # Swing window — works everywhere
+java -jar alivejTUI-demo-ansi.jar       # ANSI codes — Windows Terminal / xterm
+java -jar alivejTUI-demo-native.jar     # JNA raw mode — real terminal only
 ```
 
 ### Navigation
