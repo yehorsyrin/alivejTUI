@@ -1,7 +1,9 @@
 package io.alive.tui.event;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.EnumMap;
+import java.util.EnumSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
@@ -127,6 +129,27 @@ public class EventBus {
         handlers.clear();
         runnableWrappers.clear();
         characterHandlers.clear();
+    }
+
+    /**
+     * Returns an unmodifiable set of all {@link KeyType} values that currently have at least
+     * one handler registered (via {@link #register(KeyType, Runnable)} or
+     * {@link #register(KeyType, KeyHandler)}).
+     *
+     * <p>The {@link KeyType#CHARACTER} key is never included — character handlers are tracked
+     * separately via {@link #registerCharacter(CharacterHandler)}.
+     *
+     * @return unmodifiable set of registered key types
+     */
+    public Set<KeyType> getRegisteredKeys() {
+        if (handlers.isEmpty()) return Collections.emptySet();
+        Set<KeyType> keys = EnumSet.noneOf(KeyType.class);
+        for (Map.Entry<KeyType, Set<KeyHandler>> entry : handlers.entrySet()) {
+            if (!entry.getValue().isEmpty()) {
+                keys.add(entry.getKey());
+            }
+        }
+        return Collections.unmodifiableSet(keys);
     }
 
     public int handlerCount(KeyType key) {

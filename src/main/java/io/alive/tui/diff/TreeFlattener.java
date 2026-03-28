@@ -49,12 +49,16 @@ class TreeFlattener {
             flattenProgressBar(bar, cells);
         } else if (node instanceof SpinnerNode spinner) {
             flattenSpinner(spinner, cells);
+        } else if (node instanceof CheckboxNode cb) {
+            flattenCheckbox(cb, cells);
         } else if (node instanceof DividerNode div) {
             flattenDivider(div, cells);
         } else if (node instanceof BoxNode box) {
             flattenBox(box, cells);
         } else if (node instanceof ScrollableVBoxNode svbox) {
             flattenScrollableVBox(svbox, cells);
+        } else if (node instanceof HelpPanelNode help) {
+            flattenHelpPanel(help, cells);
         } else {
             // Container node (VBox, HBox) — recurse into children
             for (Node child : node.getChildren()) visit(child, cells);
@@ -64,11 +68,23 @@ class TreeFlattener {
     // --- Leaf renderers ---
 
     private void flattenText(TextNode text, Map<String, CellState> cells) {
-        String str = text.getText();
-        Style style = text.getStyle();
         int x = text.getX(), y = text.getY(), w = text.getWidth();
-        for (int i = 0; i < str.length() && i < w; i++) {
-            put(cells, x + i, y, str.charAt(i), style);
+        if (text.hasMarkdown()) {
+            // Render each styled segment in order, clipped to node width
+            int col = 0;
+            for (io.alive.tui.node.StyledSegment seg : text.getSegments()) {
+                String segText = seg.text();
+                for (int i = 0; i < segText.length() && col < w; i++, col++) {
+                    put(cells, x + col, y, segText.charAt(i), seg.style());
+                }
+                if (col >= w) break;
+            }
+        } else {
+            String str = text.getText();
+            Style style = text.getStyle();
+            for (int i = 0; i < str.length() && i < w; i++) {
+                put(cells, x + i, y, str.charAt(i), style);
+            }
         }
     }
 
@@ -130,6 +146,16 @@ class TreeFlattener {
         String frame = spinner.currentFrame();
         if (!frame.isEmpty()) {
             put(cells, spinner.getX(), spinner.getY(), frame.charAt(0), spinner.getStyle());
+        }
+    }
+
+    private void flattenCheckbox(CheckboxNode cb, Map<String, CellState> cells) {
+        String checkMark = cb.isChecked() ? "✓" : " ";
+        String label = "[" + checkMark + "] " + cb.getLabel();
+        Style style = cb.isFocused() ? cb.getFocusedStyle() : cb.getStyle();
+        int x = cb.getX(), y = cb.getY(), w = cb.getWidth();
+        for (int i = 0; i < label.length() && i < w; i++) {
+            put(cells, x + i, y, label.charAt(i), style);
         }
     }
 
@@ -199,6 +225,19 @@ class TreeFlattener {
             if (row >= minAbsY && row < maxAbsYEx) {
                 int remappedRow = nodeY + (row - minAbsY);
                 cells.put(col + "," + remappedRow, entry.getValue());
+            }
+        }
+    }
+
+    private void flattenHelpPanel(HelpPanelNode help, Map<String, CellState> cells) {
+        List<KeyBinding> bindings = help.getBindings();
+        int x = help.getX(), y = help.getY(), w = help.getWidth();
+
+        for (int row = 0; row < bindings.size(); row++) {
+            String line = HelpPanelNode.format(bindings.get(row));
+            for (int col = 0; col < w; col++) {
+                char c = col < line.length() ? line.charAt(col) : SPACE;
+                put(cells, x + col, y + row, c, Style.DEFAULT);
             }
         }
     }

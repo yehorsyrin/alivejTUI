@@ -58,6 +58,10 @@ public class LayoutEngine {
             root.setHeight(1);
         } else if (root instanceof DividerNode div) {
             layoutDivider(div, availableWidth, availableHeight);
+        } else if (root instanceof CheckboxNode cb) {
+            layoutCheckbox(cb, availableWidth);
+        } else if (root instanceof HelpPanelNode help) {
+            layoutHelpPanel(help, availableWidth);
         } else {
             // Unknown node type — fill available space
             root.setWidth(availableWidth);
@@ -182,6 +186,23 @@ public class LayoutEngine {
         int desired = btn.getLabel().length() + 2;
         btn.setWidth(Math.min(desired, availableWidth));
         btn.setHeight(1);
+    }
+
+    // --- CheckboxNode ---
+
+    private void layoutCheckbox(CheckboxNode cb, int availableWidth) {
+        // Rendered as "[✓] label" or "[ ] label" — 4 chars prefix + label length
+        int desired = "[✓] ".length() + cb.getLabel().length();
+        cb.setWidth(Math.min(desired, availableWidth));
+        cb.setHeight(1);
+    }
+
+    // --- HelpPanelNode ---
+
+    private void layoutHelpPanel(HelpPanelNode help, int availableWidth) {
+        int maxLen = help.maxLineLength();
+        help.setWidth(Math.min(maxLen, availableWidth));
+        help.setHeight(Math.max(1, help.getBindings().size()));
     }
 
     // --- DividerNode ---
