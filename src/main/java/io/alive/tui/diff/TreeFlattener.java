@@ -53,6 +53,8 @@ class TreeFlattener {
             flattenDivider(div, cells);
         } else if (node instanceof BoxNode box) {
             flattenBox(box, cells);
+        } else if (node instanceof ScrollableVBoxNode svbox) {
+            flattenScrollableVBox(svbox, cells);
         } else {
             // Container node (VBox, HBox) — recurse into children
             for (Node child : node.getChildren()) visit(child, cells);
@@ -174,6 +176,31 @@ class TreeFlattener {
 
         // Recurse into children
         for (Node child : box.getChildren()) visit(child, cells);
+    }
+
+    private void flattenScrollableVBox(ScrollableVBoxNode svbox, Map<String, CellState> cells) {
+        int nodeY      = svbox.getY();
+        int offset     = svbox.getScrollOffset();
+        int maxH       = svbox.getMaxHeight();
+        int minAbsY    = nodeY + offset;          // first absolute row that is visible
+        int maxAbsYEx  = minAbsY + maxH;          // first absolute row that is NOT visible
+
+        // Render children into a temporary map, then clip + remap rows
+        Map<String, CellState> childCells = new HashMap<>();
+        for (Node child : svbox.getChildren()) {
+            visit(child, childCells);
+        }
+
+        for (Map.Entry<String, CellState> entry : childCells.entrySet()) {
+            String key = entry.getKey();
+            int comma = key.indexOf(',');
+            int col   = Integer.parseInt(key.substring(0, comma));
+            int row   = Integer.parseInt(key.substring(comma + 1));
+            if (row >= minAbsY && row < maxAbsYEx) {
+                int remappedRow = nodeY + (row - minAbsY);
+                cells.put(col + "," + remappedRow, entry.getValue());
+            }
+        }
     }
 
     private static void put(Map<String, CellState> cells, int col, int row, char ch, Style style) {

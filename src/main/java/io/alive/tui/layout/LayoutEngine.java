@@ -34,6 +34,8 @@ public class LayoutEngine {
 
         if (root instanceof TextNode text) {
             layoutText(text, availableWidth);
+        } else if (root instanceof ScrollableVBoxNode svbox) {
+            layoutScrollableVBox(svbox, x, y, availableWidth, availableHeight);
         } else if (root instanceof VBoxNode vbox) {
             layoutVBox(vbox, x, y, availableWidth, availableHeight);
         } else if (root instanceof HBoxNode hbox) {
@@ -69,6 +71,29 @@ public class LayoutEngine {
         int len = node.getText().length();
         node.setWidth(Math.min(len, availableWidth));
         node.setHeight(1);
+    }
+
+    // --- ScrollableVBoxNode ---
+
+    private void layoutScrollableVBox(ScrollableVBoxNode svbox, int x, int y,
+                                      int availableWidth, int availableHeight) {
+        List<Node> children = svbox.getChildren();
+        int gap = svbox.getGap();
+        int totalHeight = 0;
+        int currentY = y;
+
+        // Layout children with unlimited height (content can exceed maxHeight)
+        for (int i = 0; i < children.size(); i++) {
+            Node child = children.get(i);
+            layout(child, x, currentY, availableWidth, availableHeight);
+            int childH = child.getHeight() + (i < children.size() - 1 ? gap : 0);
+            currentY    += childH;
+            totalHeight += childH;
+        }
+
+        svbox.setContentHeight(totalHeight);
+        svbox.setWidth(availableWidth);
+        svbox.setHeight(Math.min(svbox.getMaxHeight(), totalHeight));
     }
 
     // --- VBoxNode ---
