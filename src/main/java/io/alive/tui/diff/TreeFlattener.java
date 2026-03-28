@@ -51,6 +51,8 @@ class TreeFlattener {
             flattenSpinner(spinner, cells);
         } else if (node instanceof CheckboxNode cb) {
             flattenCheckbox(cb, cells);
+        } else if (node instanceof RadioGroupNode rg) {
+            flattenRadioGroup(rg, cells);
         } else if (node instanceof DividerNode div) {
             flattenDivider(div, cells);
         } else if (node instanceof BoxNode box) {
@@ -59,6 +61,8 @@ class TreeFlattener {
             flattenScrollableVBox(svbox, cells);
         } else if (node instanceof HelpPanelNode help) {
             flattenHelpPanel(help, cells);
+        } else if (node instanceof DialogNode dialog) {
+            flattenDialog(dialog, cells);
         } else {
             // Container node (VBox, HBox) — recurse into children
             for (Node child : node.getChildren()) visit(child, cells);
@@ -171,6 +175,27 @@ class TreeFlattener {
         }
     }
 
+    private void flattenRadioGroup(RadioGroupNode rg, Map<String, CellState> cells) {
+        java.util.List<String> options = rg.getOptions();
+        int x = rg.getX(), y = rg.getY(), w = rg.getWidth();
+        int selectedIndex = rg.getSelectedIndex();
+        boolean focused = rg.isFocused();
+
+        for (int i = 0; i < options.size(); i++) {
+            String prefix = (i == selectedIndex)
+                    ? RadioGroupNode.SELECTED_PREFIX
+                    : RadioGroupNode.UNSELECTED_PREFIX;
+            String row = prefix + options.get(i);
+            Style style = (i == selectedIndex && focused)
+                    ? rg.getFocusedStyle()
+                    : rg.getNormalStyle();
+            for (int col = 0; col < w; col++) {
+                char c = col < row.length() ? row.charAt(col) : SPACE;
+                put(cells, x + col, y + i, c, style);
+            }
+        }
+    }
+
     private void flattenDivider(DividerNode div, Map<String, CellState> cells) {
         int x = div.getX(), y = div.getY();
         Style style = div.getStyle();
@@ -252,6 +277,48 @@ class TreeFlattener {
                 put(cells, x + col, y + row, c, Style.DEFAULT);
             }
         }
+    }
+
+    private void flattenDialog(DialogNode dialog, Map<String, CellState> cells) {
+        int x = dialog.getX(), y = dialog.getY();
+        int w = dialog.getWidth(), h = dialog.getHeight();
+        Style bs = dialog.getBorderStyle();
+
+        // Corners
+        put(cells, x,         y,         TOP_LEFT,  bs);
+        put(cells, x + w - 1, y,         TOP_RIGHT, bs);
+        put(cells, x,         y + h - 1, BOT_LEFT,  bs);
+        put(cells, x + w - 1, y + h - 1, BOT_RIGHT, bs);
+
+        // Top border — with optional title: ╭─ Title ──╮
+        if (dialog.hasTitle()) {
+            String titlePart = "\u2500 " + dialog.getTitle() + " ";
+            int col = x + 1;
+            for (int i = 0; i < titlePart.length() && col < x + w - 1; i++, col++) {
+                put(cells, col, y, titlePart.charAt(i), bs);
+            }
+            for (; col < x + w - 1; col++) {
+                put(cells, col, y, H_LINE, bs);
+            }
+        } else {
+            for (int col = x + 1; col < x + w - 1; col++) {
+                put(cells, col, y, H_LINE, bs);
+            }
+        }
+
+        // Bottom border
+        for (int col = x + 1; col < x + w - 1; col++) {
+            put(cells, col, y + h - 1, H_LINE, bs);
+        }
+
+        // Left and right edges
+        for (int row = y + 1; row < y + h - 1; row++) {
+            put(cells, x,         row, V_LINE, bs);
+            put(cells, x + w - 1, row, V_LINE, bs);
+        }
+
+        // Recurse into children
+        for (Node child : dialog.getChildren()) visit(child, cells);
     }
 
     private static void put(Map<String, CellState> cells, int col, int row, char ch, Style style) {

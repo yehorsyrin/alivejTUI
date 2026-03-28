@@ -60,8 +60,12 @@ public class LayoutEngine {
             layoutDivider(div, availableWidth, availableHeight);
         } else if (root instanceof CheckboxNode cb) {
             layoutCheckbox(cb, availableWidth);
+        } else if (root instanceof RadioGroupNode rg) {
+            layoutRadioGroup(rg, availableWidth);
         } else if (root instanceof HelpPanelNode help) {
             layoutHelpPanel(help, availableWidth);
+        } else if (root instanceof DialogNode dialog) {
+            layoutDialog(dialog, x, y, availableWidth, availableHeight);
         } else {
             // Unknown node type — fill available space
             root.setWidth(availableWidth);
@@ -245,6 +249,28 @@ public class LayoutEngine {
         int desired = "[✓] ".length() + cb.getLabel().length();
         cb.setWidth(Math.min(desired, availableWidth));
         cb.setHeight(1);
+    }
+
+    // --- RadioGroupNode ---
+
+    private void layoutRadioGroup(RadioGroupNode rg, int availableWidth) {
+        rg.setWidth(availableWidth);
+        rg.setHeight(Math.max(1, rg.getOptions().size()));
+    }
+
+    // --- DialogNode ---
+
+    private void layoutDialog(DialogNode dialog, int x, int y, int availableWidth, int availableHeight) {
+        int innerW = Math.max(0, availableWidth  - 2);
+        int innerH = Math.max(0, availableHeight - 2);
+        if (!dialog.getChildren().isEmpty()) {
+            layout(dialog.getChildren().get(0), x + 1, y + 1, innerW, innerH);
+            dialog.setWidth(availableWidth);
+            dialog.setHeight(dialog.getChildren().get(0).getHeight() + 2);
+        } else {
+            dialog.setWidth(availableWidth);
+            dialog.setHeight(availableHeight);
+        }
     }
 
     // --- HelpPanelNode ---
