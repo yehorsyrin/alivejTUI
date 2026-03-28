@@ -26,12 +26,6 @@
         </dependency>
 
         <dependency>
-            <groupId>net.java.dev.jna</groupId>
-            <artifactId>jna-platform</artifactId>
-            <version>5.14.0</version>
-        </dependency>
-
-        <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>
             <version>5.10.0</version>
@@ -85,7 +79,7 @@
                 <artifactId>exec-maven-plugin</artifactId>
                 <version>3.1.0</version>
                 <configuration>
-                    <mainClass>io.alive.tui.example.DemoApp</mainClass>
+                    <mainClass>io.alive.tui.example.DemoLanterna</mainClass>
                 </configuration>
             </plugin>
 
@@ -94,64 +88,15 @@
                 <artifactId>maven-shade-plugin</artifactId>
                 <version>3.5.1</version>
                 <executions>
-                    <!-- Lanterna backend (Swing window) -->
                     <execution>
                         <id>demo-lanterna</id>
                         <phase>package</phase>
                         <goals><goal>shade</goal></goals>
                         <configuration>
-                            <finalName>alivejTUI-demo-lanterna</finalName>
+                            <finalName>alivejTUI-demo</finalName>
                             <transformers>
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                                     <mainClass>io.alive.tui.example.DemoLanterna</mainClass>
-                                </transformer>
-                            </transformers>
-                            <filters>
-                                <filter>
-                                    <artifact>*:*</artifact>
-                                    <excludes>
-                                        <exclude>META-INF/*.SF</exclude>
-                                        <exclude>META-INF/*.DSA</exclude>
-                                        <exclude>META-INF/*.RSA</exclude>
-                                    </excludes>
-                                </filter>
-                            </filters>
-                        </configuration>
-                    </execution>
-                    <!-- ANSI backend (raw escape codes) -->
-                    <execution>
-                        <id>demo-ansi</id>
-                        <phase>package</phase>
-                        <goals><goal>shade</goal></goals>
-                        <configuration>
-                            <finalName>alivejTUI-demo-ansi</finalName>
-                            <transformers>
-                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>io.alive.tui.example.DemoAnsi</mainClass>
-                                </transformer>
-                            </transformers>
-                            <filters>
-                                <filter>
-                                    <artifact>*:*</artifact>
-                                    <excludes>
-                                        <exclude>META-INF/*.SF</exclude>
-                                        <exclude>META-INF/*.DSA</exclude>
-                                        <exclude>META-INF/*.RSA</exclude>
-                                    </excludes>
-                                </filter>
-                            </filters>
-                        </configuration>
-                    </execution>
-                    <!-- Native backend (JNA raw terminal, no Lanterna) -->
-                    <execution>
-                        <id>demo-native</id>
-                        <phase>package</phase>
-                        <goals><goal>shade</goal></goals>
-                        <configuration>
-                            <finalName>alivejTUI-demo-native</finalName>
-                            <transformers>
-                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>io.alive.tui.example.DemoNative</mainClass>
                                 </transformer>
                             </transformers>
                             <filters>

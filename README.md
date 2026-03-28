@@ -49,13 +49,13 @@ Build terminal UIs as component trees — like React, but for the terminal.
 - **Virtual lists** — render 10,000+ items with only visible rows drawn
 - **Undo/Redo** — built-in `UndoManager` for reversible operations
 - **Diff-based renderer** — only changed terminal cells are redrawn; no full-screen flicker
-- **Pluggable backends** — Lanterna (default), AnsiBackend, NativeBackend (POSIX/Windows), MockBackend (testing)
+- **Pluggable backends** — `LanternaBackend` (default), `MockBackend` (testing), or bring your own
 
 ---
 
 ## Requirements
 
-- Java 21+
+- Java 17+
 - Maven 3.8+
 
 ---
@@ -113,18 +113,12 @@ public class CounterApp extends Component {
 
 ### 3. Run the demo jar
 
-Three flavours — same app, different backends:
-
 ```bash
-# Lanterna: opens a Swing window — works everywhere, including IDE
-java -jar alivejTUI-demo-lanterna.jar
-
-# ANSI: raw escape codes — run from Windows Terminal / xterm / iTerm2
-java -jar alivejTUI-demo-ansi.jar
-
-# Native: JNA raw terminal, no Lanterna — run from a real terminal (not IDE console)
-java -jar alivejTUI-demo-native.jar
+java -jar alivejTUI-demo.jar
 ```
+
+On systems with a graphical display (X11/Wayland/macOS/Windows) a Swing window opens.
+On headless Linux the app runs directly in the terminal.
 
 ---
 
@@ -551,18 +545,14 @@ UndoManager undo = new UndoManager(); // default 100 entries
 String prev = text;
 text = "new value";
 undo.record(
-    () -> setState(() -> text = prev),   // undo
-    () -> setState(() -> text = "new value") // redo
+    () -> setState(() -> text = prev),          // undo
+    () -> setState(() -> text = "new value")    // redo
 );
 
 // In key handlers:
 onKey(KeyType.CHARACTER, () -> {
-    if (event.ctrl() && event.character() == 'z') {
-        undo.undo();
-    }
-    if (event.ctrl() && event.character() == 'y') {
-        undo.redo();
-    }
+    if (event.ctrl() && event.character() == 'z') undo.undo();
+    if (event.ctrl() && event.character() == 'y') undo.redo();
 });
 
 boolean canUndo = undo.canUndo();
@@ -579,7 +569,7 @@ undo.clear();
 public void mount(Runnable onStateChange, EventBus eventBus) {
     super.mount(onStateChange, eventBus);
 
-    // Special keys (non-consuming)
+    // Special keys
     onKey(KeyType.ARROW_DOWN, () -> setState(() -> selectedRow++));
     onKey(KeyType.ARROW_UP,   () -> setState(() -> selectedRow--));
     onKey(KeyType.PAGE_DOWN,  () -> setState(() -> selectedRow += 10));
@@ -607,20 +597,23 @@ public void mount(Runnable onStateChange, EventBus eventBus) {
 
 ## Backends
 
-| Backend | Use Case |
+| Backend | Use case |
 |---------|----------|
-| `LanternaBackend` | Default. Cross-platform via the Lanterna library. |
-| `AnsiBackend` | Raw ANSI escape codes; no external dependency. |
-| `NativeBackend` | Direct POSIX/Windows terminal I/O via JNA. |
-| `MockBackend` | Unit testing; does not open a real terminal. |
+| `LanternaBackend` | Default. Cross-platform. Opens a Swing window when a display is available; falls back to in-terminal mode on headless Linux. |
+| `MockBackend` | Unit testing — no real terminal required. |
 
 ```java
-// Default
+// Default (LanternaBackend)
 AliveJTUI.run(new MyApp());
 
-// Custom backend
+// Custom backend — implement TerminalBackend
+AliveJTUI.run(new MyApp(), new MyCustomBackend());
+
+// Testing
 AliveJTUI.run(new MyApp(), new MockBackend(80, 24));
 ```
+
+`TerminalBackend` is a plain interface — implement it to integrate any other rendering layer (ncurses, raw ANSI, WebSocket, etc.).
 
 ---
 
@@ -644,12 +637,8 @@ String cell = backend.getCell(0, 0); // character at col=0, row=0
 
 ## Demo Application
 
-Run the bundled demo to explore all features:
-
 ```bash
-java -jar alivejTUI-demo-lanterna.jar   # Swing window — works everywhere
-java -jar alivejTUI-demo-ansi.jar       # ANSI codes — Windows Terminal / xterm
-java -jar alivejTUI-demo-native.jar     # JNA raw mode — real terminal only
+java -jar alivejTUI-demo.jar
 ```
 
 ### Navigation
@@ -689,11 +678,9 @@ java -jar alivejTUI-demo-native.jar     # JNA raw mode — real terminal only
 # Compile and run tests
 mvn test
 
-# Build library jar
+# Build library jar + demo fat-jar
 mvn package
-
-# Build demo fat-jar
-mvn package   # produces target/alivejTUI-demo.jar
+# produces target/alivejTUI-demo.jar
 ```
 
 ---
@@ -710,11 +697,11 @@ src/
                   ProgressBar, Spinner, Dialog, Collapsible, HelpPanel, ...
     style/        Color, Style, Theme, StyleSheet, Selector
     event/        EventBus, KeyEvent, KeyType
-    backend/      TerminalBackend, LanternaBackend, AnsiBackend, NativeBackend,
-                  MockBackend, TerminalCapabilities
+    backend/      TerminalBackend (interface), LanternaBackend, MockBackend,
+                  TerminalCapabilities
     render/       Renderer, LayoutEngine, Differ, TreeFlattener
-    example/      DemoApp, TodoApp, Showcase
-  test/           172 unit tests
+    example/      DemoApp, DemoLanterna, TodoApp, Showcase
+  test/           unit tests
 ```
 
 ---

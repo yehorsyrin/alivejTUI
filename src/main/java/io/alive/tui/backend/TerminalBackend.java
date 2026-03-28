@@ -7,6 +7,13 @@ import io.alive.tui.style.Style;
  * Abstraction over the underlying terminal library.
  * All rendering and input operations go through this interface.
  *
+ * <p>The built-in implementation is {@link LanternaBackend}.
+ * {@link MockBackend} is provided for unit testing.
+ * Custom backends can be created by implementing this interface directly —
+ * pass the instance to {@code AliveJTUI.run(component, backend)}.
+ *
+ * TODO: native backend — direct POSIX/Windows terminal I/O without Lanterna
+ *
  * <h2>Error handling contract</h2>
  * <ul>
  *   <li>{@link #init()} and {@link #shutdown()} throw {@link TerminalInitException} on failure.</li>

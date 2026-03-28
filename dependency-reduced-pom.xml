@@ -40,7 +40,7 @@
         <artifactId>exec-maven-plugin</artifactId>
         <version>3.1.0</version>
         <configuration>
-          <mainClass>io.alive.tui.example.DemoApp</mainClass>
+          <mainClass>io.alive.tui.example.DemoLanterna</mainClass>
         </configuration>
       </plugin>
       <plugin>
@@ -48,6 +48,7 @@
         <version>3.5.1</version>
         <executions>
           <execution>
+            <id>demo-lanterna</id>
             <phase>package</phase>
             <goals>
               <goal>shade</goal>
@@ -56,7 +57,7 @@
               <finalName>alivejTUI-demo</finalName>
               <transformers>
                 <transformer>
-                  <mainClass>io.alive.tui.example.DemoApp</mainClass>
+                  <mainClass>io.alive.tui.example.DemoLanterna</mainClass>
                 </transformer>
               </transformers>
               <filters>

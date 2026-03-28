@@ -16,6 +16,12 @@ import com.googlecode.lanterna.terminal.swing.TerminalEmulatorColorConfiguration
 import com.googlecode.lanterna.terminal.swing.TerminalEmulatorDeviceConfiguration;
 
 import java.awt.Font;
+import java.awt.GraphicsEnvironment;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import io.alive.tui.event.KeyEvent;
 import io.alive.tui.event.KeyType;
@@ -46,19 +52,21 @@ public class LanternaBackend implements TerminalBackend {
     @Override
     public void init() {
         try {
-            SwingTerminalFontConfiguration fontConfig = SwingTerminalFontConfiguration.newInstance(
-                    new Font("Consolas", Font.PLAIN, 16),
-                    new Font("Courier New", Font.PLAIN, 16),
-                    new Font("Monospaced", Font.PLAIN, 16)
-            );
-            SwingTerminalFrame terminal = new SwingTerminalFrame("AliveJTUI",
-                    new TerminalSize(120, 35),
-                    TerminalEmulatorDeviceConfiguration.getDefault(),
-                    fontConfig,
-                    TerminalEmulatorColorConfiguration.getDefault(),
-                    TerminalEmulatorAutoCloseTrigger.CloseOnExitPrivateMode);
-            terminal.setVisible(true);
-            screen = new TerminalScreen(terminal);
+            if (GraphicsEnvironment.isHeadless()) {
+                screen = new TerminalScreen(new DefaultTerminalFactory().createTerminal());
+            } else {
+                SwingTerminalFontConfiguration fontConfig = SwingTerminalFontConfiguration.newInstance(
+                        resolveMonospacedFonts(16)
+                );
+                SwingTerminalFrame terminal = new SwingTerminalFrame("AliveJTUI",
+                        new TerminalSize(120, 35),
+                        TerminalEmulatorDeviceConfiguration.getDefault(),
+                        fontConfig,
+                        TerminalEmulatorColorConfiguration.getDefault(),
+                        TerminalEmulatorAutoCloseTrigger.CloseOnExitPrivateMode);
+                terminal.setVisible(true);
+                screen = new TerminalScreen(terminal);
+            }
             screen.startScreen();
             screen.setCursorPosition(null);
         } catch (IOException e) {
@@ -218,6 +226,23 @@ public class LanternaBackend implements TerminalBackend {
         // SGR.FAINT (dim) not available in Lanterna 3.1.2 — silently ignored
         if (style.isStrikethrough()) sgrs.add(SGR.CROSSED_OUT);
         return sgrs;
+    }
+
+    private static Font[] resolveMonospacedFonts(int size) {
+        Set<String> available = Arrays.stream(
+                GraphicsEnvironment.getLocalGraphicsEnvironment().getAvailableFontFamilyNames()
+        ).collect(Collectors.toSet());
+        String[] candidates = {"Consolas", "Courier New", "DejaVu Sans Mono", "Liberation Mono",
+                               "Ubuntu Mono", "Noto Mono", "Monospaced"};
+        List<Font> fonts = new ArrayList<>();
+        for (String name : candidates) {
+            if (available.contains(name) || name.equals("Monospaced")) {
+                fonts.add(new Font(name, Font.PLAIN, size));
+            }
+        }
+        return fonts.isEmpty()
+                ? new Font[]{new Font(Font.MONOSPACED, Font.PLAIN, size)}
+                : fonts.toArray(new Font[0]);
     }
 
     KeyEvent toKeyEvent(KeyStroke ks) {
