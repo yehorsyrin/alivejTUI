@@ -51,6 +51,18 @@ public class Differ {
         return diffCells(oldCells, newCells);
     }
 
+    /**
+     * Flattens and merges a base tree with an optional overlay into a single cell map.
+     * The returned map is a snapshot and can be stored safely across renders.
+     *
+     * @param base    the base tree (may be {@code null})
+     * @param overlay the overlay tree (may be {@code null})
+     * @return merged cell map (overlay cells override base cells)
+     */
+    public Map<String, CellState> flattenMerged(Node base, Node overlay) {
+        return merged(flattener.flatten(base), flattener.flatten(overlay));
+    }
+
     /** Merges base and overlay cell maps; overlay wins on collision. */
     private static Map<String, CellState> merged(Map<String, CellState> base,
                                                   Map<String, CellState> overlay) {
@@ -60,8 +72,17 @@ public class Differ {
         return result;
     }
 
-    private List<CellChange> diffCells(Map<String, CellState> oldCells,
-                                       Map<String, CellState> newCells) {
+    /**
+     * Returns the minimal list of cell changes between two pre-flattened cell maps.
+     * Use this overload when the caller manages cell map snapshots to avoid re-flattening
+     * mutable node trees.
+     *
+     * @param oldCells the previous frame's cell map (from {@link #flattenMerged})
+     * @param newCells the current frame's cell map (from {@link #flattenMerged})
+     * @return ordered list of cell changes
+     */
+    public List<CellChange> diffCells(Map<String, CellState> oldCells,
+                                      Map<String, CellState> newCells) {
         List<CellChange> changes = new ArrayList<>();
 
         // Cells added or changed

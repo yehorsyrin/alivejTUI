@@ -5,6 +5,7 @@ import io.alive.tui.backend.TerminalBackend;
 import io.alive.tui.event.EventBus;
 import io.alive.tui.event.KeyEvent;
 import io.alive.tui.event.KeyType;
+import io.alive.tui.node.ButtonNode;
 import io.alive.tui.render.Renderer;
 import io.alive.tui.style.Theme;
 
@@ -67,25 +68,23 @@ public class AliveJTUI {
 
     /**
      * Pushes a node to be rendered as an overlay on top of the current root tree.
-     * Triggers an immediate re-render. Must be called from within the event loop thread.
+     * Takes effect on the next render pass. Must be called from within the event loop thread.
      *
      * @param node the overlay node (e.g. a dialog or popup)
      */
     public static void pushOverlay(Node node) {
         if (activeRenderer != null) {
             activeRenderer.pushOverlay(node);
-            if (activeRerenderCallback != null) activeRerenderCallback.run();
         }
     }
 
     /**
-     * Removes the current overlay and triggers an immediate re-render.
+     * Removes the current overlay.
      * Must be called from within the event loop thread.
      */
     public static void popOverlay() {
         if (activeRenderer != null) {
             activeRenderer.clearOverlay();
-            if (activeRerenderCallback != null) activeRerenderCallback.run();
         }
     }
 
@@ -230,6 +229,16 @@ public class AliveJTUI {
         // Wire TAB / Shift+TAB to focus cycling
         eventBus.register(KeyType.TAB,       focusManager::focusNext);
         eventBus.register(KeyType.SHIFT_TAB, focusManager::focusPrev);
+
+        // Wire ENTER to trigger the currently-focused button's onClick
+        eventBus.register(KeyType.ENTER, () -> {
+            if (focusManager.getFocused() instanceof ButtonNode btn) {
+                btn.click();
+                Runnable cb = activeRerenderCallback;
+                if (cb != null) cb.run();
+            }
+            return false; // don't consume — let other ENTER handlers run
+        });
 
         // Expose overlay and timer APIs
         activeRenderer         = renderer;

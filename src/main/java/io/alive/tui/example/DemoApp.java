@@ -18,11 +18,11 @@ import static java.util.stream.Collectors.toList;
  *
  * <h2>Navigation</h2>
  * <pre>
- *   1–5   Switch tab
+ *   1-5   Switch tab
  *   T     Toggle Dark/Light theme
  *   D     Show dialog
  *   N     Show notification
- *   ↑↓    Navigate lists / tables
+ *   Up/Down  Navigate lists / tables
  *   +/-   Progress bar
  *   ESC   Quit
  * </pre>
@@ -38,16 +38,16 @@ public class DemoApp extends Component {
     private int activeTab = 0;
 
     // --- Tab 1: Widgets ---
-    private double  progress    = 0.4;
-    private int     clickCount  = 0;
-    private int     spinFrame   = 0;
-    private boolean cbChecked   = true;
-    private int     radioIdx    = 0;
-    private int     selectIdx   = 0;
-    private String  inputText   = "";
-    private static final String[] SPIN = { "⠋","⠙","⠹","⠸","⠼","⠴","⠦","⠧","⠇","⠏" };
+    private double  progress   = 0.4;
+    private int     clickCount = 0;
+    private int     spinFrame  = 0;
+    private boolean cbChecked  = true;
+    private int     radioIdx   = 0;
+    private int     selectIdx  = 0;
+    private String  inputText  = "";
+
+    private static final String[] SPIN = { "|", "/", "-", "\\" };
     private static final String[] COLORS_OPT = { "Red", "Green", "Blue", "Cyan", "Magenta" };
-    private static final String[] THEMES_OPT = { "Dark", "Light" };
 
     // --- Tab 2: Table ---
     private int tableRow = 0;
@@ -64,23 +64,48 @@ public class DemoApp extends Component {
 
     // --- Tab 3: VirtualList ---
     private final List<String> bigList = IntStream.range(1, 10_001)
-            .mapToObj(i -> String.format("  %5d  │  Item number %d — scroll to explore", i, i))
+            .mapToObj(i -> String.format("  %5d  |  Item number %d", i, i))
             .collect(toList());
     private final VirtualListNode vList = VirtualList.of(bigList, 12);
+
+    // --- Tab 5: Viewport ---
+    private final ViewportNode viewport;
+
+    // --- Tab 1: Button ---
+    private final ButtonNode clickBtn;
 
     // --- Notifications ---
     private final NotificationManager notifications;
 
-    // --- Collapsible ---
+    // --- Overlay management ---
+    // dialogNode != null means dialog is showing; notification overlay is separate
+    private Node dialogNode   = null;
+    private boolean notifShowing = false;
+
+    // --- Layout collapsible ---
     private boolean colExpanded = true;
 
     public DemoApp() {
         notifications = new NotificationManager(() -> setState(() -> {}));
+        clickBtn = new ButtonNode("[ Click Me! ]", () -> setState(() -> {
+            clickCount++;
+            notifications.show("Clicked! Count: " + clickCount, 1500);
+        }));
+        viewport = new ViewportNode(
+            VBox.of(IntStream.range(1, 21)
+                .mapToObj(i -> Text.of("  Line " + i + ":  " + "=".repeat(i) + " " + i + "%")
+                    .color(i % 2 == 0 ? Color.BRIGHT_BLACK : Color.WHITE))
+                .toArray(Node[]::new)),
+            5
+        );
     }
 
     @Override
     public void mount(Runnable onStateChange, EventBus eventBus) {
         super.mount(onStateChange, eventBus);
+
+        // Focus
+        registerFocusable(clickBtn);
 
         // Tab switching
         eventBus.registerCharacter(c -> {
@@ -95,32 +120,20 @@ public class DemoApp extends Component {
             });
         });
 
-        // Dialog
+        // Dialog open
         eventBus.registerCharacter(c -> {
-            if (c == 'd' || c == 'D') setState(() -> {
-                AliveJTUI.pushOverlay(Dialog.of("Confirm Action",
-                    VBox.of(
-                        Paragraph.ofMarkdown("Are you sure you want to proceed?"),
-                        Text.of(""),
-                        HBox.of(
-                            Button.of("Yes", () -> {
-                                AliveJTUI.popOverlay();
-                                notifications.show("Action confirmed!", 2500, NotificationType.SUCCESS);
-                            }),
-                            Text.of("   "),
-                            Button.of("No",  AliveJTUI::popOverlay)
-                        )
-                    )
-                ));
-            });
+            if ((c == 'd' || c == 'D') && dialogNode == null) {
+                setState(() -> dialogNode = buildConfirmDialog());
+            }
         });
 
         // Notification
         eventBus.registerCharacter(c -> {
-            if (c == 'n' || c == 'N') setState(() ->
-                notifications.show("Hello from AliveJTUI! " + java.time.LocalTime.now()
-                        .toString().substring(0, 8), 3000, NotificationType.INFO)
-            );
+            if (c == 'n' || c == 'N') {
+                notifications.show("Hello from AliveJTUI! " +
+                        java.time.LocalTime.now().toString().substring(0, 8),
+                        3000, NotificationType.INFO);
+            }
         });
 
         // Progress
@@ -129,20 +142,16 @@ public class DemoApp extends Component {
             if (c == '-') setState(() -> progress = Math.max(0.0, progress - 0.05));
         });
 
-        // Button click
+        // Input (tab 1 only, ignore reserved keys)
         eventBus.registerCharacter(c -> {
-            if (c == ' ' && activeTab == 0) setState(() -> {
-                clickCount++;
-                spinFrame = (spinFrame + 1) % SPIN.length;
-                notifications.show("Button clicked! Count: " + clickCount, 1500);
-            });
-        });
-
-        // Input
-        eventBus.registerCharacter(c -> {
-            if (activeTab == 0 && c != '+' && c != '-' && c != ' '
-                    && c != 't' && c != 'T' && c != 'd' && c != 'D'
-                    && c != 'n' && c != 'N' && c >= 32) {
+            if (activeTab == 0 && c >= 32
+                    && c != '+' && c != '-'
+                    && c != 't' && c != 'T'
+                    && c != 'd' && c != 'D'
+                    && c != 'n' && c != 'N'
+                    && c != 'c' && c != 'C'
+                    && c != 'x' && c != 'X'
+                    && c != 's' && c != 'S') {
                 setState(() -> inputText += c);
             }
         });
@@ -151,37 +160,37 @@ public class DemoApp extends Component {
                 setState(() -> inputText = inputText.substring(0, inputText.length() - 1));
         });
 
-        // Table navigation
+        // Navigation
         onKey(KeyType.ARROW_DOWN, () -> {
             if (activeTab == 1) setState(() -> tableRow = Math.min(TABLE_DATA.size() - 1, tableRow + 1));
             if (activeTab == 2) setState(() -> vList.selectDown());
+            if (activeTab == 4) setState(() -> viewport.scrollDown());
             if (activeTab == 0) setState(() -> {
-                radioIdx = (radioIdx + 1) % THEMES_OPT.length;
-                spinFrame = (spinFrame + 1) % SPIN.length;
+                radioIdx   = (radioIdx + 1) % 2;
+                spinFrame  = (spinFrame + 1) % SPIN.length;
             });
         });
         onKey(KeyType.ARROW_UP, () -> {
             if (activeTab == 1) setState(() -> tableRow = Math.max(0, tableRow - 1));
             if (activeTab == 2) setState(() -> vList.selectUp());
+            if (activeTab == 4) setState(() -> viewport.scrollUp());
             if (activeTab == 0) setState(() -> {
-                radioIdx = (radioIdx + THEMES_OPT.length - 1) % THEMES_OPT.length;
+                radioIdx  = (radioIdx + 1) % 2;
                 spinFrame = (spinFrame + 1) % SPIN.length;
             });
         });
         onKey(KeyType.PAGE_DOWN, () -> {
             if (activeTab == 2) setState(() -> vList.pageDown());
+            if (activeTab == 4) setState(() -> viewport.pageDown());
         });
         onKey(KeyType.PAGE_UP, () -> {
             if (activeTab == 2) setState(() -> vList.pageUp());
+            if (activeTab == 4) setState(() -> viewport.pageUp());
         });
-        onKey(KeyType.HOME, () -> {
-            if (activeTab == 2) setState(() -> vList.selectFirst());
-        });
-        onKey(KeyType.END, () -> {
-            if (activeTab == 2) setState(() -> vList.selectLast());
-        });
+        onKey(KeyType.HOME,      () -> { if (activeTab == 2) setState(() -> vList.selectFirst()); });
+        onKey(KeyType.END,       () -> { if (activeTab == 2) setState(() -> vList.selectLast()); });
 
-        // Collapsible toggle
+        // Collapsible
         eventBus.registerCharacter(c -> {
             if (c == 'c' || c == 'C') setState(() -> colExpanded = !colExpanded);
         });
@@ -197,7 +206,7 @@ public class DemoApp extends Component {
         });
 
         // Spinner auto-tick
-        AliveJTUI.scheduleRepeating(120, () -> setState(() -> spinFrame = (spinFrame + 1) % SPIN.length));
+        AliveJTUI.scheduleRepeating(150, () -> setState(() -> spinFrame = (spinFrame + 1) % SPIN.length));
     }
 
     // ==========================================================================
@@ -206,10 +215,20 @@ public class DemoApp extends Component {
 
     @Override
     public Node render() {
+        // ---- Overlay management ----
         Node notifOverlay = notifications.buildOverlay();
-        if (notifOverlay != null) AliveJTUI.pushOverlay(notifOverlay);
-        else if (AliveJTUI.getTheme() != null) {
-            // Only pop if the overlay is a notification (not dialog)
+
+        if (dialogNode != null) {
+            // Dialog takes priority
+            AliveJTUI.pushOverlay(dialogNode);
+            notifShowing = false;
+        } else if (notifOverlay != null) {
+            AliveJTUI.pushOverlay(notifOverlay);
+            notifShowing = true;
+        } else if (notifShowing) {
+            // Notification just expired — clear overlay
+            AliveJTUI.popOverlay();
+            notifShowing = false;
         }
 
         return VBox.of(
@@ -224,28 +243,31 @@ public class DemoApp extends Component {
 
     // --- Header ---
     private Node renderHeader() {
-        String themeLabel = AliveJTUI.getTheme() == Theme.DARK ? "🌙 Dark" : "☀ Light";
+        boolean dark = AliveJTUI.getTheme() == Theme.DARK;
+        String themeLabel = dark ? "[Dark]" : "[Light]";
+        Color titleColor = dark ? Color.CYAN : Color.BLUE;
         return HBox.of(
-            Text.of("  ◈ AliveJTUI Demo v0.1.0 ◈").bold()
-                .color(Color.CYAN),
+            Text.of("  AliveJTUI Demo v0.1.0").bold().color(titleColor),
             Text.of("  theme: " + themeLabel).dim()
         );
     }
 
     // --- Tab bar ---
     private Node renderTabBar() {
+        boolean dark = AliveJTUI.getTheme() == Theme.DARK;
+        Color activeColor = dark ? Color.BRIGHT_CYAN : Color.BLUE;
         Node[] tabs = new Node[TAB_NAMES.length];
         for (int i = 0; i < TAB_NAMES.length; i++) {
             boolean active = i == activeTab;
             TextNode t = Text.of(" " + TAB_NAMES[i] + " ")
-                    .color(active ? Color.BRIGHT_CYAN : Color.BRIGHT_BLACK);
+                    .color(active ? activeColor : Color.BRIGHT_BLACK);
             if (active) t = t.bold();
             tabs[i] = t;
         }
         return HBox.of(tabs);
     }
 
-    // --- Tab content dispatcher ---
+    // --- Tab content ---
     private Node renderTabContent() {
         return switch (activeTab) {
             case 0 -> renderWidgetsTab();
@@ -266,20 +288,17 @@ public class DemoApp extends Component {
 
         return VBox.of(
             Text.of(""),
-            // Row 1: Button + Counter
             HBox.of(
                 Text.of("  "),
-                Button.of("[ Click Me! ]", () -> {}),
+                clickBtn,
                 Text.of("  Clicked: ").dim(),
                 Text.of(String.valueOf(clickCount)).bold().color(Color.GREEN),
-                Text.of("   Spinner: " + SPIN[spinFrame]).color(Color.CYAN)
+                Text.of("  Spin: " + SPIN[spinFrame]).color(Color.CYAN)
             ),
             Text.of(""),
-            // Row 2: Progress bar
             HBox.of(
                 Text.of("  Progress "),
-                Text.of("[+][-]").dim(),
-                Text.of("  ")
+                Text.of("[+][-]").dim()
             ),
             HBox.of(
                 Text.of("  "),
@@ -287,23 +306,21 @@ public class DemoApp extends Component {
                 Text.of("  " + pct + "%").bold().color(pctColor)
             ),
             Text.of(""),
-            // Row 3: Checkbox + Input
             HBox.of(
                 Text.of("  "),
-                Checkbox.of("Enable notifications [X]", cbChecked, () -> {}),
+                Checkbox.of("Notifications enabled [X]", cbChecked, () -> {}),
                 Text.of("    Input: ").dim(),
-                Text.of("[" + inputText + "▌]").color(Color.YELLOW)
+                Text.of("[" + inputText + "_]").color(Color.YELLOW)
             ),
             Text.of(""),
-            // Row 4: Radio + Select
             HBox.of(
-                Text.of("  Theme radio [↑↓]:  "),
-                Text.of(radioIdx == 0 ? "◉ Dark  ○ Light" : "○ Dark  ◉ Light")
+                Text.of("  Theme radio [Up/Down]:  "),
+                Text.of(radioIdx == 0 ? "(x) Dark  ( ) Light" : "( ) Dark  (x) Light")
                     .color(Color.BRIGHT_CYAN)
             ),
             HBox.of(
                 Text.of("  Color select [S]:  "),
-                Text.of("« " + COLORS_OPT[selectIdx] + " »").bold()
+                Text.of("<< " + COLORS_OPT[selectIdx] + " >>").bold()
                     .color(nameToColor(COLORS_OPT[selectIdx]))
             ),
             Text.of("")
@@ -330,18 +347,17 @@ public class DemoApp extends Component {
                 TABLE_DATA,
                 8
         );
-        // Manually advance selection to match tableRow state
         for (int i = 0; i < tableRow; i++) table.selectDown();
 
         return VBox.of(
             Text.of(""),
-            Text.of("  ↑↓ Navigate  •  8 employees").dim(),
+            Text.of("  Up/Down: Navigate  |  8 employees").dim(),
             Text.of(""),
             table,
             Text.of(""),
             HBox.of(
                 Text.of("  Selected: ").dim(),
-                Text.of(TABLE_DATA.get(tableRow).get(0) + "  –  "
+                Text.of(TABLE_DATA.get(tableRow).get(0) + "  -  "
                         + TABLE_DATA.get(tableRow).get(1)).bold().color(Color.BRIGHT_CYAN)
             )
         );
@@ -354,8 +370,8 @@ public class DemoApp extends Component {
         return VBox.of(
             Text.of(""),
             HBox.of(
-                Text.of("  10,000 items — only visible rows rendered").dim(),
-                Text.of("   ↑↓ PgUp PgDn Home End").color(Color.BRIGHT_BLACK)
+                Text.of("  10,000 items — only visible rows rendered  ").dim(),
+                Text.of("Up/Down  PgUp/PgDn  Home/End").color(Color.BRIGHT_BLACK)
             ),
             Text.of(""),
             vList,
@@ -369,7 +385,7 @@ public class DemoApp extends Component {
     }
 
     // ==========================================================================
-    //  TAB 4 — Text / Markdown
+    //  TAB 4 — Text
     // ==========================================================================
     private Node renderTextTab() {
         return VBox.of(
@@ -380,7 +396,7 @@ public class DemoApp extends Component {
                 Text.of("Bold ").bold(),
                 Text.of("Italic ").italic(),
                 Text.of("Underline ").underline(),
-                Text.of("Strikethrough ").strikethrough(),
+                Text.of("Strike ").strikethrough(),
                 Text.of("Dim").dim()
             ),
             HBox.of(
@@ -396,21 +412,21 @@ public class DemoApp extends Component {
             Text.of(""),
             Divider.horizontal(),
             Text.of(""),
-            Text.of("  MARKDOWN PARAGRAPH").bold().color(Color.YELLOW),
+            Text.of("  MARKDOWN").bold().color(Color.YELLOW),
             Text.of("  "),
             Paragraph.ofMarkdown(
                 "**AliveJTUI** is a *declarative* TUI library for Java. " +
-                "Build terminal UIs as component trees — just like React, but for the terminal. " +
-                "Supports **bold**, *italic*, and `inline code` rendering."
+                "Build terminal UIs as component trees -- just like React, " +
+                "but for the terminal. Supports **bold**, *italic*, and `code`."
             ),
             Text.of(""),
             Divider.horizontal(),
             Text.of(""),
-            Text.of("  WORD-WRAPPED TEXT").bold().color(Color.YELLOW),
+            Text.of("  WORD-WRAPPED").bold().color(Color.YELLOW),
             Text.of("  "),
             new TextNode(
                 "Word wrapping automatically breaks long lines to fit the terminal width. " +
-                "This is useful for descriptions, help text, log output, and any prose content " +
+                "This is useful for descriptions, help text, and any prose content " +
                 "that should reflow when the window is resized.",
                 Style.DEFAULT.withForeground(Color.BRIGHT_BLACK)
             ).wrap()
@@ -448,29 +464,38 @@ public class DemoApp extends Component {
             Text.of(""),
             HBox.of(
                 Text.of("  COLLAPSIBLE [C] ").bold().color(Color.YELLOW),
-                Text.of(colExpanded ? "▼ expanded" : "▶ collapsed").color(Color.BRIGHT_BLACK)
+                Text.of(colExpanded ? "v expanded" : "> collapsed").color(Color.BRIGHT_BLACK)
             ),
             colExpanded
                 ? VBox.of(
-                    Text.of("  • Feature flags configuration"),
-                    Text.of("  • Database connection pool settings"),
-                    Text.of("  • Logging level overrides"),
-                    Text.of("  • Performance tuning knobs")
+                    Text.of("  * Feature flags configuration"),
+                    Text.of("  * Database connection pool settings"),
+                    Text.of("  * Logging level overrides"),
+                    Text.of("  * Performance tuning knobs")
                   )
-                : Text.of("  (hidden — press C to expand)").dim(),
+                : Text.of("  (hidden -- press C to expand)").dim(),
             Text.of(""),
             Divider.horizontal(),
             Text.of(""),
-            Text.of("  VIEWPORT (scrollable)").bold().color(Color.YELLOW),
-            Viewport.of(
-                VBox.of(
-                    IntStream.range(1, 21)
-                        .mapToObj(i -> Text.of("  Line " + i + ":  " +
-                            "━".repeat(i) + " " + i + "%")
-                            .color(i % 2 == 0 ? Color.BRIGHT_BLACK : Color.WHITE))
-                        .toArray(Node[]::new)
-                ),
-                5
+            Text.of("  VIEWPORT (scrollable) — Up/Down PgUp/PgDn").bold().color(Color.YELLOW),
+            viewport
+        );
+    }
+
+    // --- Confirm dialog (built inline so callbacks can capture `this`) ---
+    private Node buildConfirmDialog() {
+        return Dialog.of("Confirm Action",
+            VBox.of(
+                Paragraph.ofMarkdown("Are you sure you want to proceed?"),
+                Text.of(""),
+                HBox.of(
+                    Button.of("[Yes]", () -> setState(() -> {
+                        dialogNode = null;
+                        notifications.show("Action confirmed!", 2500, NotificationType.SUCCESS);
+                    })),
+                    Text.of("   "),
+                    Button.of("[No]", () -> setState(() -> dialogNode = null))
+                )
             )
         );
     }
@@ -478,15 +503,15 @@ public class DemoApp extends Component {
     // --- Footer ---
     private Node renderFooter() {
         return HBox.of(
-            Text.of("  1-5: Tab  ").dim(),
-            Text.of("T: Theme  ").dim(),
-            Text.of("D: Dialog  ").dim(),
-            Text.of("N: Notify  ").dim(),
-            Text.of("C: Collapse  ").dim(),
-            Text.of("X: Checkbox  ").dim(),
-            Text.of("S: Select  ").dim(),
-            Text.of("+/-: Progress  ").dim(),
-            Text.of("ESC: Quit").dim()
+            Text.of("  1-5:Tab ").dim(),
+            Text.of("T:Theme ").dim(),
+            Text.of("D:Dialog ").dim(),
+            Text.of("N:Notify ").dim(),
+            Text.of("C:Collapse ").dim(),
+            Text.of("X:Checkbox ").dim(),
+            Text.of("S:Select ").dim(),
+            Text.of("+/-:Progress ").dim(),
+            Text.of("ESC:Quit").dim()
         );
     }
 
