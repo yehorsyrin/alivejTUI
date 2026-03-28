@@ -127,6 +127,32 @@ public class AliveJTUI {
     // --- Async State API (package-private, used by Component) ---
 
     /**
+     * Submits an {@link AsyncTask} for background execution.
+     *
+     * <p>The task's {@code work} callable runs on a background thread; the
+     * {@code onSuccess} (or {@code onError}) callback is enqueued onto the event loop
+     * thread and called during the next event loop tick.
+     *
+     * <p>May be called from any thread (not just the event loop).
+     *
+     * @param task the async task to execute
+     * @param <T>  result type
+     */
+    public static <T> void runAsync(AsyncTask<T> task) {
+        if (task == null) return;
+        submitAsync(() -> {
+            try {
+                T result = task.getWork().call();
+                enqueueStateUpdate(() -> task.getOnSuccess().accept(result));
+            } catch (Exception ex) {
+                if (task.getOnError() != null) {
+                    enqueueStateUpdate(() -> task.getOnError().accept(ex));
+                }
+            }
+        });
+    }
+
+    /**
      * Submits a task to the background executor. Tracks in-flight count so the
      * event loop knows to poll the async queue with a short timeout.
      */
