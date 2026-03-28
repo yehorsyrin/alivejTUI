@@ -73,6 +73,8 @@ class TreeFlattener {
             flattenTextArea(ta, cells);
         } else if (node instanceof NotificationNode notif) {
             flattenNotification(notif, cells);
+        } else if (node instanceof TableNode table) {
+            flattenTable(table, cells);
         } else {
             // Container node (VBox, HBox) — recurse into children
             for (Node child : node.getChildren()) visit(child, cells);
@@ -447,6 +449,90 @@ class TreeFlattener {
                 put(cells, baseX + col, baseY + visRow, c, cellStyle);
             }
         }
+    }
+
+    private void flattenTable(TableNode table, Map<String, CellState> cells) {
+        int x = table.getX(), y = table.getY(), w = table.getWidth();
+        int[] cw       = table.getColWidths();
+        int   numCols  = table.columnCount();
+        boolean borders = table.isShowBorders();
+        Style bs       = table.getBorderStyle();
+
+        if (cw == null || cw.length == 0) return;
+
+        int row = y;
+
+        if (borders) {
+            // Top border: ┌───┬───┐
+            putTableHLine(cells, x, row, w, cw, TableNode.TL, TableNode.TT, TableNode.TR, bs);
+            row++;
+        }
+
+        // Header row
+        putTableDataRow(cells, x, row, cw, table.getHeaders(), borders, table.getHeaderStyle(), bs, w);
+        row++;
+
+        if (borders) {
+            // Header separator: ├───┼───┤
+            putTableHLine(cells, x, row, w, cw, TableNode.LT, TableNode.PLUS, TableNode.RT, bs);
+            row++;
+        }
+
+        // Data rows
+        int offset = table.getScrollOffset();
+        int visibleRows = table.visibleRowCount();
+        for (int i = 0; i < visibleRows; i++) {
+            int dataIdx = offset + i;
+            if (dataIdx >= table.getRows().size()) break;
+            List<String> rowData = table.getRows().get(dataIdx);
+            Style rowStyle = (dataIdx == table.getSelectedRow())
+                    ? table.getSelectedStyle() : table.getRowStyle();
+            putTableDataRow(cells, x, row, cw, rowData, borders, rowStyle, bs, w);
+            row++;
+        }
+
+        if (borders) {
+            // Bottom border: └───┴───┘
+            putTableHLine(cells, x, row, w, cw, TableNode.BL, TableNode.BT, TableNode.BR, bs);
+        }
+    }
+
+    /**
+     * Renders a horizontal separator line for the table.
+     * Format: {@code left + (H * colWidth) + mid + (H * colWidth) + ... + right}
+     */
+    private void putTableHLine(Map<String, CellState> cells, int x, int y, int totalW,
+                               int[] cw, char left, char mid, char right, Style style) {
+        put(cells, x, y, left, style);
+        int col = x + 1;
+        for (int c = 0; c < cw.length; c++) {
+            for (int k = 0; k < cw[c]; k++) put(cells, col++, y, TableNode.H, style);
+            if (c < cw.length - 1) put(cells, col++, y, mid, style);
+        }
+        put(cells, col, y, right, style);
+    }
+
+    /**
+     * Renders a single data row (header or body row).
+     * Format: {@code │ cell1 │ cell2 │ ... │} (with borders) or {@code cell1 cell2 ...} (no borders)
+     */
+    private void putTableDataRow(Map<String, CellState> cells, int x, int y,
+                                 int[] cw, List<String> data, boolean borders,
+                                 Style rowStyle, Style borderStyle, int totalW) {
+        int col = x;
+        for (int c = 0; c < cw.length; c++) {
+            if (borders) put(cells, col++, y, TableNode.V, borderStyle);
+            String cell  = (c < data.size()) ? data.get(c) : "";
+            // Pad cell to colWidth: " text... "
+            put(cells, col++, y, SPACE, rowStyle);  // leading space
+            int usable = cw[c] - 2;                 // -2 for the two padding spaces
+            for (int k = 0; k < usable; k++) {
+                char ch = k < cell.length() ? cell.charAt(k) : SPACE;
+                put(cells, col++, y, ch, rowStyle);
+            }
+            put(cells, col++, y, SPACE, rowStyle);  // trailing space
+        }
+        if (borders) put(cells, col, y, TableNode.V, borderStyle);
     }
 
     private void flattenNotification(NotificationNode notif, Map<String, CellState> cells) {

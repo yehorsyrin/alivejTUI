@@ -77,6 +77,8 @@ public class LayoutEngine {
         } else if (root instanceof NotificationNode notif) {
             notif.setWidth(Math.min(notif.renderText().length(), availableWidth));
             notif.setHeight(1);
+        } else if (root instanceof TableNode table) {
+            layoutTable(table, availableWidth);
         } else {
             // Unknown node type — fill available space
             root.setWidth(availableWidth);
@@ -289,6 +291,21 @@ public class LayoutEngine {
             totalHeight += child.getHeight();
         }
         col.setHeight(totalHeight);
+    }
+
+    // --- TableNode ---
+
+    private void layoutTable(TableNode table, int availableWidth) {
+        int[] colWidths = table.computeColWidths(availableWidth);
+        table.setColWidths(colWidths);
+        table.setWidth(availableWidth);
+
+        // Height = borders + header + header-separator + visible rows + bottom border
+        int visibleRows = table.visibleRowCount();
+        int height = table.isShowBorders()
+                ? 4 + visibleRows  // top + header + sep + rows + bottom
+                : 1 + visibleRows; // header + rows
+        table.setHeight(height);
     }
 
     // --- SelectNode ---
