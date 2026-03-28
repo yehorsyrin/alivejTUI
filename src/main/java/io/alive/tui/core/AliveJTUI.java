@@ -24,6 +24,35 @@ public class AliveJTUI {
 
     private AliveJTUI() {}
 
+    // --- Overlay API (single-instance, single-threaded) ---
+
+    private static Renderer   activeRenderer;
+    private static Runnable   activeRerenderCallback;
+
+    /**
+     * Pushes a node to be rendered as an overlay on top of the current root tree.
+     * Triggers an immediate re-render. Must be called from within the event loop thread.
+     *
+     * @param node the overlay node (e.g. a dialog or popup)
+     */
+    public static void pushOverlay(Node node) {
+        if (activeRenderer != null) {
+            activeRenderer.pushOverlay(node);
+            if (activeRerenderCallback != null) activeRerenderCallback.run();
+        }
+    }
+
+    /**
+     * Removes the current overlay and triggers an immediate re-render.
+     * Must be called from within the event loop thread.
+     */
+    public static void popOverlay() {
+        if (activeRenderer != null) {
+            activeRenderer.clearOverlay();
+            if (activeRerenderCallback != null) activeRerenderCallback.run();
+        }
+    }
+
     /**
      * Starts the application with the given root component using the default Lanterna backend.
      * Blocks until the user presses ESC or the terminal signals EOF.
@@ -62,11 +91,12 @@ public class AliveJTUI {
         eventBus.register(KeyType.TAB,       focusManager::focusNext);
         eventBus.register(KeyType.SHIFT_TAB, focusManager::focusPrev);
 
+        // Expose overlay API
+        activeRenderer = renderer;
+        activeRerenderCallback = () -> renderer.render(root.renderAndCache());
+
         // Mount root component
-        root.mount(() -> {
-            Node tree = root.renderAndCache();
-            renderer.render(tree);
-        }, eventBus, focusManager);
+        root.mount(activeRerenderCallback, eventBus, focusManager);
 
         // Initial render
         renderer.render(root.renderAndCache());
@@ -76,6 +106,8 @@ public class AliveJTUI {
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         } finally {
+            activeRenderer          = null;
+            activeRerenderCallback  = null;
             root.unmount();
             eventBus.clear();
             try {

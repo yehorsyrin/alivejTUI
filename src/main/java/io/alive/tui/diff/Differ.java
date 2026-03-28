@@ -4,9 +4,9 @@ import io.alive.tui.core.Node;
 import io.alive.tui.style.Style;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 
 /**
  * Computes the minimal set of cell changes between two virtual tree snapshots.
@@ -32,9 +32,36 @@ public class Differ {
      * @return ordered list of cell changes (empty if no visual difference)
      */
     public List<CellChange> diff(Node oldTree, Node newTree) {
-        Map<String, CellState> oldCells = flattener.flatten(oldTree);
-        Map<String, CellState> newCells = flattener.flatten(newTree);
+        return diff(oldTree, null, newTree, null);
+    }
 
+    /**
+     * Diff with optional overlay layers. Overlay cells are rendered on top of base cells.
+     * Pass {@code null} for overlay parameters when no overlay is active.
+     *
+     * @param oldBase    previous base frame
+     * @param oldOverlay previous overlay frame (may be {@code null})
+     * @param newBase    current base frame
+     * @param newOverlay current overlay frame (may be {@code null})
+     * @return ordered list of cell changes
+     */
+    public List<CellChange> diff(Node oldBase, Node oldOverlay, Node newBase, Node newOverlay) {
+        Map<String, CellState> oldCells = merged(flattener.flatten(oldBase), flattener.flatten(oldOverlay));
+        Map<String, CellState> newCells = merged(flattener.flatten(newBase), flattener.flatten(newOverlay));
+        return diffCells(oldCells, newCells);
+    }
+
+    /** Merges base and overlay cell maps; overlay wins on collision. */
+    private static Map<String, CellState> merged(Map<String, CellState> base,
+                                                  Map<String, CellState> overlay) {
+        if (overlay.isEmpty()) return base;
+        Map<String, CellState> result = new HashMap<>(base);
+        result.putAll(overlay);
+        return result;
+    }
+
+    private List<CellChange> diffCells(Map<String, CellState> oldCells,
+                                       Map<String, CellState> newCells) {
         List<CellChange> changes = new ArrayList<>();
 
         // Cells added or changed

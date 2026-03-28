@@ -24,6 +24,8 @@ public class Renderer {
     private final Differ differ;
     private final LayoutEngine layoutEngine;
     private Node previousTree;
+    private Node previousOverlayTree;
+    private Node overlayTree;
 
     public Renderer(TerminalBackend backend) {
         if (backend == null) throw new IllegalArgumentException("backend must not be null");
@@ -34,28 +36,37 @@ public class Renderer {
 
     /**
      * Renders {@code newTree} to the terminal, emitting only the cells that changed
-     * since the last call.
+     * since the last call. If an overlay has been pushed via {@link #pushOverlay(Node)},
+     * its cells are rendered on top of the base tree.
      *
      * @param newTree the current virtual tree (may be {@code null} to clear the screen)
      */
     public void render(Node newTree) {
-        // 1. Layout: compute x/y/width/height for every node
+        int w = backend.getWidth(), h = backend.getHeight();
+
+        // 1. Layout base tree
         if (newTree != null) {
-            layoutEngine.layout(newTree, 0, 0, backend.getWidth(), backend.getHeight());
+            layoutEngine.layout(newTree, 0, 0, w, h);
         }
 
-        // 2. Diff: find what changed
-        List<CellChange> changes = differ.diff(previousTree, newTree);
+        // 2. Layout overlay tree (if present)
+        if (overlayTree != null) {
+            layoutEngine.layout(overlayTree, 0, 0, w, h);
+        }
+
+        // 3. Diff: find what changed (overlay cells override base)
+        List<CellChange> changes = differ.diff(previousTree, previousOverlayTree, newTree, overlayTree);
         if (changes.isEmpty()) return;
 
-        // 3. Apply: push changes to the terminal
+        // 4. Apply: push changes to the terminal
         backend.hideCursor();
         for (CellChange change : changes) {
             backend.putChar(change.col(), change.row(), change.character(), change.style());
         }
 
-        // 4. Cursor: position at focused InputNode's cursor, or hide if none
-        InputNode focused = findFocusedInput(newTree);
+        // 5. Cursor: prefer focused InputNode inside the overlay, then in the base tree
+        InputNode focused = findFocusedInput(overlayTree);
+        if (focused == null) focused = findFocusedInput(newTree);
         if (focused != null) {
             backend.setCursor(focused.getX() + focused.getCursorPos(), focused.getY());
         }
@@ -63,6 +74,30 @@ public class Renderer {
         backend.flush();
 
         previousTree = newTree;
+        previousOverlayTree = overlayTree;
+    }
+
+    /**
+     * Sets a node to render as an overlay on top of the base tree.
+     * Call {@link #clearOverlay()} to remove it.
+     *
+     * @param node the overlay node (e.g., a dialog or popup)
+     */
+    public void pushOverlay(Node node) {
+        this.overlayTree = node;
+    }
+
+    /**
+     * Removes the current overlay. The next {@link #render(Node)} call will
+     * restore the base tree without any overlay.
+     */
+    public void clearOverlay() {
+        this.overlayTree = null;
+    }
+
+    /** Returns the current overlay node, or {@code null} if none is active. */
+    public Node getOverlay() {
+        return overlayTree;
     }
 
     /**
@@ -70,7 +105,8 @@ public class Renderer {
      * Use after terminal resize or when the tree structure changes significantly.
      */
     public void forceFullRender(Node newTree) {
-        previousTree = null;
+        previousTree        = null;
+        previousOverlayTree = null;
         render(newTree);
     }
 

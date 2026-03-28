@@ -182,4 +182,84 @@ class RendererTest {
         assertEquals(2, backend.cursorRow);  // input is on row 2
         assertEquals(0, backend.cursorCol);
     }
+
+    // --- Overlay (TASK-18) ---
+
+    @Test
+    void pushOverlay_cellsAppearedOnTopOfBase() {
+        // Base: 'A' at (0,0). Overlay: 'X' at (0,0) — should win.
+        renderer.render(Text.of("A"));
+        backend.putChars.clear();
+
+        renderer.pushOverlay(Text.of("X"));
+        renderer.render(Text.of("A"));  // re-render with overlay
+
+        // Overlay 'X' overwrites 'A' at position 0,0
+        assertTrue(backend.putChars.contains("0,0=X"),
+            "Overlay cell should be rendered: " + backend.putChars);
+    }
+
+    @Test
+    void pushOverlay_baseAndOverlayBothRendered() {
+        // Base row 1: "B" (row 0 is a space), Overlay row 0: "O" — non-overlapping rows
+        renderer.pushOverlay(Text.of("O"));
+        var base = VBox.of(Text.of(" "), Text.of("B"));
+        renderer.render(base);
+
+        // Overlay 'O' at row 0, base 'B' at row 1 — both should appear
+        assertTrue(backend.putChars.contains("0,0=O"), "Overlay cell missing: " + backend.putChars);
+        assertTrue(backend.putChars.contains("0,1=B"), "Base cell missing: " + backend.putChars);
+    }
+
+    @Test
+    void clearOverlay_restoresBaseOnly() {
+        // Render with overlay, then clear and re-render
+        renderer.pushOverlay(Text.of("X"));
+        renderer.render(Text.of("A"));
+
+        backend.putChars.clear();
+        backend.flushCount = 0;
+
+        renderer.clearOverlay();
+        renderer.render(Text.of("A"));
+
+        // 'X' was replaced by 'A' again
+        assertTrue(backend.putChars.contains("0,0=A"), "Base cell should reappear after clear");
+        // Ensure 'X' no longer rendered as a change (it was overwritten by 'A' which is a change)
+    }
+
+    @Test
+    void getOverlay_returnsCurrentOverlay() {
+        assertNull(renderer.getOverlay());
+        TextNode overlay = Text.of("popup");
+        renderer.pushOverlay(overlay);
+        assertSame(overlay, renderer.getOverlay());
+        renderer.clearOverlay();
+        assertNull(renderer.getOverlay());
+    }
+
+    @Test
+    void forceFullRender_withOverlay_redrawsBoth() {
+        // Base 'B' at row 1, Overlay 'O' at row 0 — non-overlapping
+        renderer.pushOverlay(Text.of("O"));
+        var base = VBox.of(Text.of(" "), Text.of("B"));
+        renderer.render(base);
+        backend.putChars.clear();
+        backend.flushCount = 0;
+
+        renderer.forceFullRender(base);
+
+        // Both base and overlay cells are redrawn
+        assertTrue(backend.putChars.stream().anyMatch(s -> s.endsWith("=B")),
+            "Base 'B' should be redrawn: " + backend.putChars);
+        assertTrue(backend.putChars.stream().anyMatch(s -> s.endsWith("=O")),
+            "Overlay 'O' should be redrawn: " + backend.putChars);
+        assertEquals(1, backend.flushCount);
+    }
+
+    @Test
+    void overlay_noExceptionOnEmptyBase() {
+        renderer.pushOverlay(Text.of("popup"));
+        assertDoesNotThrow(() -> renderer.render(null));
+    }
 }
