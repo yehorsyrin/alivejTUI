@@ -4,10 +4,13 @@ import io.alive.tui.core.Node;
 import io.alive.tui.style.Color;
 import io.alive.tui.style.Style;
 
+import java.util.List;
+
 /**
  * A node that renders a single line of text with optional styling.
  *
- * <p>Use the fluent factory: {@code Text.of("Hello").bold().color(Color.GREEN)}
+ * <p>Plain usage: {@code Text.of("Hello").bold().color(Color.GREEN)}<br>
+ * Markdown usage: {@code Text.ofMarkdown("**Hello** *world*")}
  *
  * @author Jarvis (AI)
  */
@@ -16,14 +19,41 @@ public class TextNode extends Node {
     private final String text;
     private Style style;
 
+    /**
+     * Non-null when this node was created via {@link Text#ofMarkdown}.
+     * Each segment carries its own style; {@link #style} is unused in this mode.
+     */
+    private final List<StyledSegment> segments;
+
+    /** Plain-text constructor (used by {@link Text#of}). */
     public TextNode(String text, Style style) {
-        this.text = text != null ? text : "";
-        this.style = style != null ? style : Style.DEFAULT;
+        this.text     = text != null ? text : "";
+        this.style    = style != null ? style : Style.DEFAULT;
+        this.segments = null;
+    }
+
+    /** Markdown constructor (used by {@link Text#ofMarkdown}). */
+    TextNode(List<StyledSegment> segments) {
+        this.segments = List.copyOf(segments);
+        // Derive plain text from segments for width calculation
+        StringBuilder sb = new StringBuilder();
+        for (StyledSegment s : segments) sb.append(s.text());
+        this.text  = sb.toString();
+        this.style = Style.DEFAULT;
     }
 
     public String getText() { return text; }
     public Style getStyle() { return style; }
     public void setStyle(Style style) { this.style = style; }
+
+    /**
+     * Returns the styled segments if this node was created via {@link Text#ofMarkdown},
+     * or {@code null} for plain-text nodes.
+     */
+    public List<StyledSegment> getSegments() { return segments; }
+
+    /** Returns {@code true} if this node holds markdown-parsed segments. */
+    public boolean hasMarkdown() { return segments != null; }
 
     // --- Fluent builder methods (return this for chaining) ---
 
