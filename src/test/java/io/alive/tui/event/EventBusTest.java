@@ -107,4 +107,24 @@ class EventBusTest {
         assertEquals(2, bus.handlerCount(KeyType.ARROW_UP));
         assertEquals(0, bus.handlerCount(KeyType.ARROW_DOWN));
     }
+
+    @Test
+    void doubleRegisterSameHandlerDoesNotDoubleFire() {
+        int[] count = {0};
+        Runnable h = () -> count[0]++;
+        bus.register(KeyType.ENTER, h);
+        bus.register(KeyType.ENTER, h);  // duplicate — should be ignored
+        bus.dispatch(KeyEvent.of(KeyType.ENTER));
+        assertEquals(1, count[0]);
+    }
+
+    @Test
+    void doubleRegisterSameCharacterHandlerDoesNotDoubleFire() {
+        int[] count = {0};
+        EventBus.CharacterHandler h = c -> count[0]++;
+        bus.registerCharacter(h);
+        bus.registerCharacter(h);  // duplicate — should be ignored
+        bus.dispatch(KeyEvent.ofCharacter('a'));
+        assertEquals(1, count[0]);
+    }
 }

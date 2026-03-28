@@ -2,8 +2,9 @@ package io.alive.tui.event;
 
 import java.util.ArrayList;
 import java.util.EnumMap;
-import java.util.List;
+import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Central event bus for keyboard events.
@@ -15,19 +16,24 @@ import java.util.Map;
  */
 public class EventBus {
 
-    private final Map<KeyType, List<Runnable>> handlers = new EnumMap<>(KeyType.class);
-    private final List<CharacterHandler> characterHandlers = new ArrayList<>();
+    private final Map<KeyType, Set<Runnable>> handlers = new EnumMap<>(KeyType.class);
+    private final Set<CharacterHandler> characterHandlers = new LinkedHashSet<>();
 
     /**
      * Register a handler for a specific non-character key.
+     *
+     * <p>Duplicate registrations of the same handler reference are silently ignored —
+     * the handler will fire at most once per event.
      */
     public void register(KeyType key, Runnable handler) {
         if (key == null || handler == null) return;
-        handlers.computeIfAbsent(key, k -> new ArrayList<>()).add(handler);
+        handlers.computeIfAbsent(key, k -> new LinkedHashSet<>()).add(handler);
     }
 
     /**
      * Register a handler for character keys (any printable character).
+     *
+     * <p>Duplicate registrations of the same handler reference are silently ignored.
      */
     public void registerCharacter(CharacterHandler handler) {
         if (handler != null) characterHandlers.add(handler);
@@ -38,8 +44,8 @@ public class EventBus {
      */
     public void unregister(KeyType key, Runnable handler) {
         if (key == null || handler == null) return;
-        List<Runnable> list = handlers.get(key);
-        if (list != null) list.remove(handler);
+        Set<Runnable> set = handlers.get(key);
+        if (set != null) set.remove(handler);
     }
 
     /**
@@ -60,9 +66,9 @@ public class EventBus {
                 h.handle(event.character());
             }
         } else {
-            List<Runnable> list = handlers.get(event.type());
-            if (list != null) {
-                for (Runnable h : new ArrayList<>(list)) {
+            Set<Runnable> set = handlers.get(event.type());
+            if (set != null) {
+                for (Runnable h : new ArrayList<>(set)) {
                     h.run();
                 }
             }
@@ -78,8 +84,8 @@ public class EventBus {
     }
 
     public int handlerCount(KeyType key) {
-        List<Runnable> list = handlers.get(key);
-        return list == null ? 0 : list.size();
+        Set<Runnable> set = handlers.get(key);
+        return set == null ? 0 : set.size();
     }
 
     public int characterHandlerCount() {
