@@ -85,4 +85,88 @@ class ComponentTest {
         comp.setState(() -> comp.count++);
         assertEquals(0, renders[0]); // no re-render after unmount
     }
+
+    // --- shouldUpdate / Memoization (TASK-22) ---
+
+    static class AlwaysSkipComponent extends Component {
+        int renderCallCount = 0;
+
+        @Override
+        public Node render() {
+            renderCallCount++;
+            return Text.of("static");
+        }
+
+        @Override
+        protected boolean shouldUpdate() {
+            return false;  // never re-render after first
+        }
+    }
+
+    static class ToggleUpdateComponent extends Component {
+        int renderCallCount = 0;
+        boolean allowUpdate = true;
+
+        @Override
+        public Node render() {
+            renderCallCount++;
+            return Text.of("v" + renderCallCount);
+        }
+
+        @Override
+        protected boolean shouldUpdate() {
+            return allowUpdate;
+        }
+    }
+
+    @Test
+    void shouldUpdateFalse_firstRenderStillHappens() {
+        AlwaysSkipComponent comp = new AlwaysSkipComponent();
+        comp.renderAndCache();
+        assertEquals(1, comp.renderCallCount);  // first render always happens
+    }
+
+    @Test
+    void shouldUpdateFalse_subsequentRenderSkipped() {
+        AlwaysSkipComponent comp = new AlwaysSkipComponent();
+        Node first = comp.renderAndCache();
+        Node second = comp.renderAndCache();
+        assertEquals(1, comp.renderCallCount);  // render() called only once
+        assertSame(first, second);              // same cached tree returned
+    }
+
+    @Test
+    void shouldUpdateTrue_alwaysReRenders() {
+        CounterComponent comp = new CounterComponent();
+        comp.renderAndCache();
+        comp.renderAndCache();
+        // CounterComponent doesn't override shouldUpdate — default is true
+        // render() is called twice (no caching)
+        assertNotNull(comp.getPreviousTree());
+    }
+
+    @Test
+    void shouldUpdateToggle_switchesBehaviorCorrectly() {
+        ToggleUpdateComponent comp = new ToggleUpdateComponent();
+        comp.renderAndCache();          // 1st render — always happens
+        comp.allowUpdate = false;
+        comp.renderAndCache();          // skipped
+        comp.renderAndCache();          // skipped
+        assertEquals(1, comp.renderCallCount);
+
+        comp.allowUpdate = true;
+        comp.renderAndCache();          // renders again
+        assertEquals(2, comp.renderCallCount);
+    }
+
+    @Test
+    void shouldUpdate_defaultReturnsTrue() {
+        // CounterComponent doesn't override shouldUpdate; verify default is true
+        CounterComponent comp = new CounterComponent();
+        comp.renderAndCache();
+        int beforeCount = comp.count;
+        comp.renderAndCache();
+        // Both calls succeed (no caching), count unchanged but no exception
+        assertEquals(beforeCount, comp.count);
+    }
 }

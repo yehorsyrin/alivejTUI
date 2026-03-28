@@ -140,10 +140,28 @@ public abstract class Component {
     }
 
     /**
+     * Override to skip re-renders when state has not meaningfully changed.
+     * Called by {@link #renderAndCache()} before invoking {@link #render()}.
+     *
+     * <p>The default implementation always returns {@code true} (always re-render).
+     * Subclasses may return {@code false} to reuse the previous tree and skip
+     * the render + diff cycle entirely — useful for expensive subtrees.
+     *
+     * <p>Note: this method is NOT called on the first render (when no previous tree exists).
+     *
+     * @return {@code true} to render fresh, {@code false} to reuse the previous tree
+     */
+    protected boolean shouldUpdate() {
+        return true;
+    }
+
+    /**
      * Renders the component, caches the result, and returns it.
-     * Used by the framework to obtain the virtual tree for diffing.
+     * If {@link #shouldUpdate()} returns {@code false} and a cached tree exists,
+     * the cached tree is returned without calling {@link #render()}.
      */
     public Node renderAndCache() {
+        if (previousTree != null && !shouldUpdate()) return previousTree;
         previousTree = render();
         return previousTree;
     }
