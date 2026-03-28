@@ -8,6 +8,7 @@ import io.alive.tui.core.FocusManager;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Supplier;
 
 /**
  * Base class for all user-defined UI components.
@@ -43,6 +44,41 @@ public abstract class Component {
         if (onStateChange != null) {
             onStateChange.run();
         }
+    }
+
+    /**
+     * Runs {@code task} asynchronously in a background thread.
+     * The {@link Runnable} returned by the supplier is then queued and applied
+     * on the event loop thread, triggering a re-render.
+     *
+     * <p>Usage:
+     * <pre>{@code
+     * setStateAsync(() -> {
+     *     String result = slowNetworkFetch();   // runs in background
+     *     return () -> this.data = result;      // applied on event loop thread
+     * });
+     * }</pre>
+     *
+     * <p>If the supplier returns {@code null}, the re-render is still triggered.
+     * If the supplier throws, the exception is silently ignored.
+     *
+     * @param task supplier that computes the state change in a background thread
+     */
+    protected void setStateAsync(Supplier<Runnable> task) {
+        final Runnable captured = this.onStateChange;
+        AliveJTUI.submitAsync(() -> {
+            Runnable mutation = null;
+            try {
+                mutation = task.get();
+            } catch (Exception ignored) {
+                // Background errors are swallowed; components should handle them internally
+            }
+            final Runnable m = mutation;
+            AliveJTUI.enqueueStateUpdate(() -> {
+                if (m != null) m.run();
+                if (captured != null) captured.run();
+            });
+        });
     }
 
     /**

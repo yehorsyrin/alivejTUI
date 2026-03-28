@@ -7,6 +7,11 @@ import io.alive.tui.event.KeyEvent;
 import io.alive.tui.event.KeyType;
 import io.alive.tui.render.Renderer;
 
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
+
 /**
  * Entry point for AliveJTUI applications.
  *
@@ -32,6 +37,16 @@ public class AliveJTUI {
     // --- Timer API ---
 
     private static TimerManager  activeTimerManager;
+
+    // --- Async State API (always available, daemon threads) ---
+
+    static final ConcurrentLinkedQueue<Runnable> asyncQueue     = new ConcurrentLinkedQueue<>();
+    static final AtomicInteger                   asyncInFlight  = new AtomicInteger(0);
+    private static final ExecutorService asyncExecutor = Executors.newCachedThreadPool(r -> {
+        Thread t = new Thread(r, "alivejTUI-async");
+        t.setDaemon(true);
+        return t;
+    });
 
     /**
      * Pushes a node to be rendered as an overlay on top of the current root tree.
@@ -90,6 +105,49 @@ public class AliveJTUI {
      */
     public static void cancelTimer(Runnable task) {
         if (activeTimerManager != null) activeTimerManager.cancel(task);
+    }
+
+    // --- Async State API (package-private, used by Component) ---
+
+    /**
+     * Submits a task to the background executor. Tracks in-flight count so the
+     * event loop knows to poll the async queue with a short timeout.
+     */
+    static void submitAsync(Runnable task) {
+        asyncInFlight.incrementAndGet();
+        asyncExecutor.submit(() -> {
+            try {
+                task.run();
+            } finally {
+                asyncInFlight.decrementAndGet();
+            }
+        });
+    }
+
+    /**
+     * Enqueues a state mutation to be applied on the event loop thread.
+     * Thread-safe: may be called from any thread.
+     */
+    static void enqueueStateUpdate(Runnable mutation) {
+        if (mutation != null) asyncQueue.add(mutation);
+    }
+
+    /**
+     * Drains and runs all pending async state mutations.
+     * Must be called from the event loop thread. Returns the count drained.
+     */
+    static int drainAsyncQueue() {
+        int count = 0;
+        Runnable m;
+        while ((m = asyncQueue.poll()) != null) {
+            m.run();
+            count++;
+        }
+        return count;
+    }
+
+    static boolean hasAsyncPending() {
+        return !asyncQueue.isEmpty() || asyncInFlight.get() > 0;
     }
 
     /**
@@ -166,8 +224,11 @@ public class AliveJTUI {
         throws InterruptedException {
         while (true) {
             KeyEvent event;
-            if (timers.hasPendingTimers()) {
-                long waitMs = Math.max(1L, timers.msUntilNext());
+            boolean needPoll = timers.hasPendingTimers() || hasAsyncPending();
+            if (needPoll) {
+                long waitMs = timers.hasPendingTimers()
+                    ? Math.max(1L, Math.min(50L, timers.msUntilNext()))
+                    : 50L;  // async-only: poll every 50 ms
                 event = backend.readKey(waitMs);  // returns null on timeout
             } else {
                 event = backend.readKey();         // blocks until key arrives
@@ -176,7 +237,10 @@ public class AliveJTUI {
             // Fire any due timers; triggers re-render if any fired
             timers.tick(onTick);
 
-            if (event == null) continue;  // timeout — timer(s) may have fired
+            // Drain async state mutations posted by background tasks
+            if (drainAsyncQueue() > 0 && onTick != null) onTick.run();
+
+            if (event == null) continue;  // timeout — timers / async may have fired
             if (event.type() == KeyType.ESCAPE || event.type() == KeyType.EOF) break;
             eventBus.dispatch(event);
         }

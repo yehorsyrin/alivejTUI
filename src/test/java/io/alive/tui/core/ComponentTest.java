@@ -247,4 +247,75 @@ class ComponentTest {
         assertInstanceOf(io.alive.tui.node.TextNode.class, recovered);
         assertEquals("ok", ((io.alive.tui.node.TextNode) recovered).getText());
     }
+
+    // --- Async State Updates (TASK-24) ---
+
+    static class AsyncComponent extends Component {
+        String data = "initial";
+
+        @Override public Node render() { return Text.of(data); }
+    }
+
+    @Test
+    void setStateAsync_mutationAppliedAfterDrain() throws InterruptedException {
+        AsyncComponent comp = new AsyncComponent();
+        int[] rerenders = {0};
+        comp.mount(() -> rerenders[0]++, new EventBus());
+
+        comp.setStateAsync(() -> () -> comp.data = "loaded");
+
+        // Wait for background task to post to queue
+        Thread.sleep(100);
+
+        // Drain the async queue (simulates event loop draining)
+        AliveJTUI.drainAsyncQueue();
+
+        assertEquals("loaded", comp.data);
+        assertEquals(1, rerenders[0]);
+    }
+
+    @Test
+    void setStateAsync_supplierReturnsNull_onStateChangeStillCalled() throws InterruptedException {
+        AsyncComponent comp = new AsyncComponent();
+        int[] rerenders = {0};
+        comp.mount(() -> rerenders[0]++, new EventBus());
+
+        comp.setStateAsync(() -> null);  // null mutation — just re-render
+
+        Thread.sleep(100);
+        AliveJTUI.drainAsyncQueue();
+
+        assertEquals(1, rerenders[0]);
+        assertEquals("initial", comp.data); // unchanged
+    }
+
+    @Test
+    void setStateAsync_supplierThrows_queueStillDrainable() throws InterruptedException {
+        AsyncComponent comp = new AsyncComponent();
+        int[] rerenders = {0};
+        comp.mount(() -> rerenders[0]++, new EventBus());
+
+        comp.setStateAsync(() -> { throw new RuntimeException("bg error"); });
+
+        Thread.sleep(100);
+        assertDoesNotThrow(() -> AliveJTUI.drainAsyncQueue());
+        // Even on exception, the queue should be drainable without error
+    }
+
+    @Test
+    void enqueueStateUpdate_runOnDrain() {
+        int[] count = {0};
+        AliveJTUI.enqueueStateUpdate(() -> count[0]++);
+        AliveJTUI.enqueueStateUpdate(() -> count[0]++);
+        int drained = AliveJTUI.drainAsyncQueue();
+        assertEquals(2, drained);
+        assertEquals(2, count[0]);
+    }
+
+    @Test
+    void drainAsyncQueue_emptyQueue_returnsZero() {
+        // Clear any residual items first
+        AliveJTUI.asyncQueue.clear();
+        assertEquals(0, AliveJTUI.drainAsyncQueue());
+    }
 }
