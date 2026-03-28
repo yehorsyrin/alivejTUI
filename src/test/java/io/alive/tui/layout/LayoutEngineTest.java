@@ -204,4 +204,40 @@ class LayoutEngineTest {
         assertEquals(0, t.getWidth());
         assertEquals(1, t.getHeight());
     }
+
+    // --- Additional edge-case tests ---
+
+    @Test
+    void veryNarrowConsole_textTruncated() {
+        TextNode t = Text.of("hello");
+        engine.layout(t, 0, 0, 3, 24);
+        assertEquals(3, t.getWidth());
+    }
+
+    @Test
+    void veryNarrowConsole_buttonFits() {
+        ButtonNode btn = Button.of("A", () -> {});
+        engine.layout(btn, 0, 0, 3, 24);
+        // "[A]" = 3 chars, must clamp to available width = 3
+        assertEquals(3, btn.getWidth());
+    }
+
+    @Test
+    void zeroWidthContainer_noException() {
+        TextNode t = Text.of("test");
+        assertDoesNotThrow(() -> engine.layout(t, 0, 0, 0, 24));
+    }
+
+    @Test
+    void zeroHeightContainer_noException() {
+        TextNode t = Text.of("test");
+        assertDoesNotThrow(() -> engine.layout(t, 0, 0, 80, 0));
+    }
+
+    @Test
+    void nodeWiderThanScreen_clampedToWidth() {
+        TextNode t = Text.of("ABCDEFGHIJKLMNOPQRSTUVWXYZ");
+        engine.layout(t, 0, 0, 5, 24);
+        assertEquals(5, t.getWidth());
+    }
 }

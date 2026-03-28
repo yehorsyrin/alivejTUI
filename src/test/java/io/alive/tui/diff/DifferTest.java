@@ -171,4 +171,45 @@ class DifferTest {
         assertEquals(2, changes.size());
         assertTrue(changes.stream().allMatch(c -> c.character() == ' '));
     }
+
+    // --- Additional tests ---
+
+    @Test
+    void deepTree_changesDetected() {
+        // VBox > HBox > Text
+        TextNode textA = Text.of("A");
+        HBoxNode hboxA = HBox.of(textA);
+        VBoxNode treeA = VBox.of(hboxA);
+        doLayout(treeA);
+
+        TextNode textB = Text.of("B");
+        HBoxNode hboxB = HBox.of(textB);
+        VBoxNode treeB = VBox.of(hboxB);
+        doLayout(treeB);
+
+        List<CellChange> changes = differ.diff(treeA, treeB);
+        // 'A' → 'B': exactly 1 changed cell
+        assertEquals(1, changes.size());
+        assertEquals('B', changes.get(0).character());
+    }
+
+    @Test
+    void unicodeChar_rendered() {
+        TextNode text = Text.of("α");
+        doLayout(text);
+        List<CellChange> changes = differ.diff(null, text);
+        assertEquals(1, changes.size());
+        assertEquals('α', changes.get(0).character());
+    }
+
+    @Test
+    void wideTree_manyChanges() {
+        // "hello" → "world": h≠w, e≠o, l≠r, l=l (same), o≠d → 4 changes
+        TextNode prev = Text.of("hello");
+        TextNode next = Text.of("world");
+        doLayout(prev);
+        doLayout(next);
+        List<CellChange> changes = differ.diff(prev, next);
+        assertEquals(4, changes.size());
+    }
 }

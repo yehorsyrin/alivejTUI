@@ -45,4 +45,64 @@ class InputNodeTest {
     void focusedDefaultFalse() {
         assertFalse(Input.of("", v -> {}).isFocused());
     }
+
+    // --- Additional tests ---
+
+    @Test
+    void typeCharacter_appendsToValue() {
+        InputNode input = new InputNode("", v -> {});
+        input.setValue("a");
+        assertEquals("a", input.getValue());
+    }
+
+    @Test
+    void backspace_removesLastChar() {
+        InputNode input = new InputNode("hello", v -> {});
+        input.setValue("hell");
+        assertEquals("hell", input.getValue());
+    }
+
+    @Test
+    void backspace_onEmptyValueNoOp() {
+        InputNode input = new InputNode("", v -> {});
+        assertDoesNotThrow(() -> input.setValue(""));
+        assertEquals("", input.getValue());
+    }
+
+    @Test
+    void cursorPos_clampedToValueLength() {
+        InputNode input = new InputNode("abc", v -> {});
+        input.setCursorPos(100);
+        assertEquals(3, input.getCursorPos());
+    }
+
+    @Test
+    void cursorPos_clampedToZero() {
+        InputNode input = new InputNode("abc", v -> {});
+        input.setCursorPos(-5);
+        assertEquals(0, input.getCursorPos());
+    }
+
+    @Test
+    void placeholder_showsWhenEmpty() {
+        InputNode input = Input.of("", v -> {}).placeholder("Enter name...");
+        assertEquals("Enter name...", input.getPlaceholder());
+    }
+
+    @Test
+    void setValue_notifiesOnChange() {
+        String[] captured = {null};
+        InputNode input = new InputNode("", v -> captured[0] = v);
+        input.setValue("changed");
+        assertEquals("changed", captured[0]);
+    }
+
+    @Test
+    void cursorPos_updatesOnSetValue_ifBeyondNewLength() {
+        InputNode input = new InputNode("hello", v -> {});
+        input.setCursorPos(5);
+        assertEquals(5, input.getCursorPos());
+        input.setValue("hi");
+        assertEquals(2, input.getCursorPos());
+    }
 }
