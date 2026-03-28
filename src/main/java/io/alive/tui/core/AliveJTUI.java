@@ -6,6 +6,7 @@ import io.alive.tui.event.EventBus;
 import io.alive.tui.event.KeyEvent;
 import io.alive.tui.event.KeyType;
 import io.alive.tui.render.Renderer;
+import io.alive.tui.style.Theme;
 
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
@@ -28,6 +29,22 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class AliveJTUI {
 
     private AliveJTUI() {}
+
+    // --- Theme API ---
+
+    private static Theme activeTheme = Theme.DARK;
+
+    /**
+     * Sets the active theme.  Components read it via {@link #getTheme()}.
+     *
+     * @param theme the theme to activate; {@code null} resets to {@link Theme#DARK}
+     */
+    public static void setTheme(Theme theme) {
+        activeTheme = theme != null ? theme : Theme.DARK;
+    }
+
+    /** Returns the currently active theme (default: {@link Theme#DARK}). */
+    public static Theme getTheme() { return activeTheme; }
 
     // --- Overlay API (single-instance, single-threaded) ---
 
