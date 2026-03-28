@@ -55,6 +55,35 @@ public class TextNode extends Node {
     /** Returns {@code true} if this node holds markdown-parsed segments. */
     public boolean hasMarkdown() { return segments != null; }
 
+    // --- Word-wrap support ---
+
+    private boolean wrap = false;
+
+    /**
+     * Lines produced by word-wrapping; set by {@link io.alive.tui.layout.LayoutEngine}
+     * when {@link #isWrap()} is {@code true} or the text contains {@code \n}.
+     * {@code null} for single-line nodes.
+     */
+    private List<String> wrappedLines;
+
+    /** Returns {@code true} if this node should wrap text at the available width. */
+    public boolean isWrap() { return wrap; }
+
+    /**
+     * Enables word-wrapping for this node. When the layout engine encounters a
+     * wrapped node, it breaks the text into lines and adjusts the node's height.
+     */
+    public TextNode wrap() { this.wrap = true; return this; }
+
+    /** Sets wrap mode on or off. */
+    public TextNode wrap(boolean enabled) { this.wrap = enabled; return this; }
+
+    /** Returns the wrapped lines set by the layout engine, or {@code null} if not wrapped. */
+    public List<String> getWrappedLines() { return wrappedLines; }
+
+    /** Called by the layout engine after computing word-wrapped lines. */
+    public void setWrappedLines(List<String> lines) { this.wrappedLines = lines; }
+
     // --- Fluent builder methods (return this for chaining) ---
 
     public TextNode color(Color color) {

@@ -69,8 +69,19 @@ class TreeFlattener {
 
     private void flattenText(TextNode text, Map<String, CellState> cells) {
         int x = text.getX(), y = text.getY(), w = text.getWidth();
-        if (text.hasMarkdown()) {
-            // Render each styled segment in order, clipped to node width
+
+        if (text.getWrappedLines() != null) {
+            // Multi-line (wrapped) text
+            Style style = text.getStyle();
+            java.util.List<String> lines = text.getWrappedLines();
+            for (int row = 0; row < lines.size(); row++) {
+                String line = lines.get(row);
+                for (int i = 0; i < line.length() && i < w; i++) {
+                    put(cells, x + i, y + row, line.charAt(i), style);
+                }
+            }
+        } else if (text.hasMarkdown()) {
+            // Inline markdown — render each styled segment in order, clipped to node width
             int col = 0;
             for (io.alive.tui.node.StyledSegment seg : text.getSegments()) {
                 String segText = seg.text();
@@ -80,6 +91,7 @@ class TreeFlattener {
                 if (col >= w) break;
             }
         } else {
+            // Plain single-line text
             String str = text.getText();
             Style style = text.getStyle();
             for (int i = 0; i < str.length() && i < w; i++) {

@@ -72,9 +72,59 @@ public class LayoutEngine {
     // --- TextNode ---
 
     private void layoutText(TextNode node, int availableWidth) {
-        int len = node.getText().length();
-        node.setWidth(Math.min(len, availableWidth));
-        node.setHeight(1);
+        String text = node.getText();
+        boolean needsWrap = node.isWrap() || text.contains("\n");
+        if (needsWrap && availableWidth > 0) {
+            java.util.List<String> lines = wordWrap(text, availableWidth);
+            node.setWrappedLines(lines);
+            node.setWidth(availableWidth);
+            node.setHeight(Math.max(1, lines.size()));
+        } else {
+            node.setWrappedLines(null);
+            node.setWidth(Math.min(text.length(), availableWidth));
+            node.setHeight(1);
+        }
+    }
+
+    /**
+     * Splits {@code text} into lines that fit within {@code width} columns.
+     * Newline characters force a line break. Long words are hard-broken.
+     */
+    static java.util.List<String> wordWrap(String text, int width) {
+        java.util.List<String> result = new java.util.ArrayList<>();
+        if (width <= 0) return result;
+        for (String paragraph : text.split("\n", -1)) {
+            if (paragraph.isEmpty()) {
+                result.add("");
+                continue;
+            }
+            String[] words = paragraph.split(" ", -1);
+            StringBuilder line = new StringBuilder();
+            for (String word : words) {
+                // Hard-break words that exceed the available width
+                while (word.length() > width) {
+                    int space = width - line.length();
+                    if (line.length() > 0) {
+                        result.add(line.toString());
+                        line.setLength(0);
+                        space = width;
+                    }
+                    result.add(word.substring(0, space));
+                    word = word.substring(space);
+                }
+                if (line.isEmpty()) {
+                    line.append(word);
+                } else if (line.length() + 1 + word.length() <= width) {
+                    line.append(' ').append(word);
+                } else {
+                    result.add(line.toString());
+                    line.setLength(0);
+                    line.append(word);
+                }
+            }
+            if (!line.isEmpty()) result.add(line.toString());
+        }
+        return result;
     }
 
     // --- ScrollableVBoxNode ---
