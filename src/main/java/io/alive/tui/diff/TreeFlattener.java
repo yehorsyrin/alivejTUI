@@ -75,6 +75,8 @@ class TreeFlattener {
             flattenNotification(notif, cells);
         } else if (node instanceof TableNode table) {
             flattenTable(table, cells);
+        } else if (node instanceof io.alive.tui.node.VirtualListNode vlist) {
+            flattenVirtualList(vlist, cells);
         } else {
             // Container node (VBox, HBox) — recurse into children
             for (Node child : node.getChildren()) visit(child, cells);
@@ -151,6 +153,26 @@ class TreeFlattener {
             Style style = itemIdx == list.getSelectedIndex()
                 ? list.getSelectedStyle()
                 : list.getNormalStyle();
+            for (int col = 0; col < w; col++) {
+                char c = col < item.length() ? item.charAt(col) : SPACE;
+                put(cells, x + col, y + row, c, style);
+            }
+        }
+    }
+
+    private void flattenVirtualList(io.alive.tui.node.VirtualListNode vlist,
+                                    Map<String, CellState> cells) {
+        List<String> visible = vlist.getVisibleItems();
+        int x = vlist.getX(), y = vlist.getY();
+        int w = vlist.getWidth(), h = vlist.getHeight();
+        int offset = vlist.getScrollOffset();
+
+        for (int row = 0; row < h && row < visible.size(); row++) {
+            int itemIdx = offset + row;
+            String item = visible.get(row);
+            Style style = itemIdx == vlist.getSelectedIndex()
+                    ? vlist.getSelectedStyle()
+                    : vlist.getNormalStyle();
             for (int col = 0; col < w; col++) {
                 char c = col < item.length() ? item.charAt(col) : SPACE;
                 put(cells, x + col, y + row, c, style);

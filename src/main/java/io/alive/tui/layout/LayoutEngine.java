@@ -50,6 +50,9 @@ public class LayoutEngine {
         } else if (root instanceof ListNode list) {
             root.setWidth(availableWidth);
             root.setHeight(Math.min(list.getItems().size(), Math.max(1, availableHeight)));
+        } else if (root instanceof VirtualListNode vlist) {
+            root.setWidth(availableWidth);
+            root.setHeight(Math.min(vlist.getMaxVisibleRows(), Math.max(1, vlist.visibleRowCount())));
         } else if (root instanceof ProgressBarNode) {
             root.setWidth(availableWidth);
             root.setHeight(1);
