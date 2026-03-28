@@ -1,0 +1,301 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="uk"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>AliveJTUI.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">AliveJTUI</a> &gt; <a href="index.source.html" class="el_package">io.alive.tui.core</a> &gt; <span class="el_source">AliveJTUI.java</span></div><h1>AliveJTUI.java</h1><pre class="source lang-java linenums">package io.alive.tui.core;
+
+import io.alive.tui.backend.LanternaBackend;
+import io.alive.tui.backend.TerminalBackend;
+import io.alive.tui.event.EventBus;
+import io.alive.tui.event.KeyEvent;
+import io.alive.tui.event.KeyType;
+import io.alive.tui.node.ButtonNode;
+import io.alive.tui.render.Renderer;
+import io.alive.tui.style.Theme;
+
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
+
+/**
+ * Entry point for AliveJTUI applications.
+ *
+ * &lt;pre&gt;{@code
+ * public static void main(String[] args) {
+ *     AliveJTUI.run(new MyApp());
+ * }
+ * }&lt;/pre&gt;
+ *
+ * &lt;p&gt;The event loop is single-threaded. ESC (or Ctrl+C via shutdown hook) exits cleanly.
+ *
+ * @author Jarvis (AI)
+ */
+public class AliveJTUI {
+
+    private AliveJTUI() {}
+
+    // --- Theme API ---
+
+<span class="fc" id="L36">    private static Theme activeTheme = Theme.DARK;</span>
+
+    /**
+     * Sets the active theme.  Components read it via {@link #getTheme()}.
+     *
+     * @param theme the theme to activate; {@code null} resets to {@link Theme#DARK}
+     */
+    public static void setTheme(Theme theme) {
+<span class="fc bfc" id="L44" title="All 2 branches covered.">        activeTheme = theme != null ? theme : Theme.DARK;</span>
+<span class="fc" id="L45">    }</span>
+
+    /** Returns the currently active theme (default: {@link Theme#DARK}). */
+<span class="fc" id="L48">    public static Theme getTheme() { return activeTheme; }</span>
+
+    // --- Overlay API (single-instance, single-threaded) ---
+
+    private static Renderer      activeRenderer;
+    private static Runnable      activeRerenderCallback;
+
+    // --- Timer API ---
+
+    private static TimerManager  activeTimerManager;
+
+    // --- Async State API (always available, daemon threads) ---
+
+<span class="fc" id="L61">    static final ConcurrentLinkedQueue&lt;Runnable&gt; asyncQueue     = new ConcurrentLinkedQueue&lt;&gt;();</span>
+<span class="fc" id="L62">    static final AtomicInteger                   asyncInFlight  = new AtomicInteger(0);</span>
+<span class="fc" id="L63">    private static final ExecutorService asyncExecutor = Executors.newCachedThreadPool(r -&gt; {</span>
+<span class="fc" id="L64">        Thread t = new Thread(r, &quot;alivejTUI-async&quot;);</span>
+<span class="fc" id="L65">        t.setDaemon(true);</span>
+<span class="fc" id="L66">        return t;</span>
+    });
+
+    /**
+     * Pushes a node to be rendered as an overlay on top of the current root tree.
+     * Takes effect on the next render pass. Must be called from within the event loop thread.
+     *
+     * @param node the overlay node (e.g. a dialog or popup)
+     */
+    public static void pushOverlay(Node node) {
+<span class="nc bnc" id="L76" title="All 2 branches missed.">        if (activeRenderer != null) {</span>
+<span class="nc" id="L77">            activeRenderer.pushOverlay(node);</span>
+        }
+<span class="nc" id="L79">    }</span>
+
+    /**
+     * Removes the current overlay.
+     * Must be called from within the event loop thread.
+     */
+    public static void popOverlay() {
+<span class="nc bnc" id="L86" title="All 2 branches missed.">        if (activeRenderer != null) {</span>
+<span class="nc" id="L87">            activeRenderer.clearOverlay();</span>
+        }
+<span class="nc" id="L89">    }</span>
+
+    // --- Timer API ---
+
+    /**
+     * Schedules a one-shot callback to run after {@code delayMs} milliseconds.
+     * Must be called from within the event loop thread (e.g. inside a key handler or setState).
+     * A re-render is triggered automatically after the callback fires.
+     *
+     * @param delayMs delay in milliseconds
+     * @param task    the callback to run
+     */
+    public static void schedule(long delayMs, Runnable task) {
+<span class="pc bpc" id="L102" title="1 of 2 branches missed.">        if (activeTimerManager != null) activeTimerManager.schedule(delayMs, task);</span>
+<span class="fc" id="L103">    }</span>
+
+    /**
+     * Schedules a repeating callback that fires every {@code intervalMs} milliseconds.
+     * Useful for animations (e.g. advancing a {@link io.alive.tui.node.SpinnerNode} frame).
+     * A re-render is triggered automatically after each firing.
+     *
+     * @param intervalMs interval in milliseconds
+     * @param task       the callback to run on each interval
+     */
+    public static void scheduleRepeating(long intervalMs, Runnable task) {
+<span class="nc bnc" id="L114" title="All 2 branches missed.">        if (activeTimerManager != null) activeTimerManager.scheduleRepeating(intervalMs, task);</span>
+<span class="nc" id="L115">    }</span>
+
+    /**
+     * Cancels all scheduled occurrences of the given task (by reference equality).
+     *
+     * @param task the task to cancel
+     */
+    public static void cancelTimer(Runnable task) {
+<span class="nc bnc" id="L123" title="All 2 branches missed.">        if (activeTimerManager != null) activeTimerManager.cancel(task);</span>
+<span class="nc" id="L124">    }</span>
+
+    // --- Async State API (package-private, used by Component) ---
+
+    /**
+     * Submits an {@link AsyncTask} for background execution.
+     *
+     * &lt;p&gt;The task's {@code work} callable runs on a background thread; the
+     * {@code onSuccess} (or {@code onError}) callback is enqueued onto the event loop
+     * thread and called during the next event loop tick.
+     *
+     * &lt;p&gt;May be called from any thread (not just the event loop).
+     *
+     * @param task the async task to execute
+     * @param &lt;T&gt;  result type
+     */
+    public static &lt;T&gt; void runAsync(AsyncTask&lt;T&gt; task) {
+<span class="fc bfc" id="L141" title="All 2 branches covered.">        if (task == null) return;</span>
+<span class="fc" id="L142">        submitAsync(() -&gt; {</span>
+            try {
+<span class="fc" id="L144">                T result = task.getWork().call();</span>
+<span class="fc" id="L145">                enqueueStateUpdate(() -&gt; task.getOnSuccess().accept(result));</span>
+<span class="fc" id="L146">            } catch (Exception ex) {</span>
+<span class="fc bfc" id="L147" title="All 2 branches covered.">                if (task.getOnError() != null) {</span>
+<span class="fc" id="L148">                    enqueueStateUpdate(() -&gt; task.getOnError().accept(ex));</span>
+                }
+<span class="fc" id="L150">            }</span>
+<span class="fc" id="L151">        });</span>
+<span class="fc" id="L152">    }</span>
+
+    /**
+     * Submits a task to the background executor. Tracks in-flight count so the
+     * event loop knows to poll the async queue with a short timeout.
+     */
+    static void submitAsync(Runnable task) {
+<span class="fc" id="L159">        asyncInFlight.incrementAndGet();</span>
+<span class="fc" id="L160">        asyncExecutor.submit(() -&gt; {</span>
+            try {
+<span class="fc" id="L162">                task.run();</span>
+            } finally {
+<span class="fc" id="L164">                asyncInFlight.decrementAndGet();</span>
+            }
+<span class="fc" id="L166">        });</span>
+<span class="fc" id="L167">    }</span>
+
+    /**
+     * Enqueues a state mutation to be applied on the event loop thread.
+     * Thread-safe: may be called from any thread.
+     */
+    static void enqueueStateUpdate(Runnable mutation) {
+<span class="pc bpc" id="L174" title="1 of 2 branches missed.">        if (mutation != null) asyncQueue.add(mutation);</span>
+<span class="fc" id="L175">    }</span>
+
+    /**
+     * Drains and runs all pending async state mutations.
+     * Must be called from the event loop thread. Returns the count drained.
+     */
+    static int drainAsyncQueue() {
+<span class="fc" id="L182">        int count = 0;</span>
+        Runnable m;
+<span class="fc bfc" id="L184" title="All 2 branches covered.">        while ((m = asyncQueue.poll()) != null) {</span>
+<span class="fc" id="L185">            m.run();</span>
+<span class="fc" id="L186">            count++;</span>
+        }
+<span class="fc" id="L188">        return count;</span>
+    }
+
+    static boolean hasAsyncPending() {
+<span class="pc bpc" id="L192" title="2 of 4 branches missed.">        return !asyncQueue.isEmpty() || asyncInFlight.get() &gt; 0;</span>
+    }
+
+    /**
+     * Starts the application with the given root component using the default Lanterna backend.
+     * Blocks until the user presses ESC or the terminal signals EOF.
+     */
+    public static void run(Component root) {
+<span class="nc" id="L200">        run(root, new LanternaBackend());</span>
+<span class="nc" id="L201">    }</span>
+
+    /**
+     * Starts the application with a custom {@link TerminalBackend}.
+     * Useful for testing with a fake backend.
+     *
+     * @param root    the root component
+     * @param backend the terminal backend to use
+     */
+    public static void run(Component root, TerminalBackend backend) {
+<span class="fc bfc" id="L211" title="All 2 branches covered.">        if (root == null)    throw new IllegalArgumentException(&quot;root component must not be null&quot;);</span>
+<span class="fc bfc" id="L212" title="All 2 branches covered.">        if (backend == null) throw new IllegalArgumentException(&quot;backend must not be null&quot;);</span>
+
+<span class="fc" id="L214">        backend.init();</span>
+
+<span class="fc" id="L216">        EventBus eventBus = new EventBus();</span>
+<span class="fc" id="L217">        FocusManager focusManager = new FocusManager();</span>
+<span class="fc" id="L218">        Renderer renderer = new Renderer(backend);</span>
+
+        // Wire resize: on resize, do a full redraw
+<span class="fc" id="L221">        backend.setResizeListener(renderer::onResize);</span>
+
+        // Register shutdown hook for Ctrl+C
+<span class="fc" id="L224">        Thread shutdownHook = new Thread(() -&gt; {</span>
+<span class="nc" id="L225">            try { backend.shutdown(); } catch (Exception ignored) {}</span>
+<span class="nc" id="L226">        });</span>
+<span class="fc" id="L227">        Runtime.getRuntime().addShutdownHook(shutdownHook);</span>
+
+        // Wire TAB / Shift+TAB to focus cycling
+<span class="fc" id="L230">        eventBus.register(KeyType.TAB,       focusManager::focusNext);</span>
+<span class="fc" id="L231">        eventBus.register(KeyType.SHIFT_TAB, focusManager::focusPrev);</span>
+
+        // Wire ENTER to trigger the currently-focused button's onClick
+<span class="fc" id="L234">        eventBus.register(KeyType.ENTER, () -&gt; {</span>
+<span class="pc bpc" id="L235" title="1 of 2 branches missed.">            if (focusManager.getFocused() instanceof ButtonNode btn) {</span>
+<span class="nc" id="L236">                btn.click();</span>
+<span class="nc" id="L237">                Runnable cb = activeRerenderCallback;</span>
+<span class="nc bnc" id="L238" title="All 2 branches missed.">                if (cb != null) cb.run();</span>
+            }
+<span class="fc" id="L240">            return false; // don't consume — let other ENTER handlers run</span>
+        });
+
+        // Expose overlay and timer APIs
+<span class="fc" id="L244">        activeRenderer         = renderer;</span>
+<span class="fc" id="L245">        activeRerenderCallback = () -&gt; renderer.render(root.renderAndCache());</span>
+<span class="fc" id="L246">        activeTimerManager     = new TimerManager();</span>
+
+        // Mount root component
+<span class="fc" id="L249">        root.mount(activeRerenderCallback, eventBus, focusManager);</span>
+
+        // Initial render
+<span class="fc" id="L252">        renderer.render(root.renderAndCache());</span>
+
+        try {
+<span class="fc" id="L255">            eventLoop(backend, eventBus, activeTimerManager, activeRerenderCallback);</span>
+<span class="nc" id="L256">        } catch (InterruptedException e) {</span>
+<span class="nc" id="L257">            Thread.currentThread().interrupt();</span>
+        } finally {
+<span class="fc" id="L259">            activeRenderer         = null;</span>
+<span class="fc" id="L260">            activeRerenderCallback = null;</span>
+<span class="fc" id="L261">            activeTimerManager.clear();</span>
+<span class="fc" id="L262">            activeTimerManager     = null;</span>
+<span class="fc" id="L263">            root.unmount();</span>
+<span class="fc" id="L264">            eventBus.clear();</span>
+            try {
+<span class="fc" id="L266">                Runtime.getRuntime().removeShutdownHook(shutdownHook);</span>
+<span class="nc" id="L267">            } catch (IllegalStateException ignored) {</span>
+                // JVM already shutting down
+<span class="fc" id="L269">            }</span>
+<span class="fc" id="L270">            backend.shutdown();</span>
+        }
+<span class="fc" id="L272">    }</span>
+
+    private static void eventLoop(TerminalBackend backend, EventBus eventBus,
+                                  TimerManager timers, Runnable onTick)
+        throws InterruptedException {
+        while (true) {
+            KeyEvent event;
+<span class="pc bpc" id="L279" title="2 of 4 branches missed.">            boolean needPoll = timers.hasPendingTimers() || hasAsyncPending();</span>
+<span class="pc bpc" id="L280" title="1 of 2 branches missed.">            if (needPoll) {</span>
+<span class="nc bnc" id="L281" title="All 2 branches missed.">                long waitMs = timers.hasPendingTimers()</span>
+<span class="nc" id="L282">                    ? Math.max(1L, Math.min(50L, timers.msUntilNext()))</span>
+<span class="nc" id="L283">                    : 50L;  // async-only: poll every 50 ms</span>
+<span class="nc" id="L284">                event = backend.readKey(waitMs);  // returns null on timeout</span>
+<span class="nc" id="L285">            } else {</span>
+<span class="fc" id="L286">                event = backend.readKey();         // blocks until key arrives</span>
+            }
+
+            // Fire any due timers; triggers re-render if any fired
+<span class="fc" id="L290">            timers.tick(onTick);</span>
+
+            // Drain async state mutations posted by background tasks
+<span class="pc bpc" id="L293" title="3 of 4 branches missed.">            if (drainAsyncQueue() &gt; 0 &amp;&amp; onTick != null) onTick.run();</span>
+
+<span class="pc bpc" id="L295" title="1 of 2 branches missed.">            if (event == null) continue;  // timeout — timers / async may have fired</span>
+<span class="fc bfc" id="L296" title="All 4 branches covered.">            if (event.type() == KeyType.ESCAPE || event.type() == KeyType.EOF) break;</span>
+<span class="fc" id="L297">            eventBus.dispatch(event);</span>
+<span class="fc" id="L298">        }</span>
+<span class="fc" id="L299">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.10.202304240956</span></div></body></html>

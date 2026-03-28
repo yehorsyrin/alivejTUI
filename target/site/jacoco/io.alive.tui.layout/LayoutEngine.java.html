@@ -1,0 +1,385 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="uk"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>LayoutEngine.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">AliveJTUI</a> &gt; <a href="index.source.html" class="el_package">io.alive.tui.layout</a> &gt; <span class="el_source">LayoutEngine.java</span></div><h1>LayoutEngine.java</h1><pre class="source lang-java linenums">package io.alive.tui.layout;
+
+import io.alive.tui.core.Node;
+import io.alive.tui.node.*;
+
+import java.util.List;
+
+/**
+ * Computes the position (x, y) and dimensions (width, height) for every node in the virtual tree.
+ *
+ * &lt;p&gt;Must be run before diffing or rendering. After layout, every node's x/y/width/height
+ * fields are set to concrete terminal column/row values.
+ *
+ * @author Jarvis (AI)
+ */
+<span class="fc" id="L16">public class LayoutEngine {</span>
+
+    /**
+     * Recursively lays out the entire tree starting from {@code root}.
+     *
+     * @param root            the root node
+     * @param x               left edge (terminal column, 0-based)
+     * @param y               top edge (terminal row, 0-based)
+     * @param availableWidth  width available for this node
+     * @param availableHeight height available for this node
+     */
+    public void layout(Node root, int x, int y, int availableWidth, int availableHeight) {
+<span class="fc bfc" id="L28" title="All 2 branches covered.">        if (root == null) return;</span>
+<span class="fc" id="L29">        availableWidth  = Math.max(0, availableWidth);</span>
+<span class="fc" id="L30">        availableHeight = Math.max(0, availableHeight);</span>
+
+<span class="fc" id="L32">        root.setX(x);</span>
+<span class="fc" id="L33">        root.setY(y);</span>
+
+<span class="fc bfc" id="L35" title="All 2 branches covered.">        if (root instanceof TextNode text) {</span>
+<span class="fc" id="L36">            layoutText(text, availableWidth);</span>
+<span class="fc bfc" id="L37" title="All 2 branches covered.">        } else if (root instanceof ScrollableVBoxNode svbox) {</span>
+<span class="fc" id="L38">            layoutScrollableVBox(svbox, x, y, availableWidth, availableHeight);</span>
+<span class="fc bfc" id="L39" title="All 2 branches covered.">        } else if (root instanceof VBoxNode vbox) {</span>
+<span class="fc" id="L40">            layoutVBox(vbox, x, y, availableWidth, availableHeight);</span>
+<span class="fc bfc" id="L41" title="All 2 branches covered.">        } else if (root instanceof HBoxNode hbox) {</span>
+<span class="fc" id="L42">            layoutHBox(hbox, x, y, availableWidth, availableHeight);</span>
+<span class="fc bfc" id="L43" title="All 2 branches covered.">        } else if (root instanceof BoxNode box) {</span>
+<span class="fc" id="L44">            layoutBox(box, x, y, availableWidth, availableHeight);</span>
+<span class="fc bfc" id="L45" title="All 2 branches covered.">        } else if (root instanceof ButtonNode btn) {</span>
+<span class="fc" id="L46">            layoutButton(btn, availableWidth);</span>
+<span class="fc bfc" id="L47" title="All 2 branches covered.">        } else if (root instanceof InputNode) {</span>
+<span class="fc" id="L48">            root.setWidth(availableWidth);</span>
+<span class="fc" id="L49">            root.setHeight(1);</span>
+<span class="pc bpc" id="L50" title="1 of 2 branches missed.">        } else if (root instanceof ListNode list) {</span>
+<span class="nc" id="L51">            root.setWidth(availableWidth);</span>
+<span class="nc" id="L52">            root.setHeight(Math.min(list.getItems().size(), Math.max(1, availableHeight)));</span>
+<span class="fc bfc" id="L53" title="All 2 branches covered.">        } else if (root instanceof VirtualListNode vlist) {</span>
+<span class="fc" id="L54">            root.setWidth(availableWidth);</span>
+<span class="fc" id="L55">            root.setHeight(Math.min(vlist.getMaxVisibleRows(), Math.max(1, vlist.visibleRowCount())));</span>
+<span class="fc bfc" id="L56" title="All 2 branches covered.">        } else if (root instanceof ProgressBarNode) {</span>
+<span class="fc" id="L57">            root.setWidth(availableWidth);</span>
+<span class="fc" id="L58">            root.setHeight(1);</span>
+<span class="fc bfc" id="L59" title="All 2 branches covered.">        } else if (root instanceof SpinnerNode) {</span>
+<span class="fc" id="L60">            root.setWidth(1);</span>
+<span class="fc" id="L61">            root.setHeight(1);</span>
+<span class="fc bfc" id="L62" title="All 2 branches covered.">        } else if (root instanceof DividerNode div) {</span>
+<span class="fc" id="L63">            layoutDivider(div, availableWidth, availableHeight);</span>
+<span class="fc bfc" id="L64" title="All 2 branches covered.">        } else if (root instanceof CheckboxNode cb) {</span>
+<span class="fc" id="L65">            layoutCheckbox(cb, availableWidth);</span>
+<span class="fc bfc" id="L66" title="All 2 branches covered.">        } else if (root instanceof RadioGroupNode rg) {</span>
+<span class="fc" id="L67">            layoutRadioGroup(rg, availableWidth);</span>
+<span class="fc bfc" id="L68" title="All 2 branches covered.">        } else if (root instanceof HelpPanelNode help) {</span>
+<span class="fc" id="L69">            layoutHelpPanel(help, availableWidth);</span>
+<span class="fc bfc" id="L70" title="All 2 branches covered.">        } else if (root instanceof DialogNode dialog) {</span>
+<span class="fc" id="L71">            layoutDialog(dialog, x, y, availableWidth, availableHeight);</span>
+<span class="fc bfc" id="L72" title="All 2 branches covered.">        } else if (root instanceof ViewportNode vp) {</span>
+<span class="fc" id="L73">            layoutViewport(vp, x, y, availableWidth, availableHeight);</span>
+<span class="fc bfc" id="L74" title="All 2 branches covered.">        } else if (root instanceof SelectNode sel) {</span>
+<span class="fc" id="L75">            layoutSelect(sel, availableWidth);</span>
+<span class="fc bfc" id="L76" title="All 2 branches covered.">        } else if (root instanceof CollapsibleNode col) {</span>
+<span class="fc" id="L77">            layoutCollapsible(col, x, y, availableWidth, availableHeight);</span>
+<span class="fc bfc" id="L78" title="All 2 branches covered.">        } else if (root instanceof io.alive.tui.node.TextAreaNode ta) {</span>
+<span class="fc" id="L79">            layoutTextArea(ta, availableWidth);</span>
+<span class="pc bpc" id="L80" title="1 of 2 branches missed.">        } else if (root instanceof NotificationNode notif) {</span>
+<span class="nc" id="L81">            notif.setWidth(Math.min(notif.renderText().length(), availableWidth));</span>
+<span class="nc" id="L82">            notif.setHeight(1);</span>
+<span class="pc bpc" id="L83" title="1 of 2 branches missed.">        } else if (root instanceof TableNode table) {</span>
+<span class="fc" id="L84">            layoutTable(table, availableWidth);</span>
+        } else {
+            // Unknown node type — fill available space
+<span class="nc" id="L87">            root.setWidth(availableWidth);</span>
+<span class="nc" id="L88">            root.setHeight(availableHeight);</span>
+        }
+<span class="fc" id="L90">    }</span>
+
+    // --- TextNode ---
+
+    private void layoutText(TextNode node, int availableWidth) {
+<span class="fc" id="L95">        String text = node.getText();</span>
+<span class="fc bfc" id="L96" title="All 4 branches covered.">        boolean needsWrap = node.isWrap() || text.contains(&quot;\n&quot;);</span>
+<span class="pc bpc" id="L97" title="1 of 4 branches missed.">        if (needsWrap &amp;&amp; availableWidth &gt; 0) {</span>
+<span class="fc" id="L98">            java.util.List&lt;String&gt; lines = wordWrap(text, availableWidth);</span>
+<span class="fc" id="L99">            node.setWrappedLines(lines);</span>
+<span class="fc" id="L100">            node.setWidth(availableWidth);</span>
+<span class="fc" id="L101">            node.setHeight(Math.max(1, lines.size()));</span>
+<span class="fc" id="L102">        } else {</span>
+<span class="fc" id="L103">            node.setWrappedLines(null);</span>
+<span class="fc" id="L104">            node.setWidth(Math.min(text.length(), availableWidth));</span>
+<span class="fc" id="L105">            node.setHeight(1);</span>
+        }
+<span class="fc" id="L107">    }</span>
+
+    /**
+     * Splits {@code text} into lines that fit within {@code width} columns.
+     * Newline characters force a line break. Long words are hard-broken.
+     */
+    static java.util.List&lt;String&gt; wordWrap(String text, int width) {
+<span class="fc" id="L114">        java.util.List&lt;String&gt; result = new java.util.ArrayList&lt;&gt;();</span>
+<span class="fc bfc" id="L115" title="All 2 branches covered.">        if (width &lt;= 0) return result;</span>
+<span class="fc bfc" id="L116" title="All 2 branches covered.">        for (String paragraph : text.split(&quot;\n&quot;, -1)) {</span>
+<span class="fc bfc" id="L117" title="All 2 branches covered.">            if (paragraph.isEmpty()) {</span>
+<span class="fc" id="L118">                result.add(&quot;&quot;);</span>
+<span class="fc" id="L119">                continue;</span>
+            }
+<span class="fc" id="L121">            String[] words = paragraph.split(&quot; &quot;, -1);</span>
+<span class="fc" id="L122">            StringBuilder line = new StringBuilder();</span>
+<span class="fc bfc" id="L123" title="All 2 branches covered.">            for (String word : words) {</span>
+                // Hard-break words that exceed the available width
+<span class="fc bfc" id="L125" title="All 2 branches covered.">                while (word.length() &gt; width) {</span>
+<span class="fc" id="L126">                    int space = width - line.length();</span>
+<span class="pc bpc" id="L127" title="1 of 2 branches missed.">                    if (line.length() &gt; 0) {</span>
+<span class="nc" id="L128">                        result.add(line.toString());</span>
+<span class="nc" id="L129">                        line.setLength(0);</span>
+<span class="nc" id="L130">                        space = width;</span>
+                    }
+<span class="fc" id="L132">                    result.add(word.substring(0, space));</span>
+<span class="fc" id="L133">                    word = word.substring(space);</span>
+<span class="fc" id="L134">                }</span>
+<span class="fc bfc" id="L135" title="All 2 branches covered.">                if (line.isEmpty()) {</span>
+<span class="fc" id="L136">                    line.append(word);</span>
+<span class="fc bfc" id="L137" title="All 2 branches covered.">                } else if (line.length() + 1 + word.length() &lt;= width) {</span>
+<span class="fc" id="L138">                    line.append(' ').append(word);</span>
+                } else {
+<span class="fc" id="L140">                    result.add(line.toString());</span>
+<span class="fc" id="L141">                    line.setLength(0);</span>
+<span class="fc" id="L142">                    line.append(word);</span>
+                }
+            }
+<span class="pc bpc" id="L145" title="1 of 2 branches missed.">            if (!line.isEmpty()) result.add(line.toString());</span>
+        }
+<span class="fc" id="L147">        return result;</span>
+    }
+
+    // --- ScrollableVBoxNode ---
+
+    private void layoutScrollableVBox(ScrollableVBoxNode svbox, int x, int y,
+                                      int availableWidth, int availableHeight) {
+<span class="fc" id="L154">        List&lt;Node&gt; children = svbox.getChildren();</span>
+<span class="fc" id="L155">        int gap = svbox.getGap();</span>
+<span class="fc" id="L156">        int totalHeight = 0;</span>
+<span class="fc" id="L157">        int currentY = y;</span>
+
+        // Layout children with unlimited height (content can exceed maxHeight)
+<span class="fc bfc" id="L160" title="All 2 branches covered.">        for (int i = 0; i &lt; children.size(); i++) {</span>
+<span class="fc" id="L161">            Node child = children.get(i);</span>
+<span class="fc" id="L162">            layout(child, x, currentY, availableWidth, availableHeight);</span>
+<span class="fc bfc" id="L163" title="All 2 branches covered.">            int childH = child.getHeight() + (i &lt; children.size() - 1 ? gap : 0);</span>
+<span class="fc" id="L164">            currentY    += childH;</span>
+<span class="fc" id="L165">            totalHeight += childH;</span>
+        }
+
+<span class="fc" id="L168">        svbox.setContentHeight(totalHeight);</span>
+<span class="fc" id="L169">        svbox.setWidth(availableWidth);</span>
+<span class="fc" id="L170">        svbox.setHeight(Math.min(svbox.getMaxHeight(), totalHeight));</span>
+<span class="fc" id="L171">    }</span>
+
+    // --- VBoxNode ---
+
+    private void layoutVBox(VBoxNode vbox, int x, int y, int availableWidth, int availableHeight) {
+<span class="fc" id="L176">        List&lt;Node&gt; children = vbox.getChildren();</span>
+<span class="fc" id="L177">        int gap = vbox.getGap();</span>
+<span class="fc" id="L178">        int totalHeight = 0;</span>
+<span class="fc" id="L179">        int currentY = y;</span>
+
+<span class="fc bfc" id="L181" title="All 2 branches covered.">        for (int i = 0; i &lt; children.size(); i++) {</span>
+<span class="fc" id="L182">            Node child = children.get(i);</span>
+<span class="fc" id="L183">            int remainingHeight = Math.max(0, availableHeight - totalHeight);</span>
+<span class="fc" id="L184">            layout(child, x, currentY, availableWidth, remainingHeight);</span>
+<span class="fc bfc" id="L185" title="All 2 branches covered.">            currentY  += child.getHeight() + (i &lt; children.size() - 1 ? gap : 0);</span>
+<span class="fc bfc" id="L186" title="All 2 branches covered.">            totalHeight += child.getHeight() + (i &lt; children.size() - 1 ? gap : 0);</span>
+        }
+
+<span class="fc" id="L189">        vbox.setWidth(availableWidth);</span>
+<span class="fc" id="L190">        vbox.setHeight(totalHeight);</span>
+<span class="fc" id="L191">    }</span>
+
+    // --- HBoxNode ---
+
+    private void layoutHBox(HBoxNode hbox, int x, int y, int availableWidth, int availableHeight) {
+<span class="fc" id="L196">        List&lt;Node&gt; children = hbox.getChildren();</span>
+<span class="fc bfc" id="L197" title="All 2 branches covered.">        if (children.isEmpty()) {</span>
+<span class="fc" id="L198">            hbox.setWidth(0);</span>
+<span class="fc" id="L199">            hbox.setHeight(0);</span>
+<span class="fc" id="L200">            return;</span>
+        }
+
+<span class="fc" id="L203">        int gap      = hbox.getGap();</span>
+<span class="fc" id="L204">        int totalGap = gap * Math.max(0, children.size() - 1);</span>
+<span class="fc" id="L205">        int usable   = Math.max(0, availableWidth - totalGap);</span>
+<span class="fc" id="L206">        int baseWidth = usable / children.size();</span>
+<span class="fc" id="L207">        int extra     = usable % children.size(); // distribute remainder to first N children</span>
+
+<span class="fc" id="L209">        int currentX  = x;</span>
+<span class="fc" id="L210">        int maxHeight = 0;</span>
+
+<span class="fc bfc" id="L212" title="All 2 branches covered.">        for (int i = 0; i &lt; children.size(); i++) {</span>
+<span class="fc" id="L213">            Node child = children.get(i);</span>
+<span class="pc bpc" id="L214" title="1 of 2 branches missed.">            int childWidth = baseWidth + (i &lt; extra ? 1 : 0);</span>
+<span class="fc" id="L215">            layout(child, currentX, y, childWidth, availableHeight);</span>
+            // Advance by the allocated slot width, not the actual child width,
+            // so that children are evenly spaced regardless of content size.
+<span class="fc bfc" id="L218" title="All 2 branches covered.">            currentX += childWidth + (i &lt; children.size() - 1 ? gap : 0);</span>
+<span class="fc" id="L219">            maxHeight = Math.max(maxHeight, child.getHeight());</span>
+        }
+
+<span class="fc" id="L222">        hbox.setWidth(availableWidth);</span>
+<span class="fc" id="L223">        hbox.setHeight(maxHeight);</span>
+<span class="fc" id="L224">    }</span>
+
+    // --- BoxNode ---
+
+    private void layoutBox(BoxNode box, int x, int y, int availableWidth, int availableHeight) {
+<span class="fc bfc" id="L229" title="All 2 branches covered.">        if (box.hasBorder()) {</span>
+<span class="fc" id="L230">            int innerW = Math.max(0, availableWidth  - 2);</span>
+<span class="fc" id="L231">            int innerH = Math.max(0, availableHeight - 2);</span>
+<span class="pc bpc" id="L232" title="1 of 2 branches missed.">            if (!box.getChildren().isEmpty()) {</span>
+<span class="fc" id="L233">                layout(box.getChildren().get(0), x + 1, y + 1, innerW, innerH);</span>
+<span class="fc" id="L234">                box.setWidth(availableWidth);</span>
+<span class="fc" id="L235">                box.setHeight(box.getChildren().get(0).getHeight() + 2);</span>
+            } else {
+<span class="nc" id="L237">                box.setWidth(availableWidth);</span>
+<span class="nc" id="L238">                box.setHeight(availableHeight);</span>
+            }
+<span class="fc" id="L240">        } else {</span>
+<span class="pc bpc" id="L241" title="1 of 2 branches missed.">            if (!box.getChildren().isEmpty()) {</span>
+<span class="fc" id="L242">                layout(box.getChildren().get(0), x, y, availableWidth, availableHeight);</span>
+<span class="fc" id="L243">                box.setWidth(box.getChildren().get(0).getWidth());</span>
+<span class="fc" id="L244">                box.setHeight(box.getChildren().get(0).getHeight());</span>
+            } else {
+<span class="nc" id="L246">                box.setWidth(availableWidth);</span>
+<span class="nc" id="L247">                box.setHeight(availableHeight);</span>
+            }
+        }
+<span class="fc" id="L250">    }</span>
+
+    // --- ButtonNode ---
+
+    private void layoutButton(ButtonNode btn, int availableWidth) {
+        // Rendered as &quot;[label]&quot; — 2 brackets + label
+<span class="fc" id="L256">        int desired = btn.getLabel().length() + 2;</span>
+<span class="fc" id="L257">        btn.setWidth(Math.min(desired, availableWidth));</span>
+<span class="fc" id="L258">        btn.setHeight(1);</span>
+<span class="fc" id="L259">    }</span>
+
+    // --- CheckboxNode ---
+
+    private void layoutCheckbox(CheckboxNode cb, int availableWidth) {
+        // Rendered as &quot;[✓] label&quot; or &quot;[ ] label&quot; — 4 chars prefix + label length
+<span class="fc" id="L265">        int desired = &quot;[✓] &quot;.length() + cb.getLabel().length();</span>
+<span class="fc" id="L266">        cb.setWidth(Math.min(desired, availableWidth));</span>
+<span class="fc" id="L267">        cb.setHeight(1);</span>
+<span class="fc" id="L268">    }</span>
+
+    // --- RadioGroupNode ---
+
+    private void layoutRadioGroup(RadioGroupNode rg, int availableWidth) {
+<span class="fc" id="L273">        rg.setWidth(availableWidth);</span>
+<span class="fc" id="L274">        rg.setHeight(Math.max(1, rg.getOptions().size()));</span>
+<span class="fc" id="L275">    }</span>
+
+    // --- CollapsibleNode ---
+
+    private void layoutCollapsible(CollapsibleNode col, int x, int y,
+                                   int availableWidth, int availableHeight) {
+<span class="fc" id="L281">        col.setWidth(availableWidth);</span>
+<span class="fc bfc" id="L282" title="All 2 branches covered.">        if (!col.isExpanded()) {</span>
+<span class="fc" id="L283">            col.setHeight(1);</span>
+<span class="fc" id="L284">            return;</span>
+        }
+        // Expanded: title row + lay out children stacked below
+<span class="fc" id="L287">        int currentY    = y + 1;</span>
+<span class="fc" id="L288">        int totalHeight = 1;</span>
+<span class="fc bfc" id="L289" title="All 2 branches covered.">        for (int i = 0; i &lt; col.getChildren().size(); i++) {</span>
+<span class="fc" id="L290">            Node child = col.getChildren().get(i);</span>
+<span class="fc" id="L291">            int remaining = Math.max(0, availableHeight - totalHeight);</span>
+<span class="fc" id="L292">            layout(child, x, currentY, availableWidth, remaining);</span>
+<span class="fc" id="L293">            currentY    += child.getHeight();</span>
+<span class="fc" id="L294">            totalHeight += child.getHeight();</span>
+        }
+<span class="fc" id="L296">        col.setHeight(totalHeight);</span>
+<span class="fc" id="L297">    }</span>
+
+    // --- TableNode ---
+
+    private void layoutTable(TableNode table, int availableWidth) {
+<span class="fc" id="L302">        int[] colWidths = table.computeColWidths(availableWidth);</span>
+<span class="fc" id="L303">        table.setColWidths(colWidths);</span>
+<span class="fc" id="L304">        table.setWidth(availableWidth);</span>
+
+        // Height = borders + header + header-separator + visible rows + bottom border
+<span class="fc" id="L307">        int visibleRows = table.visibleRowCount();</span>
+<span class="fc bfc" id="L308" title="All 2 branches covered.">        int height = table.isShowBorders()</span>
+<span class="fc" id="L309">                ? 4 + visibleRows  // top + header + sep + rows + bottom</span>
+<span class="fc" id="L310">                : 1 + visibleRows; // header + rows</span>
+<span class="fc" id="L311">        table.setHeight(height);</span>
+<span class="fc" id="L312">    }</span>
+
+    // --- SelectNode ---
+
+    private void layoutSelect(SelectNode sel, int availableWidth) {
+<span class="fc" id="L317">        sel.setWidth(availableWidth);</span>
+        // Closed: 1 row (the header). Open: 1 header + n options.
+<span class="fc bfc" id="L319" title="All 2 branches covered.">        sel.setHeight(sel.isOpen() ? 1 + sel.getOptions().size() : 1);</span>
+<span class="fc" id="L320">    }</span>
+
+    // --- ViewportNode ---
+
+    private void layoutViewport(ViewportNode vp, int x, int y,
+                                int availableWidth, int availableHeight) {
+<span class="fc" id="L326">        boolean hasSb = vp.isShowScrollbar();</span>
+<span class="fc bfc" id="L327" title="All 2 branches covered.">        int contentW = hasSb ? Math.max(0, availableWidth - 1) : availableWidth;</span>
+
+<span class="pc bpc" id="L329" title="1 of 2 branches missed.">        if (!vp.getChildren().isEmpty()) {</span>
+            // Lay out content with effectively unlimited height so it shows its natural size
+<span class="fc" id="L331">            layout(vp.getChildren().get(0), x, y, contentW, Integer.MAX_VALUE / 2);</span>
+<span class="fc" id="L332">            int contentH = vp.getChildren().get(0).getHeight();</span>
+<span class="fc" id="L333">            vp.setContentHeight(contentH);</span>
+<span class="fc" id="L334">            vp.setWidth(availableWidth);</span>
+<span class="fc" id="L335">            vp.setHeight(Math.min(vp.getMaxHeight(), contentH));</span>
+<span class="fc" id="L336">        } else {</span>
+<span class="nc" id="L337">            vp.setContentHeight(0);</span>
+<span class="nc" id="L338">            vp.setWidth(availableWidth);</span>
+<span class="nc" id="L339">            vp.setHeight(Math.min(vp.getMaxHeight(), availableHeight));</span>
+        }
+<span class="fc" id="L341">    }</span>
+
+    // --- DialogNode ---
+
+    private void layoutDialog(DialogNode dialog, int x, int y, int availableWidth, int availableHeight) {
+<span class="fc" id="L346">        int innerW = Math.max(0, availableWidth  - 2);</span>
+<span class="fc" id="L347">        int innerH = Math.max(0, availableHeight - 2);</span>
+<span class="fc bfc" id="L348" title="All 2 branches covered.">        if (!dialog.getChildren().isEmpty()) {</span>
+<span class="fc" id="L349">            layout(dialog.getChildren().get(0), x + 1, y + 1, innerW, innerH);</span>
+<span class="fc" id="L350">            dialog.setWidth(availableWidth);</span>
+<span class="fc" id="L351">            dialog.setHeight(dialog.getChildren().get(0).getHeight() + 2);</span>
+        } else {
+<span class="fc" id="L353">            dialog.setWidth(availableWidth);</span>
+<span class="fc" id="L354">            dialog.setHeight(availableHeight);</span>
+        }
+<span class="fc" id="L356">    }</span>
+
+    // --- HelpPanelNode ---
+
+    private void layoutHelpPanel(HelpPanelNode help, int availableWidth) {
+<span class="fc" id="L361">        int maxLen = help.maxLineLength();</span>
+<span class="fc" id="L362">        help.setWidth(Math.min(maxLen, availableWidth));</span>
+<span class="fc" id="L363">        help.setHeight(Math.max(1, help.getBindings().size()));</span>
+<span class="fc" id="L364">    }</span>
+
+    // --- TextAreaNode ---
+
+    private void layoutTextArea(io.alive.tui.node.TextAreaNode ta, int availableWidth) {
+<span class="fc" id="L369">        ta.setWidth(availableWidth);</span>
+<span class="fc" id="L370">        ta.setHeight(Math.min(ta.getMaxHeight(), Math.max(1, ta.getLines().size())));</span>
+<span class="fc" id="L371">    }</span>
+
+    // --- DividerNode ---
+
+    private void layoutDivider(DividerNode div, int availableWidth, int availableHeight) {
+<span class="fc bfc" id="L376" title="All 2 branches covered.">        if (div.getOrientation() == DividerNode.Orientation.HORIZONTAL) {</span>
+<span class="fc" id="L377">            div.setWidth(availableWidth);</span>
+<span class="fc" id="L378">            div.setHeight(1);</span>
+        } else {
+<span class="fc" id="L380">            div.setWidth(1);</span>
+<span class="fc" id="L381">            div.setHeight(availableHeight);</span>
+        }
+<span class="fc" id="L383">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.10.202304240956</span></div></body></html>

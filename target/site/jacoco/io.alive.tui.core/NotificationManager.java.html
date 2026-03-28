@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="uk"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>NotificationManager.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">AliveJTUI</a> &gt; <a href="index.source.html" class="el_package">io.alive.tui.core</a> &gt; <span class="el_source">NotificationManager.java</span></div><h1>NotificationManager.java</h1><pre class="source lang-java linenums">package io.alive.tui.core;
+
+import io.alive.tui.core.Node;
+import io.alive.tui.node.NotificationNode;
+import io.alive.tui.node.NotificationType;
+import io.alive.tui.node.VBox;
+import io.alive.tui.node.VBoxNode;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
+/**
+ * Manages a stack of temporary toast notifications and auto-dismisses them
+ * after their configured duration using {@link AliveJTUI#schedule}.
+ *
+ * &lt;pre&gt;{@code
+ * // In your component:
+ * private final NotificationManager notifications = new NotificationManager(this::markDirty);
+ *
+ * // Show a toast:
+ * notifications.show(&quot;Saved!&quot;, 3000);
+ * notifications.show(&quot;File not found&quot;, 5000, NotificationType.ERROR);
+ *
+ * // In render():
+ * Node overlay = notifications.buildOverlay();
+ * if (overlay != null) AliveJTUI.pushOverlay(overlay);
+ * }&lt;/pre&gt;
+ *
+ * @author Jarvis (AI)
+ */
+public class NotificationManager {
+
+<span class="fc" id="L34">    private final List&lt;NotificationNode&gt; active  = new ArrayList&lt;&gt;();</span>
+    private final Runnable               onUpdate;
+
+    /**
+     * Creates a notification manager.
+     *
+     * @param onUpdate called on the event loop thread when the notification list changes
+     *                 (a notification is added or auto-dismissed); may be {@code null}
+     */
+<span class="fc" id="L43">    public NotificationManager(Runnable onUpdate) {</span>
+<span class="fc" id="L44">        this.onUpdate = onUpdate;</span>
+<span class="fc" id="L45">    }</span>
+
+    /**
+     * Shows an {@link NotificationType#INFO} notification for {@code durationMs} milliseconds.
+     *
+     * @param message    the text to display
+     * @param durationMs how long (in ms) to display the notification before auto-dismiss
+     */
+    public void show(String message, long durationMs) {
+<span class="fc" id="L54">        show(message, durationMs, NotificationType.INFO);</span>
+<span class="fc" id="L55">    }</span>
+
+    /**
+     * Shows a notification for {@code durationMs} milliseconds.
+     *
+     * @param message    the text to display
+     * @param durationMs how long (in ms) to display before auto-dismiss
+     * @param type       the notification type ({@link NotificationType#INFO} by default)
+     */
+    public void show(String message, long durationMs, NotificationType type) {
+<span class="fc" id="L65">        NotificationNode n = new NotificationNode(message, type);</span>
+<span class="fc" id="L66">        active.add(n);</span>
+<span class="fc" id="L67">        fireUpdate();</span>
+<span class="fc" id="L68">        AliveJTUI.schedule(durationMs, () -&gt; {</span>
+<span class="nc" id="L69">            active.remove(n);</span>
+<span class="nc" id="L70">            fireUpdate();</span>
+<span class="nc" id="L71">        });</span>
+<span class="fc" id="L72">    }</span>
+
+    /**
+     * Immediately dismisses all notifications.
+     */
+    public void clear() {
+<span class="fc" id="L78">        active.clear();</span>
+<span class="fc" id="L79">        fireUpdate();</span>
+<span class="fc" id="L80">    }</span>
+
+    /**
+     * Returns {@code true} if there are no active notifications.
+     */
+<span class="fc" id="L85">    public boolean isEmpty() { return active.isEmpty(); }</span>
+
+    /**
+     * Returns the number of active notifications.
+     */
+<span class="fc" id="L90">    public int size() { return active.size(); }</span>
+
+    /**
+     * Returns an unmodifiable snapshot of the currently active notifications,
+     * in the order they were added (oldest first).
+     */
+    public List&lt;NotificationNode&gt; getActiveNotifications() {
+<span class="fc" id="L97">        return Collections.unmodifiableList(new ArrayList&lt;&gt;(active));</span>
+    }
+
+    /**
+     * Builds a vertical stack of {@link NotificationNode} objects suitable for use
+     * as an overlay, or returns {@code null} if there are no active notifications.
+     *
+     * &lt;p&gt;The caller is responsible for positioning and pushing the overlay:
+     * &lt;pre&gt;{@code
+     * Node overlay = notifications.buildOverlay();
+     * if (overlay != null) AliveJTUI.pushOverlay(overlay);
+     * }&lt;/pre&gt;
+     *
+     * @return a {@link io.alive.tui.node.VBoxNode} of notifications, or {@code null} if empty
+     */
+    public Node buildOverlay() {
+<span class="fc bfc" id="L113" title="All 2 branches covered.">        if (active.isEmpty()) return null;</span>
+<span class="fc" id="L114">        List&lt;NotificationNode&gt; snap = getActiveNotifications();</span>
+<span class="fc bfc" id="L115" title="All 2 branches covered.">        if (snap.size() == 1) return snap.get(0);</span>
+<span class="fc" id="L116">        return VBox.of(snap.toArray(new Node[0]));</span>
+    }
+
+    private void fireUpdate() {
+<span class="fc bfc" id="L120" title="All 2 branches covered.">        if (onUpdate != null) onUpdate.run();</span>
+<span class="fc" id="L121">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.10.202304240956</span></div></body></html>

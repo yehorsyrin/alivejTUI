@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="uk"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>TerminalSizeDetector.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">AliveJTUI</a> &gt; <a href="index.source.html" class="el_package">io.alive.tui.nativeio.size</a> &gt; <span class="el_source">TerminalSizeDetector.java</span></div><h1>TerminalSizeDetector.java</h1><pre class="source lang-java linenums">package io.alive.tui.nativeio.size;
+
+import com.sun.jna.platform.win32.Kernel32;
+import com.sun.jna.platform.win32.Wincon;
+import com.sun.jna.platform.win32.WinNT;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
+
+/**
+ * Detects the current terminal size (columns × rows) using the most appropriate
+ * method for the current platform.
+ *
+ * &lt;p&gt;Strategy selection (in order):
+ * &lt;ol&gt;
+ *   &lt;li&gt;Windows: {@link #detectWindows()} — {@code GetConsoleScreenBufferInfo} via JNA&lt;/li&gt;
+ *   &lt;li&gt;ANSI cursor hack: {@link #detectAnsi(InputStream, OutputStream)} — write
+ *       {@code ESC[999;999H ESC[6n}, read {@code ESC[r;cR}&lt;/li&gt;
+ *   &lt;li&gt;Environment variables {@code COLUMNS} / {@code LINES}&lt;/li&gt;
+ *   &lt;li&gt;Fallback: 80×24&lt;/li&gt;
+ * &lt;/ol&gt;
+ *
+ * @author Jarvis (AI)
+ */
+public final class TerminalSizeDetector {
+
+    private TerminalSizeDetector() {}
+
+    /**
+     * Auto-selects the best detection strategy for the current platform.
+     *
+     * @return detected terminal size, never {@code null}
+     */
+    public static TerminalSize detect() {
+<span class="pc bpc" id="L37" title="1 of 2 branches missed.">        if (isWindows()) {</span>
+<span class="fc" id="L38">            TerminalSize win = detectWindows();</span>
+<span class="pc bpc" id="L39" title="1 of 2 branches missed.">            if (win != null) return win;</span>
+        }
+<span class="fc" id="L41">        TerminalSize env = detectFromEnvironment();</span>
+<span class="pc bpc" id="L42" title="1 of 2 branches missed.">        if (env != null) return env;</span>
+<span class="fc" id="L43">        return TerminalSize.DEFAULT;</span>
+    }
+
+    /**
+     * Windows: uses {@code GetConsoleScreenBufferInfo} from kernel32.dll.
+     *
+     * @return size or {@code null} if not on Windows / no console handle
+     */
+    public static TerminalSize detectWindows() {
+<span class="pc bpc" id="L52" title="1 of 2 branches missed.">        if (!isWindows()) return null;</span>
+        try {
+<span class="fc" id="L54">            WinNT.HANDLE hOut = Kernel32.INSTANCE.GetStdHandle(-11); // STD_OUTPUT_HANDLE</span>
+<span class="pc bpc" id="L55" title="2 of 4 branches missed.">            if (hOut == null || hOut.equals(WinNT.INVALID_HANDLE_VALUE)) return null;</span>
+
+<span class="fc" id="L57">            Wincon.CONSOLE_SCREEN_BUFFER_INFO info = new Wincon.CONSOLE_SCREEN_BUFFER_INFO();</span>
+<span class="pc bpc" id="L58" title="1 of 2 branches missed.">            if (!Kernel32.INSTANCE.GetConsoleScreenBufferInfo(hOut, info)) return null;</span>
+
+            // srWindow is the visible window, not the full buffer
+<span class="nc" id="L61">            int cols = info.srWindow.Right  - info.srWindow.Left + 1;</span>
+<span class="nc" id="L62">            int rows = info.srWindow.Bottom - info.srWindow.Top  + 1;</span>
+<span class="nc bnc" id="L63" title="All 4 branches missed.">            if (cols &gt; 0 &amp;&amp; rows &gt; 0) return new TerminalSize(cols, rows);</span>
+<span class="nc" id="L64">        } catch (UnsatisfiedLinkError | Exception ignored) {</span>
+<span class="nc" id="L65">        }</span>
+<span class="nc" id="L66">        return null;</span>
+    }
+
+    /**
+     * ANSI cursor position query hack.
+     *
+     * &lt;p&gt;Writes {@code ESC[999;999H} (move cursor to extreme bottom-right) then
+     * {@code ESC[6n} (request cursor position).  The terminal responds with
+     * {@code ESC[r;cR} where {@code r} and {@code c} are the actual dimensions.
+     *
+     * &lt;p&gt;Requires the terminal to be in raw mode so the response is not
+     * line-buffered.
+     *
+     * @param in  raw input stream (must be in raw mode, non-blocking preferred)
+     * @param out output stream connected to the terminal
+     * @return detected size or {@code null} if the response could not be parsed
+     */
+    public static TerminalSize detectAnsi(InputStream in, OutputStream out) {
+        try {
+            // Save cursor, move to extremes, query position, restore cursor
+<span class="fc" id="L86">            out.write(&quot;\033[s\033[999;999H\033[6n\033[u&quot;.getBytes(StandardCharsets.UTF_8));</span>
+<span class="fc" id="L87">            out.flush();</span>
+
+            // Read ESC [ rows ; cols R  (timeout ~500 ms)
+<span class="fc" id="L90">            StringBuilder sb = new StringBuilder();</span>
+<span class="fc" id="L91">            long deadline = System.currentTimeMillis() + 500;</span>
+            int b;
+<span class="fc" id="L93">            boolean inEscape = false;</span>
+<span class="fc bfc" id="L94" title="All 2 branches covered.">            while (System.currentTimeMillis() &lt; deadline) {</span>
+<span class="fc bfc" id="L95" title="All 2 branches covered.">                if (in.available() &lt;= 0) {</span>
+<span class="fc" id="L96">                    Thread.sleep(5);</span>
+<span class="fc" id="L97">                    continue;</span>
+                }
+<span class="fc" id="L99">                b = in.read();</span>
+<span class="fc bfc" id="L100" title="All 2 branches covered.">                if (b == 27) { inEscape = true; continue; }</span>
+<span class="fc bfc" id="L101" title="All 4 branches covered.">                if (inEscape &amp;&amp; b == '[') continue;</span>
+<span class="fc bfc" id="L102" title="All 4 branches covered.">                if (inEscape &amp;&amp; b == 'R') break;</span>
+<span class="fc bfc" id="L103" title="All 2 branches covered.">                if (inEscape) sb.append((char) b);</span>
+            }
+<span class="fc" id="L105">            String response = sb.toString(); // e.g. &quot;24;80&quot;</span>
+<span class="fc" id="L106">            String[] parts = response.split(&quot;;&quot;);</span>
+<span class="fc bfc" id="L107" title="All 2 branches covered.">            if (parts.length == 2) {</span>
+<span class="fc" id="L108">                int rows = Integer.parseInt(parts[0].trim());</span>
+<span class="fc" id="L109">                int cols = Integer.parseInt(parts[1].trim());</span>
+<span class="pc bpc" id="L110" title="2 of 4 branches missed.">                if (cols &gt; 0 &amp;&amp; rows &gt; 0) return new TerminalSize(cols, rows);</span>
+            }
+<span class="nc" id="L112">        } catch (IOException | InterruptedException | NumberFormatException ignored) {</span>
+<span class="nc bnc" id="L113" title="All 2 branches missed.">            if (Thread.currentThread().isInterrupted()) Thread.currentThread().interrupt();</span>
+<span class="fc" id="L114">        }</span>
+<span class="fc" id="L115">        return null;</span>
+    }
+
+    // --- Private helpers ---
+
+    private static TerminalSize detectFromEnvironment() {
+        try {
+<span class="fc" id="L122">            String cols = System.getenv(&quot;COLUMNS&quot;);</span>
+<span class="fc" id="L123">            String rows = System.getenv(&quot;LINES&quot;);</span>
+<span class="pc bpc" id="L124" title="3 of 4 branches missed.">            if (cols != null &amp;&amp; rows != null) {</span>
+<span class="nc" id="L125">                int c = Integer.parseInt(cols.trim());</span>
+<span class="nc" id="L126">                int r = Integer.parseInt(rows.trim());</span>
+<span class="nc bnc" id="L127" title="All 4 branches missed.">                if (c &gt; 0 &amp;&amp; r &gt; 0) return new TerminalSize(c, r);</span>
+            }
+<span class="pc" id="L129">        } catch (NumberFormatException ignored) {}</span>
+<span class="fc" id="L130">        return null;</span>
+    }
+
+    public static boolean isWindows() {
+<span class="fc" id="L134">        return System.getProperty(&quot;os.name&quot;, &quot;&quot;).toLowerCase().contains(&quot;win&quot;);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.10.202304240956</span></div></body></html>

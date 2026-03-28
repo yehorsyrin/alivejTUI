@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="uk"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>DebugOverlay.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">AliveJTUI</a> &gt; <a href="index.source.html" class="el_package">io.alive.tui.debug</a> &gt; <span class="el_source">DebugOverlay.java</span></div><h1>DebugOverlay.java</h1><pre class="source lang-java linenums">package io.alive.tui.debug;
+
+import io.alive.tui.core.Node;
+import io.alive.tui.node.TextNode;
+import io.alive.tui.node.VBoxNode;
+import io.alive.tui.style.Color;
+import io.alive.tui.style.Style;
+
+/**
+ * Optional HUD overlay showing render stats, node count, and memory usage.
+ *
+ * &lt;p&gt;Builds a lightweight {@link Node} subtree that can be pushed as an overlay:
+ *
+ * &lt;pre&gt;{@code
+ * AliveJTUI.pushOverlay(DebugOverlay.build(renderCount, nodeCount));
+ * }&lt;/pre&gt;
+ *
+ * @author Jarvis (AI)
+ */
+public final class DebugOverlay {
+
+<span class="nc" id="L22">    private static final Style OVERLAY_STYLE = Style.DEFAULT</span>
+<span class="nc" id="L23">            .withForeground(Color.BRIGHT_GREEN)</span>
+<span class="nc" id="L24">            .withBold(true);</span>
+
+    private DebugOverlay() {}
+
+    /**
+     * Builds a debug HUD node displaying the given stats.
+     *
+     * @param renderCount  total number of renders since application start
+     * @param nodeCount    number of nodes in the current tree
+     * @return a node ready to be pushed as an overlay
+     */
+    public static Node build(long renderCount, int nodeCount) {
+<span class="nc" id="L36">        Runtime rt = Runtime.getRuntime();</span>
+<span class="nc" id="L37">        long usedMb  = (rt.totalMemory() - rt.freeMemory()) / (1024 * 1024);</span>
+<span class="nc" id="L38">        long totalMb = rt.totalMemory() / (1024 * 1024);</span>
+
+<span class="nc" id="L40">        VBoxNode hud = new VBoxNode(0);</span>
+<span class="nc" id="L41">        hud.addChild(new TextNode(</span>
+<span class="nc" id="L42">                String.format(&quot;renders: %d  nodes: %d&quot;, renderCount, nodeCount),</span>
+                OVERLAY_STYLE));
+<span class="nc" id="L44">        hud.addChild(new TextNode(</span>
+<span class="nc" id="L45">                String.format(&quot;mem: %dMB / %dMB&quot;, usedMb, totalMb),</span>
+                OVERLAY_STYLE));
+<span class="nc" id="L47">        return hud;</span>
+    }
+
+    /**
+     * Counts the total number of nodes in the given tree (depth-first).
+     *
+     * @param root root node; {@code null} returns 0
+     * @return total node count
+     */
+    public static int countNodes(Node root) {
+<span class="nc bnc" id="L57" title="All 2 branches missed.">        if (root == null) return 0;</span>
+<span class="nc" id="L58">        int count = 1;</span>
+<span class="nc bnc" id="L59" title="All 2 branches missed.">        for (Node child : root.getChildren()) count += countNodes(child);</span>
+<span class="nc" id="L60">        return count;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.10.202304240956</span></div></body></html>

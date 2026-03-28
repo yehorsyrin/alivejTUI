@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="uk"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>StyleSheet.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">AliveJTUI</a> &gt; <a href="index.source.html" class="el_package">io.alive.tui.style</a> &gt; <span class="el_source">StyleSheet.java</span></div><h1>StyleSheet.java</h1><pre class="source lang-java linenums">package io.alive.tui.style;
+
+import io.alive.tui.core.Node;
+
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * A CSS-like style sheet that maps {@link Selector}s to {@link Style}s.
+ *
+ * &lt;p&gt;Rules are evaluated in order of insertion. When multiple selectors match the same
+ * node, their styles are merged (later rules override earlier ones).
+ *
+ * &lt;pre&gt;{@code
+ * StyleSheet sheet = new StyleSheet()
+ *     .add(Selector.byClass(&quot;muted&quot;), Style.DEFAULT.withDim(true))
+ *     .add(Selector.byId(&quot;title&quot;),   Style.DEFAULT.withBold(true).withForeground(Color.CYAN));
+ *
+ * sheet.applyToTree(root);   // walks the tree and calls node.setComputedStyle(...)
+ * }&lt;/pre&gt;
+ *
+ * @author Jarvis (AI)
+ */
+<span class="fc" id="L24">public final class StyleSheet {</span>
+
+<span class="fc" id="L26">    private record Rule(Selector selector, Style style) {}</span>
+
+<span class="fc" id="L28">    private final List&lt;Rule&gt; rules = new ArrayList&lt;&gt;();</span>
+
+    /**
+     * Adds a rule mapping {@code selector} → {@code style}.
+     * Returns {@code this} for fluent chaining.
+     *
+     * @param selector the selector; must not be {@code null}
+     * @param style    the style to apply; must not be {@code null}
+     */
+    public StyleSheet add(Selector selector, Style style) {
+<span class="fc bfc" id="L38" title="All 2 branches covered.">        if (selector == null) throw new IllegalArgumentException(&quot;selector must not be null&quot;);</span>
+<span class="fc bfc" id="L39" title="All 2 branches covered.">        if (style    == null) throw new IllegalArgumentException(&quot;style must not be null&quot;);</span>
+<span class="fc" id="L40">        rules.add(new Rule(selector, style));</span>
+<span class="fc" id="L41">        return this;</span>
+    }
+
+    /**
+     * Resolves the merged {@link Style} for the given node by applying all matching rules
+     * in insertion order. Later rules override earlier ones.
+     *
+     * @param node the node to evaluate; must not be {@code null}
+     * @return the merged style, or {@link Style#DEFAULT} if no rules match
+     */
+    public Style resolve(Node node) {
+<span class="fc bfc" id="L52" title="All 2 branches covered.">        if (node == null) throw new IllegalArgumentException(&quot;node must not be null&quot;);</span>
+<span class="fc" id="L53">        Style result = null;</span>
+<span class="fc bfc" id="L54" title="All 2 branches covered.">        for (Rule rule : rules) {</span>
+<span class="fc bfc" id="L55" title="All 2 branches covered.">            if (rule.selector().matches(node)) {</span>
+<span class="fc bfc" id="L56" title="All 2 branches covered.">                result = result == null ? rule.style() : merge(result, rule.style());</span>
+            }
+<span class="fc" id="L58">        }</span>
+<span class="fc bfc" id="L59" title="All 2 branches covered.">        return result != null ? result : Style.DEFAULT;</span>
+    }
+
+    /**
+     * Walks the entire node tree depth-first and stores the resolved style on each node
+     * via {@link Node#setComputedStyle(Style)}.
+     *
+     * &lt;p&gt;Nodes with no matching rules receive {@code null} (the computed style is not set).
+     *
+     * @param root the root of the tree to style; {@code null} is a no-op
+     */
+    public void applyToTree(Node root) {
+<span class="fc bfc" id="L71" title="All 2 branches covered.">        if (root == null) return;</span>
+<span class="fc" id="L72">        boolean hasMatch = false;</span>
+<span class="fc bfc" id="L73" title="All 2 branches covered.">        for (Rule rule : rules) {</span>
+<span class="fc bfc" id="L74" title="All 2 branches covered.">            if (rule.selector().matches(root)) { hasMatch = true; break; }</span>
+<span class="fc" id="L75">        }</span>
+<span class="fc bfc" id="L76" title="All 2 branches covered.">        if (hasMatch) root.setComputedStyle(resolve(root));</span>
+<span class="fc bfc" id="L77" title="All 2 branches covered.">        for (Node child : root.getChildren()) applyToTree(child);</span>
+<span class="fc" id="L78">    }</span>
+
+    /** Returns the number of rules registered in this style sheet. */
+    public int ruleCount() {
+<span class="fc" id="L82">        return rules.size();</span>
+    }
+
+    /**
+     * Merges two styles: fields from {@code override} take precedence over {@code base}
+     * for non-default (non-null, non-false) values.
+     */
+    private static Style merge(Style base, Style override) {
+<span class="fc" id="L90">        Style result = base;</span>
+<span class="pc bpc" id="L91" title="1 of 2 branches missed.">        if (override.getForeground() != null)  result = result.withForeground(override.getForeground());</span>
+<span class="pc bpc" id="L92" title="1 of 2 branches missed.">        if (override.getBackground() != null)  result = result.withBackground(override.getBackground());</span>
+<span class="pc bpc" id="L93" title="1 of 2 branches missed.">        if (override.isBold())                 result = result.withBold(true);</span>
+<span class="pc bpc" id="L94" title="1 of 2 branches missed.">        if (override.isItalic())               result = result.withItalic(true);</span>
+<span class="pc bpc" id="L95" title="1 of 2 branches missed.">        if (override.isUnderline())            result = result.withUnderline(true);</span>
+<span class="pc bpc" id="L96" title="1 of 2 branches missed.">        if (override.isDim())                  result = result.withDim(true);</span>
+<span class="pc bpc" id="L97" title="1 of 2 branches missed.">        if (override.isStrikethrough())        result = result.withStrikethrough(true);</span>
+<span class="fc" id="L98">        return result;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.10.202304240956</span></div></body></html>

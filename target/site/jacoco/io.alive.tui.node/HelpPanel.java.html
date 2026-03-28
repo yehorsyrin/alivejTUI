@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="uk"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>HelpPanel.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">AliveJTUI</a> &gt; <a href="index.source.html" class="el_package">io.alive.tui.node</a> &gt; <span class="el_source">HelpPanel.java</span></div><h1>HelpPanel.java</h1><pre class="source lang-java linenums">package io.alive.tui.node;
+
+import io.alive.tui.event.EventBus;
+import io.alive.tui.event.KeyType;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+/**
+ * Factory for {@link HelpPanelNode}.
+ *
+ * &lt;pre&gt;{@code
+ * // Simple construction
+ * HelpPanel.of(
+ *     new KeyBinding(&quot;↑/↓&quot;, &quot;navigate&quot;),
+ *     new KeyBinding(&quot;ESC&quot;, &quot;quit&quot;)
+ * )
+ *
+ * // Derived from an EventBus
+ * HelpPanel.forBus(bus, Map.of(KeyType.ESCAPE, &quot;quit&quot;, KeyType.ENTER, &quot;confirm&quot;))
+ * }&lt;/pre&gt;
+ *
+ * @author Jarvis (AI)
+ */
+public final class HelpPanel {
+
+    private HelpPanel() {}
+
+    /**
+     * Creates a {@link HelpPanelNode} from a varargs array of {@link KeyBinding} entries.
+     *
+     * @param bindings the keybindings to display
+     * @return a new {@code HelpPanelNode}
+     */
+    public static HelpPanelNode of(KeyBinding... bindings) {
+<span class="pc bpc" id="L39" title="1 of 2 branches missed.">        return new HelpPanelNode(bindings == null ? List.of() : Arrays.asList(bindings));</span>
+    }
+
+    /**
+     * Creates a {@link HelpPanelNode} from a list of {@link KeyBinding} entries.
+     *
+     * @param bindings the keybindings to display
+     * @return a new {@code HelpPanelNode}
+     */
+    public static HelpPanelNode of(List&lt;KeyBinding&gt; bindings) {
+<span class="fc" id="L49">        return new HelpPanelNode(bindings);</span>
+    }
+
+    /**
+     * Creates a {@link HelpPanelNode} by inspecting the keys registered in the given
+     * {@link EventBus} and mapping them to human-readable descriptions.
+     *
+     * &lt;p&gt;Only keys present in {@code descriptions} are included; keys registered on the bus
+     * but absent from the map are silently skipped.
+     *
+     * @param bus          the event bus to introspect
+     * @param descriptions mapping from {@link KeyType} to description string
+     * @return a new {@code HelpPanelNode}
+     */
+    public static HelpPanelNode forBus(EventBus bus, Map&lt;KeyType, String&gt; descriptions) {
+<span class="pc bpc" id="L64" title="1 of 4 branches missed.">        if (bus == null || descriptions == null) {</span>
+<span class="fc" id="L65">            return new HelpPanelNode(List.of());</span>
+        }
+<span class="fc" id="L67">        Set&lt;KeyType&gt; registered = bus.getRegisteredKeys();</span>
+<span class="fc" id="L68">        List&lt;KeyBinding&gt; bindings = registered.stream()</span>
+<span class="fc" id="L69">                .filter(descriptions::containsKey)</span>
+<span class="fc" id="L70">                .map(k -&gt; new KeyBinding(k.name(), descriptions.get(k)))</span>
+<span class="fc" id="L71">                .collect(Collectors.toList());</span>
+<span class="fc" id="L72">        return new HelpPanelNode(bindings);</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.10.202304240956</span></div></body></html>

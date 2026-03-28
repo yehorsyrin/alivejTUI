@@ -1,0 +1,263 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="uk"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>NativeBackend.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">AliveJTUI</a> &gt; <a href="index.source.html" class="el_package">io.alive.tui.nativeio.backend</a> &gt; <span class="el_source">NativeBackend.java</span></div><h1>NativeBackend.java</h1><pre class="source lang-java linenums">package io.alive.tui.nativeio.backend;
+
+import io.alive.tui.backend.TerminalBackend;
+import io.alive.tui.backend.TerminalRenderException;
+import io.alive.tui.event.KeyEvent;
+import io.alive.tui.event.KeyType;
+import io.alive.tui.nativeio.input.AnsiKeyDecoder;
+import io.alive.tui.nativeio.raw.WindowsRawMode;
+import io.alive.tui.nativeio.raw.WindowsVtOutput;
+import io.alive.tui.nativeio.size.TerminalSize;
+import io.alive.tui.nativeio.size.TerminalSizeDetector;
+import io.alive.tui.style.Style;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+
+/**
+ * Native terminal backend — replaces {@code LanternaBackend}.
+ *
+ * &lt;p&gt;Uses only JDK standard I/O + JNA Win32 bindings.
+ * No Lanterna dependency required.
+ *
+ * &lt;p&gt;Lifecycle:
+ * &lt;ol&gt;
+ *   &lt;li&gt;{@link #init()}: enable VT output (Windows), raw mode, alternate screen, hide cursor&lt;/li&gt;
+ *   &lt;li&gt;Normal rendering / input loop&lt;/li&gt;
+ *   &lt;li&gt;{@link #shutdown()}: restore terminal, main screen, show cursor&lt;/li&gt;
+ * &lt;/ol&gt;
+ *
+ * &lt;p&gt;Use {@link #create()} for automatic platform detection, or
+ * {@link #createWindows()} / {@link #createPosix()} explicitly.
+ *
+ * @author Jarvis (AI)
+ */
+public final class NativeBackend implements TerminalBackend {
+
+    private final OutputStream out;
+    private final InputStream  in;
+    private final AnsiWriter   writer;
+    private final AnsiKeyDecoder decoder;
+
+<span class="fc" id="L43">    private int width  = 80;</span>
+<span class="fc" id="L44">    private int height = 24;</span>
+
+    private Runnable resizeListener;
+    private TerminalSize lastKnownSize;
+
+    /**
+     * Creates a NativeBackend using the given streams.
+     *
+     * @param out terminal output stream
+     * @param in  terminal input stream (should be in raw mode after {@link #init()})
+     */
+<span class="fc" id="L55">    public NativeBackend(OutputStream out, InputStream in) {</span>
+<span class="fc bfc" id="L56" title="All 2 branches covered.">        if (out == null) throw new IllegalArgumentException(&quot;out must not be null&quot;);</span>
+<span class="fc bfc" id="L57" title="All 2 branches covered.">        if (in  == null) throw new IllegalArgumentException(&quot;in must not be null&quot;);</span>
+<span class="fc" id="L58">        this.out     = out;</span>
+<span class="fc" id="L59">        this.in      = in;</span>
+<span class="fc" id="L60">        this.writer  = new AnsiWriter(out);</span>
+<span class="fc" id="L61">        this.decoder = AnsiKeyDecoder.create();</span>
+<span class="fc" id="L62">    }</span>
+
+    /**
+     * Auto-detects the platform and returns the appropriate backend instance
+     * using {@link System#out} and {@link System#in}.
+     */
+    public static NativeBackend create() {
+<span class="fc" id="L69">        return new NativeBackend(System.out, System.in);</span>
+    }
+
+    /** Windows-specific factory (same as {@link #create()} but explicit). */
+    public static NativeBackend createWindows() {
+<span class="fc" id="L74">        return new NativeBackend(System.out, System.in);</span>
+    }
+
+    /** POSIX-specific factory (same as {@link #create()} on non-Windows). */
+    public static NativeBackend createPosix() {
+<span class="nc" id="L79">        return new NativeBackend(System.out, System.in);</span>
+    }
+
+    // --- TerminalBackend ---
+
+    @Override
+    public void init() {
+        try {
+            // 1. Enable VT processing on Windows stdout (no-op on POSIX)
+<span class="fc" id="L88">            WindowsVtOutput.enable();</span>
+
+            // 2. Switch stdin to raw mode
+<span class="fc" id="L91">            WindowsRawMode.enable();</span>
+
+            // 3. Switch to alternate screen buffer
+<span class="fc" id="L94">            writer.alternateScreenOn();</span>
+
+            // 4. Hide cursor
+<span class="fc" id="L97">            writer.hideCursor();</span>
+
+            // 5. Detect terminal size
+<span class="fc" id="L100">            TerminalSize sz = TerminalSizeDetector.detect();</span>
+<span class="fc" id="L101">            width  = sz.cols();</span>
+<span class="fc" id="L102">            height = sz.rows();</span>
+<span class="fc" id="L103">            lastKnownSize = sz;</span>
+
+<span class="fc" id="L105">            writer.flush();</span>
+<span class="nc" id="L106">        } catch (IOException e) {</span>
+<span class="nc" id="L107">            throw new TerminalRenderException(&quot;NativeBackend.init() failed&quot;, e);</span>
+<span class="fc" id="L108">        }</span>
+<span class="fc" id="L109">    }</span>
+
+    @Override
+    public void shutdown() {
+        try {
+<span class="fc" id="L114">            writer.showCursor();</span>
+<span class="fc" id="L115">            writer.alternateScreenOff();</span>
+<span class="fc" id="L116">            writer.resetStyle();</span>
+<span class="fc" id="L117">            writer.flush();</span>
+<span class="nc" id="L118">        } catch (IOException ignored) {</span>
+        } finally {
+<span class="fc" id="L120">            WindowsRawMode.disable();</span>
+<span class="fc" id="L121">            WindowsVtOutput.disable();</span>
+        }
+<span class="fc" id="L123">    }</span>
+
+    @Override
+<span class="fc" id="L126">    public int getWidth()  { return width;  }</span>
+
+    @Override
+<span class="fc" id="L129">    public int getHeight() { return height; }</span>
+
+    @Override
+    public void putChar(int col, int row, char c, Style style) {
+        try {
+<span class="fc" id="L134">            writer.putChar(col, row, c, style);</span>
+<span class="nc" id="L135">        } catch (IOException e) {</span>
+<span class="nc" id="L136">            throw new TerminalRenderException(&quot;putChar failed&quot;, e);</span>
+<span class="fc" id="L137">        }</span>
+<span class="fc" id="L138">    }</span>
+
+    @Override
+    public void flush() {
+        try {
+<span class="fc" id="L143">            writer.flush();</span>
+<span class="fc" id="L144">            checkResize();</span>
+<span class="nc" id="L145">        } catch (IOException e) {</span>
+<span class="nc" id="L146">            throw new TerminalRenderException(&quot;flush failed&quot;, e);</span>
+<span class="fc" id="L147">        }</span>
+<span class="fc" id="L148">    }</span>
+
+    @Override
+    public void hideCursor() {
+<span class="pc" id="L152">        try { writer.hideCursor(); } catch (IOException e) {</span>
+<span class="nc" id="L153">            throw new TerminalRenderException(&quot;hideCursor failed&quot;, e);</span>
+<span class="fc" id="L154">        }</span>
+<span class="fc" id="L155">    }</span>
+
+    @Override
+    public void showCursor() {
+<span class="pc" id="L159">        try { writer.showCursor(); } catch (IOException e) {</span>
+<span class="nc" id="L160">            throw new TerminalRenderException(&quot;showCursor failed&quot;, e);</span>
+<span class="fc" id="L161">        }</span>
+<span class="fc" id="L162">    }</span>
+
+    @Override
+    public void setCursor(int col, int row) {
+<span class="pc" id="L166">        try { writer.moveCursor(col, row); writer.showCursor(); } catch (IOException e) {</span>
+<span class="nc" id="L167">            throw new TerminalRenderException(&quot;setCursor failed&quot;, e);</span>
+<span class="fc" id="L168">        }</span>
+<span class="fc" id="L169">    }</span>
+
+    @Override
+    public void clear() {
+<span class="pc" id="L173">        try { writer.clearScreen(); writer.flush(); } catch (IOException e) {</span>
+<span class="nc" id="L174">            throw new TerminalRenderException(&quot;clear failed&quot;, e);</span>
+<span class="fc" id="L175">        }</span>
+<span class="fc" id="L176">    }</span>
+
+    @Override
+    public KeyEvent readKey() throws InterruptedException {
+        try {
+<span class="fc" id="L181">            byte[] seq = readSequence();</span>
+<span class="fc" id="L182">            return decoder.decode(seq);</span>
+<span class="nc" id="L183">        } catch (IOException e) {</span>
+<span class="nc" id="L184">            throw new TerminalRenderException(&quot;readKey failed&quot;, e);</span>
+        }
+    }
+
+    @Override
+    public KeyEvent readKey(long timeoutMs) throws InterruptedException {
+        try {
+<span class="fc" id="L191">            long deadline = System.currentTimeMillis() + timeoutMs;</span>
+<span class="fc bfc" id="L192" title="All 2 branches covered.">            while (System.currentTimeMillis() &lt; deadline) {</span>
+<span class="pc bpc" id="L193" title="1 of 2 branches missed.">                if (in.available() &gt; 0) {</span>
+<span class="nc" id="L194">                    return readKey();</span>
+                }
+<span class="fc" id="L196">                Thread.sleep(5);</span>
+            }
+<span class="fc" id="L198">            return null;</span>
+<span class="nc" id="L199">        } catch (IOException e) {</span>
+<span class="nc" id="L200">            throw new TerminalRenderException(&quot;readKey(timeout) failed&quot;, e);</span>
+        }
+    }
+
+    @Override
+    public void setResizeListener(Runnable onResize) {
+<span class="fc" id="L206">        this.resizeListener = onResize;</span>
+<span class="fc" id="L207">    }</span>
+
+    // --- Input reading ---
+
+    /**
+     * Reads a complete key sequence from the input stream.
+     * For ESC sequences, continues reading bytes until the sequence is complete.
+     */
+    private byte[] readSequence() throws IOException, InterruptedException {
+<span class="fc" id="L216">        int first = in.read();</span>
+<span class="pc bpc" id="L217" title="1 of 2 branches missed.">        if (first == -1) return new byte[]{(byte) KeyType.EOF.ordinal()};</span>
+
+<span class="fc bfc" id="L219" title="All 2 branches covered.">        if (first != 0x1B) {</span>
+            // Plain byte
+<span class="fc" id="L221">            return new byte[]{(byte) first};</span>
+        }
+
+        // ESC sequence — read ahead with a short timeout
+<span class="fc" id="L225">        byte[] buf = new byte[16];</span>
+<span class="fc" id="L226">        buf[0] = 0x1B;</span>
+<span class="fc" id="L227">        int len = 1;</span>
+
+<span class="fc" id="L229">        long deadline = System.currentTimeMillis() + 50;</span>
+<span class="pc bpc" id="L230" title="2 of 4 branches missed.">        while (len &lt; buf.length &amp;&amp; System.currentTimeMillis() &lt; deadline) {</span>
+<span class="pc bpc" id="L231" title="1 of 2 branches missed.">            if (in.available() &lt;= 0) {</span>
+<span class="nc" id="L232">                Thread.sleep(2);</span>
+<span class="nc" id="L233">                continue;</span>
+            }
+<span class="fc" id="L235">            int b = in.read();</span>
+<span class="pc bpc" id="L236" title="1 of 2 branches missed.">            if (b == -1) break;</span>
+<span class="fc" id="L237">            buf[len++] = (byte) b;</span>
+
+            // Check if sequence is complete:
+            // Final byte of CSI is in range 0x40–0x7E (@ to ~)
+<span class="fc" id="L241">            byte last = buf[len - 1];</span>
+<span class="pc bpc" id="L242" title="2 of 6 branches missed.">            if (len &gt;= 3 &amp;&amp; last &gt;= 0x40 &amp;&amp; last &lt;= 0x7E) break;</span>
+            // SS3 is always 3 bytes
+<span class="pc bpc" id="L244" title="3 of 4 branches missed.">            if (len == 3 &amp;&amp; buf[1] == 'O') break;</span>
+<span class="fc" id="L245">        }</span>
+
+<span class="fc" id="L247">        byte[] result = new byte[len];</span>
+<span class="fc" id="L248">        System.arraycopy(buf, 0, result, 0, len);</span>
+<span class="fc" id="L249">        return result;</span>
+    }
+
+    // --- Resize detection ---
+
+    private void checkResize() {
+<span class="fc" id="L255">        TerminalSize current = TerminalSizeDetector.detect();</span>
+<span class="pc bpc" id="L256" title="2 of 4 branches missed.">        if (lastKnownSize != null &amp;&amp; current.equals(lastKnownSize)) return;</span>
+<span class="nc" id="L257">        lastKnownSize = current;</span>
+<span class="nc" id="L258">        width  = current.cols();</span>
+<span class="nc" id="L259">        height = current.rows();</span>
+<span class="nc bnc" id="L260" title="All 2 branches missed.">        if (resizeListener != null) resizeListener.run();</span>
+<span class="nc" id="L261">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.10.202304240956</span></div></body></html>

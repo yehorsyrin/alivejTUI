@@ -1,0 +1,209 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="uk"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>EventBus.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">AliveJTUI</a> &gt; <a href="index.source.html" class="el_package">io.alive.tui.event</a> &gt; <span class="el_source">EventBus.java</span></div><h1>EventBus.java</h1><pre class="source lang-java linenums">package io.alive.tui.event;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.EnumMap;
+import java.util.EnumSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.Map;
+import java.util.Set;
+
+/**
+ * Central event bus for keyboard events.
+ * Handlers are registered per {@link KeyType} and dispatched on the event loop thread.
+ *
+ * &lt;p&gt;All operations are single-threaded (event loop).
+ *
+ * &lt;p&gt;Handlers are invoked in registration order. A {@link KeyHandler} that returns {@code true}
+ * consumes the event — subsequent handlers in the chain will not be called.
+ * Use {@link #register(KeyType, Runnable)} for non-consuming handlers (always returns {@code false}).
+ *
+ * @author Jarvis (AI)
+ */
+<span class="fc" id="L24">public class EventBus {</span>
+
+    /** Primary handler storage keyed by KeyType. */
+<span class="fc" id="L27">    private final Map&lt;KeyType, Set&lt;KeyHandler&gt;&gt; handlers = new EnumMap&lt;&gt;(KeyType.class);</span>
+
+    /**
+     * Tracks Runnable → KeyHandler wrappers so that registering the same Runnable twice
+     * de-duplicates, and unregister-by-Runnable works correctly.
+     */
+<span class="fc" id="L33">    private final Map&lt;KeyType, Map&lt;Runnable, KeyHandler&gt;&gt; runnableWrappers = new EnumMap&lt;&gt;(KeyType.class);</span>
+
+<span class="fc" id="L35">    private final Set&lt;CharacterHandler&gt; characterHandlers = new LinkedHashSet&lt;&gt;();</span>
+<span class="fc" id="L36">    private final Set&lt;MouseHandler&gt;     mouseHandlers     = new LinkedHashSet&lt;&gt;();</span>
+
+    /**
+     * Register a non-consuming handler for a specific non-character key.
+     *
+     * &lt;p&gt;Duplicate registrations of the same handler reference are silently ignored.
+     * The handler never consumes the event — all subsequent handlers also fire.
+     */
+    public void register(KeyType key, Runnable handler) {
+<span class="fc bfc" id="L45" title="All 4 branches covered.">        if (key == null || handler == null) return;</span>
+<span class="fc" id="L46">        Map&lt;Runnable, KeyHandler&gt; wrappers = runnableWrappers.computeIfAbsent(key, k -&gt; new LinkedHashMap&lt;&gt;());</span>
+<span class="fc bfc" id="L47" title="All 2 branches covered.">        if (wrappers.containsKey(handler)) return;  // already registered — ignore duplicate</span>
+<span class="fc" id="L48">        KeyHandler wrapper = () -&gt; { handler.run(); return false; };</span>
+<span class="fc" id="L49">        wrappers.put(handler, wrapper);</span>
+<span class="fc" id="L50">        handlers.computeIfAbsent(key, k -&gt; new LinkedHashSet&lt;&gt;()).add(wrapper);</span>
+<span class="fc" id="L51">    }</span>
+
+    /**
+     * Register a consumable handler for a specific non-character key.
+     *
+     * &lt;p&gt;Duplicate registrations of the same handler reference are silently ignored.
+     * Return {@code true} from the handler to stop propagation.
+     */
+    public void register(KeyType key, KeyHandler handler) {
+<span class="pc bpc" id="L60" title="1 of 4 branches missed.">        if (key == null || handler == null) return;</span>
+<span class="fc" id="L61">        handlers.computeIfAbsent(key, k -&gt; new LinkedHashSet&lt;&gt;()).add(handler);</span>
+<span class="fc" id="L62">    }</span>
+
+    /**
+     * Register a handler for character keys (any printable character).
+     *
+     * &lt;p&gt;Duplicate registrations of the same handler reference are silently ignored.
+     */
+    public void registerCharacter(CharacterHandler handler) {
+<span class="fc bfc" id="L70" title="All 2 branches covered.">        if (handler != null) characterHandlers.add(handler);</span>
+<span class="fc" id="L71">    }</span>
+
+    /**
+     * Unregister a non-consuming handler previously registered via {@link #register(KeyType, Runnable)}.
+     */
+    public void unregister(KeyType key, Runnable handler) {
+<span class="pc bpc" id="L77" title="2 of 4 branches missed.">        if (key == null || handler == null) return;</span>
+<span class="fc" id="L78">        Map&lt;Runnable, KeyHandler&gt; wrappers = runnableWrappers.get(key);</span>
+<span class="pc bpc" id="L79" title="1 of 2 branches missed.">        if (wrappers == null) return;</span>
+<span class="fc" id="L80">        KeyHandler wrapper = wrappers.remove(handler);</span>
+<span class="pc bpc" id="L81" title="1 of 2 branches missed.">        if (wrapper != null) {</span>
+<span class="fc" id="L82">            Set&lt;KeyHandler&gt; set = handlers.get(key);</span>
+<span class="pc bpc" id="L83" title="1 of 2 branches missed.">            if (set != null) set.remove(wrapper);</span>
+        }
+<span class="fc" id="L85">    }</span>
+
+    /**
+     * Unregister a consumable handler previously registered via {@link #register(KeyType, KeyHandler)}.
+     */
+    public void unregister(KeyType key, KeyHandler handler) {
+<span class="pc bpc" id="L91" title="2 of 4 branches missed.">        if (key == null || handler == null) return;</span>
+<span class="fc" id="L92">        Set&lt;KeyHandler&gt; set = handlers.get(key);</span>
+<span class="pc bpc" id="L93" title="1 of 2 branches missed.">        if (set != null) set.remove(handler);</span>
+<span class="fc" id="L94">    }</span>
+
+    /**
+     * Unregister a character handler.
+     */
+    public void unregisterCharacter(CharacterHandler handler) {
+<span class="fc" id="L100">        characterHandlers.remove(handler);</span>
+<span class="fc" id="L101">    }</span>
+
+    // --- Mouse handlers ---
+
+    /**
+     * Register a mouse event handler.
+     *
+     * &lt;p&gt;Duplicate registrations of the same handler reference are silently ignored.
+     * Return {@code true} from the handler to stop propagation.
+     */
+    public void registerMouse(MouseHandler handler) {
+<span class="pc bpc" id="L112" title="1 of 2 branches missed.">        if (handler != null) mouseHandlers.add(handler);</span>
+<span class="fc" id="L113">    }</span>
+
+    /**
+     * Unregister a mouse event handler previously registered via {@link #registerMouse}.
+     */
+    public void unregisterMouse(MouseHandler handler) {
+<span class="fc" id="L119">        mouseHandlers.remove(handler);</span>
+<span class="fc" id="L120">    }</span>
+
+    /**
+     * Dispatch a mouse event to all registered {@link MouseHandler}s.
+     *
+     * &lt;p&gt;Handlers are invoked in registration order. A handler that returns {@code true}
+     * consumes the event — subsequent handlers will not be called.
+     */
+    public void dispatchMouse(MouseEvent event) {
+<span class="fc bfc" id="L129" title="All 2 branches covered.">        if (event == null) return;</span>
+<span class="fc bfc" id="L130" title="All 2 branches covered.">        for (MouseHandler h : new ArrayList&lt;&gt;(mouseHandlers)) {</span>
+<span class="fc bfc" id="L131" title="All 2 branches covered.">            if (h.handle(event)) break;</span>
+<span class="fc" id="L132">        }</span>
+<span class="fc" id="L133">    }</span>
+
+    /**
+     * Dispatch an event to registered handlers.
+     *
+     * &lt;p&gt;For non-character keys, handlers are called in registration order.
+     * Dispatch stops at the first handler that returns {@code true} (consumed).
+     */
+    public void dispatch(KeyEvent event) {
+<span class="fc bfc" id="L142" title="All 2 branches covered.">        if (event == null) return;</span>
+
+<span class="fc bfc" id="L144" title="All 2 branches covered.">        if (event.type() == KeyType.CHARACTER) {</span>
+<span class="fc bfc" id="L145" title="All 2 branches covered.">            for (CharacterHandler h : new ArrayList&lt;&gt;(characterHandlers)) {</span>
+<span class="fc" id="L146">                h.handle(event.character());</span>
+<span class="fc" id="L147">            }</span>
+<span class="pc bpc" id="L148" title="1 of 4 branches missed.">        } else if (event.type() == KeyType.MOUSE &amp;&amp; event.mouseEvent() != null) {</span>
+<span class="fc" id="L149">            dispatchMouse(event.mouseEvent());</span>
+        } else {
+<span class="fc" id="L151">            Set&lt;KeyHandler&gt; set = handlers.get(event.type());</span>
+<span class="fc bfc" id="L152" title="All 2 branches covered.">            if (set != null) {</span>
+<span class="fc bfc" id="L153" title="All 2 branches covered.">                for (KeyHandler h : new ArrayList&lt;&gt;(set)) {</span>
+<span class="fc bfc" id="L154" title="All 2 branches covered.">                    if (h.handle()) break;  // consumed — stop propagation</span>
+<span class="fc" id="L155">                }</span>
+            }
+        }
+<span class="fc" id="L158">    }</span>
+
+    /**
+     * Remove all registered handlers.
+     */
+    public void clear() {
+<span class="fc" id="L164">        handlers.clear();</span>
+<span class="fc" id="L165">        runnableWrappers.clear();</span>
+<span class="fc" id="L166">        characterHandlers.clear();</span>
+<span class="fc" id="L167">        mouseHandlers.clear();</span>
+<span class="fc" id="L168">    }</span>
+
+    /**
+     * Returns an unmodifiable set of all {@link KeyType} values that currently have at least
+     * one handler registered (via {@link #register(KeyType, Runnable)} or
+     * {@link #register(KeyType, KeyHandler)}).
+     *
+     * &lt;p&gt;The {@link KeyType#CHARACTER} key is never included — character handlers are tracked
+     * separately via {@link #registerCharacter(CharacterHandler)}.
+     *
+     * @return unmodifiable set of registered key types
+     */
+    public Set&lt;KeyType&gt; getRegisteredKeys() {
+<span class="fc bfc" id="L181" title="All 2 branches covered.">        if (handlers.isEmpty()) return Collections.emptySet();</span>
+<span class="fc" id="L182">        Set&lt;KeyType&gt; keys = EnumSet.noneOf(KeyType.class);</span>
+<span class="fc bfc" id="L183" title="All 2 branches covered.">        for (Map.Entry&lt;KeyType, Set&lt;KeyHandler&gt;&gt; entry : handlers.entrySet()) {</span>
+<span class="fc bfc" id="L184" title="All 2 branches covered.">            if (!entry.getValue().isEmpty()) {</span>
+<span class="fc" id="L185">                keys.add(entry.getKey());</span>
+            }
+<span class="fc" id="L187">        }</span>
+<span class="fc" id="L188">        return Collections.unmodifiableSet(keys);</span>
+    }
+
+    public int handlerCount(KeyType key) {
+<span class="fc" id="L192">        Set&lt;KeyHandler&gt; set = handlers.get(key);</span>
+<span class="fc bfc" id="L193" title="All 2 branches covered.">        return set == null ? 0 : set.size();</span>
+    }
+
+    public int characterHandlerCount() {
+<span class="nc" id="L197">        return characterHandlers.size();</span>
+    }
+
+    public int mouseHandlerCount() {
+<span class="fc" id="L201">        return mouseHandlers.size();</span>
+    }
+
+    @FunctionalInterface
+    public interface CharacterHandler {
+        void handle(char c);
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.10.202304240956</span></div></body></html>

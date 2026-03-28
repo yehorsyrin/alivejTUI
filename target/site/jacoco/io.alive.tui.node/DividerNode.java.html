@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="uk"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>DividerNode.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">AliveJTUI</a> &gt; <a href="index.source.html" class="el_package">io.alive.tui.node</a> &gt; <span class="el_source">DividerNode.java</span></div><h1>DividerNode.java</h1><pre class="source lang-java linenums">package io.alive.tui.node;
+
+import io.alive.tui.core.Node;
+import io.alive.tui.style.Style;
+
+/**
+ * A horizontal or vertical separator line.
+ *
+ * @author Jarvis (AI)
+ */
+public class DividerNode extends Node {
+
+<span class="fc" id="L13">    public enum Orientation { HORIZONTAL, VERTICAL }</span>
+
+    public static final char DEFAULT_HORIZONTAL_CHAR = '─';
+    public static final char DEFAULT_VERTICAL_CHAR   = '│';
+
+    private final Orientation orientation;
+    private char character;
+    private Style style;
+
+<span class="fc" id="L22">    public DividerNode(Orientation orientation) {</span>
+<span class="fc" id="L23">        this.orientation = orientation;</span>
+<span class="fc bfc" id="L24" title="All 2 branches covered.">        this.character = orientation == Orientation.HORIZONTAL</span>
+<span class="fc" id="L25">            ? DEFAULT_HORIZONTAL_CHAR</span>
+<span class="fc" id="L26">            : DEFAULT_VERTICAL_CHAR;</span>
+<span class="fc" id="L27">        this.style = Style.DEFAULT;</span>
+<span class="fc" id="L28">    }</span>
+
+<span class="fc" id="L30">    public Orientation getOrientation() { return orientation; }</span>
+<span class="fc" id="L31">    public char getCharacter() { return character; }</span>
+<span class="fc" id="L32">    public Style getStyle() { return style; }</span>
+
+    public DividerNode character(char character) {
+<span class="fc" id="L35">        this.character = character;</span>
+<span class="fc" id="L36">        return this;</span>
+    }
+
+    public DividerNode style(Style style) {
+<span class="nc" id="L40">        this.style = style;</span>
+<span class="nc" id="L41">        return this;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.10.202304240956</span></div></body></html>

@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="uk"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>MarkdownParser.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">AliveJTUI</a> &gt; <a href="index.source.html" class="el_package">io.alive.tui.node</a> &gt; <span class="el_source">MarkdownParser.java</span></div><h1>MarkdownParser.java</h1><pre class="source lang-java linenums">package io.alive.tui.node;
+
+import io.alive.tui.style.Style;
+
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * Minimal inline-markdown parser that converts a marked-up string into a list of
+ * {@link StyledSegment}s, each carrying its own {@link Style}.
+ *
+ * &lt;h2&gt;Supported syntax&lt;/h2&gt;
+ * &lt;ul&gt;
+ *   &lt;li&gt;{@code **text**} — bold&lt;/li&gt;
+ *   &lt;li&gt;{@code *text*}   — italic&lt;/li&gt;
+ *   &lt;li&gt;{@code `text`}   — code (bold + underline)&lt;/li&gt;
+ *   &lt;li&gt;{@code ~~text~~} — strikethrough&lt;/li&gt;
+ * &lt;/ul&gt;
+ *
+ * &lt;p&gt;Markers without a matching close are emitted as plain text.
+ * Nesting is not supported.
+ *
+ * @author Jarvis (AI)
+ */
+public final class MarkdownParser {
+
+    private MarkdownParser() {}
+
+    /**
+     * Parses {@code input} and returns a list of styled segments.
+     * The {@code baseStyle} is applied to unstyled runs and merged with span styles.
+     *
+     * @param input     the markdown-annotated string
+     * @param baseStyle the base style for unstyled text
+     * @return ordered list of {@link StyledSegment}s
+     */
+    public static List&lt;StyledSegment&gt; parse(String input, Style baseStyle) {
+<span class="fc bfc" id="L38" title="All 4 branches covered.">        if (input == null || input.isEmpty()) return List.of();</span>
+<span class="pc bpc" id="L39" title="1 of 2 branches missed.">        if (baseStyle == null) baseStyle = Style.DEFAULT;</span>
+
+<span class="fc" id="L41">        List&lt;StyledSegment&gt; result = new ArrayList&lt;&gt;();</span>
+<span class="fc" id="L42">        StringBuilder plain = new StringBuilder();</span>
+<span class="fc" id="L43">        int i = 0;</span>
+<span class="fc" id="L44">        int len = input.length();</span>
+
+<span class="fc bfc" id="L46" title="All 2 branches covered.">        while (i &lt; len) {</span>
+            // ** bold **
+<span class="fc bfc" id="L48" title="All 6 branches covered.">            if (i + 1 &lt; len &amp;&amp; input.charAt(i) == '*' &amp;&amp; input.charAt(i + 1) == '*') {</span>
+<span class="fc" id="L49">                int end = input.indexOf(&quot;**&quot;, i + 2);</span>
+<span class="fc bfc" id="L50" title="All 2 branches covered.">                if (end &gt;= 0) {</span>
+<span class="fc" id="L51">                    flushPlain(plain, baseStyle, result);</span>
+<span class="fc" id="L52">                    result.add(new StyledSegment(input.substring(i + 2, end),</span>
+<span class="fc" id="L53">                                                 baseStyle.withBold(true)));</span>
+<span class="fc" id="L54">                    i = end + 2;</span>
+<span class="fc" id="L55">                    continue;</span>
+                }
+            }
+            // ~~ strikethrough ~~
+<span class="pc bpc" id="L59" title="1 of 6 branches missed.">            if (i + 1 &lt; len &amp;&amp; input.charAt(i) == '~' &amp;&amp; input.charAt(i + 1) == '~') {</span>
+<span class="fc" id="L60">                int end = input.indexOf(&quot;~~&quot;, i + 2);</span>
+<span class="pc bpc" id="L61" title="1 of 2 branches missed.">                if (end &gt;= 0) {</span>
+<span class="fc" id="L62">                    flushPlain(plain, baseStyle, result);</span>
+<span class="fc" id="L63">                    result.add(new StyledSegment(input.substring(i + 2, end),</span>
+<span class="fc" id="L64">                                                 baseStyle.withStrikethrough(true)));</span>
+<span class="fc" id="L65">                    i = end + 2;</span>
+<span class="fc" id="L66">                    continue;</span>
+                }
+            }
+            // ` code `
+<span class="fc bfc" id="L70" title="All 2 branches covered.">            if (input.charAt(i) == '`') {</span>
+<span class="fc" id="L71">                int end = input.indexOf('`', i + 1);</span>
+<span class="pc bpc" id="L72" title="1 of 2 branches missed.">                if (end &gt;= 0) {</span>
+<span class="fc" id="L73">                    flushPlain(plain, baseStyle, result);</span>
+<span class="fc" id="L74">                    result.add(new StyledSegment(input.substring(i + 1, end),</span>
+<span class="fc" id="L75">                                                 baseStyle.withBold(true).withUnderline(true)));</span>
+<span class="fc" id="L76">                    i = end + 1;</span>
+<span class="fc" id="L77">                    continue;</span>
+                }
+            }
+            // * italic *  (checked after ** to avoid double-consuming)
+            // Require end &gt; i+1 to avoid matching an empty span like the second * of **
+<span class="fc bfc" id="L82" title="All 2 branches covered.">            if (input.charAt(i) == '*') {</span>
+<span class="fc" id="L83">                int end = input.indexOf('*', i + 1);</span>
+<span class="fc bfc" id="L84" title="All 2 branches covered.">                if (end &gt; i + 1) {</span>
+<span class="fc" id="L85">                    flushPlain(plain, baseStyle, result);</span>
+<span class="fc" id="L86">                    result.add(new StyledSegment(input.substring(i + 1, end),</span>
+<span class="fc" id="L87">                                                 baseStyle.withItalic(true)));</span>
+<span class="fc" id="L88">                    i = end + 1;</span>
+<span class="fc" id="L89">                    continue;</span>
+                }
+            }
+            // Plain character
+<span class="fc" id="L93">            plain.append(input.charAt(i++));</span>
+        }
+
+<span class="fc" id="L96">        flushPlain(plain, baseStyle, result);</span>
+<span class="fc" id="L97">        return List.copyOf(result);</span>
+    }
+
+    /** Parses with {@link Style#DEFAULT} as the base style. */
+    public static List&lt;StyledSegment&gt; parse(String input) {
+<span class="fc" id="L102">        return parse(input, Style.DEFAULT);</span>
+    }
+
+    private static void flushPlain(StringBuilder buf, Style style, List&lt;StyledSegment&gt; out) {
+<span class="fc bfc" id="L106" title="All 2 branches covered.">        if (buf.isEmpty()) return;</span>
+<span class="fc" id="L107">        out.add(new StyledSegment(buf.toString(), style));</span>
+<span class="fc" id="L108">        buf.setLength(0);</span>
+<span class="fc" id="L109">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.10.202304240956</span></div></body></html>

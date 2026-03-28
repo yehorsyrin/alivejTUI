@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="uk"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>AsyncTask.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">AliveJTUI</a> &gt; <a href="index.source.html" class="el_package">io.alive.tui.core</a> &gt; <span class="el_source">AsyncTask.java</span></div><h1>AsyncTask.java</h1><pre class="source lang-java linenums">package io.alive.tui.core;
+
+import java.util.concurrent.Callable;
+import java.util.function.Consumer;
+
+/**
+ * A background task whose result is delivered to a callback on the event loop thread.
+ *
+ * &lt;pre&gt;{@code
+ * AliveJTUI.runAsync(AsyncTask.of(
+ *     ()     -&gt; fetchData(),          // runs in background thread
+ *     result -&gt; setState(result),     // called on event loop thread
+ *     ex     -&gt; showError(ex)         // called on error (event loop thread)
+ * ));
+ * }&lt;/pre&gt;
+ *
+ * &lt;p&gt;Use {@link AliveJTUI#runAsync(AsyncTask)} to submit.
+ *
+ * @param &lt;T&gt; type of the result produced by the background task
+ *
+ * @author Jarvis (AI)
+ */
+public final class AsyncTask&lt;T&gt; {
+
+    private final Callable&lt;T&gt;         work;
+    private final Consumer&lt;T&gt;         onSuccess;
+    private final Consumer&lt;Exception&gt; onError;
+
+<span class="fc" id="L29">    private AsyncTask(Callable&lt;T&gt; work, Consumer&lt;T&gt; onSuccess, Consumer&lt;Exception&gt; onError) {</span>
+<span class="fc bfc" id="L30" title="All 2 branches covered.">        if (work      == null) throw new IllegalArgumentException(&quot;work must not be null&quot;);</span>
+<span class="fc bfc" id="L31" title="All 2 branches covered.">        if (onSuccess == null) throw new IllegalArgumentException(&quot;onSuccess must not be null&quot;);</span>
+<span class="fc" id="L32">        this.work      = work;</span>
+<span class="fc" id="L33">        this.onSuccess = onSuccess;</span>
+<span class="fc" id="L34">        this.onError   = onError; // nullable — errors silently ignored when null</span>
+<span class="fc" id="L35">    }</span>
+
+    /**
+     * Creates a task with a success callback; errors are silently ignored.
+     *
+     * @param work      background computation
+     * @param onSuccess callback invoked on the event loop thread with the result
+     */
+    public static &lt;T&gt; AsyncTask&lt;T&gt; of(Callable&lt;T&gt; work, Consumer&lt;T&gt; onSuccess) {
+<span class="fc" id="L44">        return new AsyncTask&lt;&gt;(work, onSuccess, null);</span>
+    }
+
+    /**
+     * Creates a task with both a success and an error callback.
+     *
+     * @param work      background computation
+     * @param onSuccess callback invoked on the event loop thread with the result
+     * @param onError   callback invoked on the event loop thread if the task throws
+     */
+    public static &lt;T&gt; AsyncTask&lt;T&gt; of(Callable&lt;T&gt; work, Consumer&lt;T&gt; onSuccess,
+                                      Consumer&lt;Exception&gt; onError) {
+<span class="fc" id="L56">        return new AsyncTask&lt;&gt;(work, onSuccess, onError);</span>
+    }
+
+    /**
+     * Convenience method equivalent to {@link AliveJTUI#runAsync(AsyncTask)}.
+     * Submits this task to the background executor.
+     */
+    public void run() {
+<span class="fc" id="L64">        AliveJTUI.runAsync(this);</span>
+<span class="fc" id="L65">    }</span>
+
+    // --- Package-private accessors for AliveJTUI ---
+
+<span class="fc" id="L69">    Callable&lt;T&gt;         getWork()      { return work;      }</span>
+<span class="fc" id="L70">    Consumer&lt;T&gt;         getOnSuccess() { return onSuccess; }</span>
+<span class="fc" id="L71">    Consumer&lt;Exception&gt; getOnError()   { return onError;   }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.10.202304240956</span></div></body></html>

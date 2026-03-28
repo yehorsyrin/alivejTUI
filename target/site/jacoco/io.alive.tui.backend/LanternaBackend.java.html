@@ -1,0 +1,268 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="uk"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>LanternaBackend.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">AliveJTUI</a> &gt; <a href="index.source.html" class="el_package">io.alive.tui.backend</a> &gt; <span class="el_source">LanternaBackend.java</span></div><h1>LanternaBackend.java</h1><pre class="source lang-java linenums">package io.alive.tui.backend;
+
+import com.googlecode.lanterna.SGR;
+import com.googlecode.lanterna.TerminalPosition;
+import com.googlecode.lanterna.TerminalSize;
+import com.googlecode.lanterna.TextCharacter;
+import com.googlecode.lanterna.TextColor;
+import com.googlecode.lanterna.input.KeyStroke;
+import com.googlecode.lanterna.input.MouseAction;
+import com.googlecode.lanterna.screen.Screen;
+import com.googlecode.lanterna.screen.TerminalScreen;
+import com.googlecode.lanterna.terminal.DefaultTerminalFactory;
+import com.googlecode.lanterna.terminal.swing.SwingTerminalFrame;
+import com.googlecode.lanterna.terminal.swing.SwingTerminalFontConfiguration;
+import com.googlecode.lanterna.terminal.swing.TerminalEmulatorAutoCloseTrigger;
+import com.googlecode.lanterna.terminal.swing.TerminalEmulatorColorConfiguration;
+import com.googlecode.lanterna.terminal.swing.TerminalEmulatorDeviceConfiguration;
+
+import java.awt.Font;
+
+import io.alive.tui.event.KeyEvent;
+import io.alive.tui.event.KeyType;
+import io.alive.tui.event.MouseEvent;
+import io.alive.tui.event.MouseType;
+import io.alive.tui.style.Color;
+import io.alive.tui.style.Style;
+
+import java.io.IOException;
+import java.util.EnumSet;
+
+/**
+ * Lanterna-based terminal backend implementation.
+ *
+ * &lt;p&gt;Known limitations of Lanterna 3.1.2:
+ * &lt;ul&gt;
+ *   &lt;li&gt;{@code SGR.FAINT} is not available — dim style is silently ignored.&lt;/li&gt;
+ *   &lt;li&gt;{@code showCursor()} cannot set cursor visibility directly; it is a no-op.
+ *       Cursor visibility is controlled by {@link #setCursor(int, int)} (visible)
+ *       and {@link #hideCursor()} (hidden via null position).&lt;/li&gt;
+ * &lt;/ul&gt;
+ *
+ * @author Jarvis (AI)
+ */
+<span class="fc" id="L44">public class LanternaBackend implements TerminalBackend {</span>
+
+    private Screen screen;
+    private Runnable resizeListener;
+
+    @Override
+    public void init() {
+        try {
+<span class="nc" id="L52">            SwingTerminalFontConfiguration fontConfig = SwingTerminalFontConfiguration.newInstance(</span>
+                    new Font(&quot;Consolas&quot;, Font.PLAIN, 16),
+                    new Font(&quot;Courier New&quot;, Font.PLAIN, 16),
+                    new Font(&quot;Monospaced&quot;, Font.PLAIN, 16)
+            );
+<span class="nc" id="L57">            SwingTerminalFrame terminal = new SwingTerminalFrame(&quot;AliveJTUI&quot;,</span>
+                    new TerminalSize(120, 35),
+<span class="nc" id="L59">                    TerminalEmulatorDeviceConfiguration.getDefault(),</span>
+                    fontConfig,
+<span class="nc" id="L61">                    TerminalEmulatorColorConfiguration.getDefault(),</span>
+                    TerminalEmulatorAutoCloseTrigger.CloseOnExitPrivateMode);
+<span class="nc" id="L63">            terminal.setVisible(true);</span>
+<span class="nc" id="L64">            screen = new TerminalScreen(terminal);</span>
+<span class="nc" id="L65">            screen.startScreen();</span>
+<span class="nc" id="L66">            screen.setCursorPosition(null);</span>
+<span class="nc" id="L67">        } catch (IOException e) {</span>
+<span class="nc" id="L68">            throw new TerminalInitException(&quot;Failed to initialize Lanterna terminal&quot;, e);</span>
+<span class="nc" id="L69">        }</span>
+<span class="nc" id="L70">    }</span>
+
+    @Override
+    public void shutdown() {
+        try {
+<span class="nc bnc" id="L75" title="All 2 branches missed.">            if (screen != null) {</span>
+<span class="nc" id="L76">                screen.stopScreen();</span>
+            }
+<span class="nc" id="L78">        } catch (IOException e) {</span>
+<span class="nc" id="L79">            throw new TerminalInitException(&quot;Failed to shutdown Lanterna terminal&quot;, e);</span>
+<span class="nc" id="L80">        }</span>
+<span class="nc" id="L81">    }</span>
+
+    @Override
+    public int getWidth() {
+<span class="nc" id="L85">        requireInitialized();</span>
+<span class="nc" id="L86">        return screen.getTerminalSize().getColumns();</span>
+    }
+
+    @Override
+    public int getHeight() {
+<span class="nc" id="L91">        requireInitialized();</span>
+<span class="nc" id="L92">        return screen.getTerminalSize().getRows();</span>
+    }
+
+    @Override
+    public void putChar(int col, int row, char c, Style style) {
+<span class="nc" id="L97">        requireInitialized();</span>
+<span class="nc" id="L98">        TextColor fg = toTextColor(style.getForeground(), TextColor.ANSI.DEFAULT);</span>
+<span class="nc" id="L99">        TextColor bg = toTextColor(style.getBackground(), TextColor.ANSI.DEFAULT);</span>
+<span class="nc" id="L100">        EnumSet&lt;SGR&gt; sgrs = toSGR(style);</span>
+<span class="nc" id="L101">        TextCharacter tc = new TextCharacter(c, fg, bg, sgrs.toArray(new SGR[0]));</span>
+<span class="nc" id="L102">        screen.setCharacter(col, row, tc);</span>
+<span class="nc" id="L103">    }</span>
+
+    @Override
+    public void flush() {
+<span class="nc" id="L107">        requireInitialized();</span>
+        try {
+<span class="nc" id="L109">            TerminalSize newSize = screen.doResizeIfNecessary();</span>
+<span class="nc bnc" id="L110" title="All 4 branches missed.">            if (newSize != null &amp;&amp; resizeListener != null) {</span>
+<span class="nc" id="L111">                resizeListener.run();</span>
+            }
+<span class="nc" id="L113">            screen.refresh();</span>
+<span class="nc" id="L114">        } catch (IOException e) {</span>
+<span class="nc" id="L115">            throw new TerminalRenderException(&quot;Failed to flush screen&quot;, e);</span>
+<span class="nc" id="L116">        }</span>
+<span class="nc" id="L117">    }</span>
+
+    @Override
+    public void hideCursor() {
+<span class="nc" id="L121">        requireInitialized();</span>
+<span class="nc" id="L122">        screen.setCursorPosition(null);</span>
+<span class="nc" id="L123">    }</span>
+
+    @Override
+    public void showCursor() {
+        // No-op in Lanterna 3.1.2: cursor visibility is controlled via setCursor/hideCursor.
+        // See class-level JavaDoc for details.
+<span class="nc" id="L129">    }</span>
+
+    @Override
+    public void setCursor(int col, int row) {
+<span class="nc" id="L133">        requireInitialized();</span>
+<span class="nc" id="L134">        screen.setCursorPosition(new TerminalPosition(col, row));</span>
+<span class="nc" id="L135">    }</span>
+
+    @Override
+    public void clear() {
+<span class="nc" id="L139">        requireInitialized();</span>
+<span class="nc" id="L140">        screen.clear();</span>
+<span class="nc" id="L141">    }</span>
+
+    @Override
+    public KeyEvent readKey() throws InterruptedException {
+<span class="nc" id="L145">        requireInitialized();</span>
+        try {
+<span class="nc" id="L147">            KeyStroke ks = screen.readInput();</span>
+<span class="nc bnc" id="L148" title="All 2 branches missed.">            if (ks == null) return KeyEvent.of(KeyType.EOF);</span>
+<span class="nc" id="L149">            return toKeyEvent(ks);</span>
+<span class="nc" id="L150">        } catch (IOException e) {</span>
+<span class="nc" id="L151">            throw new TerminalRenderException(&quot;Terminal I/O error while reading input&quot;, e);</span>
+        }
+    }
+
+    @Override
+    public KeyEvent readKey(long timeoutMs) throws InterruptedException {
+<span class="nc" id="L157">        requireInitialized();</span>
+<span class="nc" id="L158">        long deadline = System.nanoTime() + timeoutMs * 1_000_000L;</span>
+        try {
+            while (true) {
+<span class="nc" id="L161">                KeyStroke ks = screen.pollInput();</span>
+<span class="nc bnc" id="L162" title="All 2 branches missed.">                if (ks != null) return toKeyEvent(ks);</span>
+<span class="nc" id="L163">                long remaining = deadline - System.nanoTime();</span>
+<span class="nc bnc" id="L164" title="All 2 branches missed.">                if (remaining &lt;= 0) return null;</span>
+<span class="nc" id="L165">                Thread.sleep(Math.min(10L, remaining / 1_000_000L + 1));</span>
+<span class="nc" id="L166">            }</span>
+<span class="nc" id="L167">        } catch (IOException e) {</span>
+<span class="nc" id="L168">            throw new TerminalRenderException(&quot;Terminal I/O error while reading input&quot;, e);</span>
+        }
+    }
+
+    @Override
+    public void setResizeListener(Runnable onResize) {
+<span class="nc" id="L174">        this.resizeListener = onResize;</span>
+<span class="nc" id="L175">    }</span>
+
+    // --- Internal helpers ---
+
+    private void requireInitialized() {
+<span class="pc bpc" id="L180" title="1 of 2 branches missed.">        if (screen == null) {</span>
+<span class="fc" id="L181">            throw new IllegalStateException(&quot;LanternaBackend.init() must be called before use&quot;);</span>
+        }
+<span class="nc" id="L183">    }</span>
+
+    TextColor toTextColor(Color color, TextColor fallback) {
+<span class="fc bfc" id="L186" title="All 2 branches covered.">        if (color == null) return fallback;</span>
+<span class="pc bpc" id="L187" title="1 of 4 branches missed.">        return switch (color.getType()) {</span>
+<span class="fc" id="L188">            case ANSI_16  -&gt; indexToAnsi(color.getAnsiIndex());</span>
+<span class="fc" id="L189">            case ANSI_256 -&gt; new TextColor.Indexed(color.getAnsiIndex());</span>
+<span class="fc" id="L190">            case RGB      -&gt; new TextColor.RGB(color.getR(), color.getG(), color.getB());</span>
+        };
+    }
+
+    TextColor.ANSI indexToAnsi(int index) {
+<span class="fc bfc" id="L195" title="All 17 branches covered.">        return switch (index) {</span>
+<span class="fc" id="L196">            case 0  -&gt; TextColor.ANSI.BLACK;</span>
+<span class="fc" id="L197">            case 1  -&gt; TextColor.ANSI.RED;</span>
+<span class="fc" id="L198">            case 2  -&gt; TextColor.ANSI.GREEN;</span>
+<span class="fc" id="L199">            case 3  -&gt; TextColor.ANSI.YELLOW;</span>
+<span class="fc" id="L200">            case 4  -&gt; TextColor.ANSI.BLUE;</span>
+<span class="fc" id="L201">            case 5  -&gt; TextColor.ANSI.MAGENTA;</span>
+<span class="fc" id="L202">            case 6  -&gt; TextColor.ANSI.CYAN;</span>
+<span class="fc" id="L203">            case 7  -&gt; TextColor.ANSI.WHITE;</span>
+<span class="fc" id="L204">            case 8  -&gt; TextColor.ANSI.BLACK_BRIGHT;</span>
+<span class="fc" id="L205">            case 9  -&gt; TextColor.ANSI.RED_BRIGHT;</span>
+<span class="fc" id="L206">            case 10 -&gt; TextColor.ANSI.GREEN_BRIGHT;</span>
+<span class="fc" id="L207">            case 11 -&gt; TextColor.ANSI.YELLOW_BRIGHT;</span>
+<span class="fc" id="L208">            case 12 -&gt; TextColor.ANSI.BLUE_BRIGHT;</span>
+<span class="fc" id="L209">            case 13 -&gt; TextColor.ANSI.MAGENTA_BRIGHT;</span>
+<span class="fc" id="L210">            case 14 -&gt; TextColor.ANSI.CYAN_BRIGHT;</span>
+<span class="fc" id="L211">            case 15 -&gt; TextColor.ANSI.WHITE_BRIGHT;</span>
+<span class="fc" id="L212">            default -&gt; TextColor.ANSI.DEFAULT;</span>
+        };
+    }
+
+    EnumSet&lt;SGR&gt; toSGR(Style style) {
+<span class="fc" id="L217">        EnumSet&lt;SGR&gt; sgrs = EnumSet.noneOf(SGR.class);</span>
+<span class="fc bfc" id="L218" title="All 2 branches covered.">        if (style.isBold())          sgrs.add(SGR.BOLD);</span>
+<span class="fc bfc" id="L219" title="All 2 branches covered.">        if (style.isItalic())        sgrs.add(SGR.ITALIC);</span>
+<span class="fc bfc" id="L220" title="All 2 branches covered.">        if (style.isUnderline())     sgrs.add(SGR.UNDERLINE);</span>
+        // SGR.FAINT (dim) not available in Lanterna 3.1.2 — silently ignored
+<span class="fc bfc" id="L222" title="All 2 branches covered.">        if (style.isStrikethrough()) sgrs.add(SGR.CROSSED_OUT);</span>
+<span class="fc" id="L223">        return sgrs;</span>
+    }
+
+    KeyEvent toKeyEvent(KeyStroke ks) {
+<span class="fc" id="L227">        boolean ctrl  = ks.isCtrlDown();</span>
+<span class="fc" id="L228">        boolean alt   = ks.isAltDown();</span>
+<span class="fc" id="L229">        boolean shift = ks.isShiftDown();</span>
+<span class="pc bpc" id="L230" title="7 of 17 branches missed.">        return switch (ks.getKeyType()) {</span>
+<span class="fc" id="L231">            case Character  -&gt; KeyEvent.ofCharacter(ks.getCharacter(), ctrl, alt, shift);</span>
+<span class="fc" id="L232">            case Enter      -&gt; KeyEvent.of(KeyType.ENTER,       ctrl, alt, shift);</span>
+<span class="fc" id="L233">            case Backspace  -&gt; KeyEvent.of(KeyType.BACKSPACE,   ctrl, alt, shift);</span>
+<span class="nc" id="L234">            case Delete     -&gt; KeyEvent.of(KeyType.DELETE,      ctrl, alt, shift);</span>
+<span class="fc" id="L235">            case ArrowUp    -&gt; KeyEvent.of(KeyType.ARROW_UP,    ctrl, alt, shift);</span>
+<span class="fc" id="L236">            case ArrowDown  -&gt; KeyEvent.of(KeyType.ARROW_DOWN,  ctrl, alt, shift);</span>
+<span class="fc" id="L237">            case ArrowLeft  -&gt; KeyEvent.of(KeyType.ARROW_LEFT,  ctrl, alt, shift);</span>
+<span class="fc" id="L238">            case ArrowRight -&gt; KeyEvent.of(KeyType.ARROW_RIGHT, ctrl, alt, shift);</span>
+<span class="fc" id="L239">            case Escape     -&gt; KeyEvent.of(KeyType.ESCAPE,      ctrl, alt, shift);</span>
+<span class="fc bfc" id="L240" title="All 2 branches covered.">            case Tab        -&gt; shift</span>
+<span class="fc" id="L241">                                 ? KeyEvent.of(KeyType.SHIFT_TAB, ctrl, alt, true)</span>
+<span class="fc" id="L242">                                 : KeyEvent.of(KeyType.TAB,       ctrl, alt, false);</span>
+<span class="nc" id="L243">            case Home       -&gt; KeyEvent.of(KeyType.HOME,        ctrl, alt, shift);</span>
+<span class="nc" id="L244">            case End        -&gt; KeyEvent.of(KeyType.END,         ctrl, alt, shift);</span>
+<span class="nc" id="L245">            case PageUp     -&gt; KeyEvent.of(KeyType.PAGE_UP,     ctrl, alt, shift);</span>
+<span class="nc" id="L246">            case PageDown   -&gt; KeyEvent.of(KeyType.PAGE_DOWN,   ctrl, alt, shift);</span>
+<span class="fc" id="L247">            case EOF        -&gt; KeyEvent.of(KeyType.EOF);</span>
+<span class="nc" id="L248">            case MouseEvent -&gt; toMouseKeyEvent(ks);</span>
+<span class="nc" id="L249">            default         -&gt; KeyEvent.of(KeyType.EOF);</span>
+        };
+    }
+
+    private KeyEvent toMouseKeyEvent(KeyStroke ks) {
+<span class="nc bnc" id="L254" title="All 2 branches missed.">        if (!(ks instanceof MouseAction ma)) return KeyEvent.of(KeyType.EOF);</span>
+<span class="nc" id="L255">        int col    = ma.getPosition().getColumn();</span>
+<span class="nc" id="L256">        int row    = ma.getPosition().getRow();</span>
+<span class="nc" id="L257">        int button = ma.getButton();</span>
+<span class="nc bnc" id="L258" title="All 5 branches missed.">        MouseType mType = switch (ma.getActionType()) {</span>
+<span class="nc" id="L259">            case CLICK_DOWN    -&gt; MouseType.PRESS;</span>
+<span class="nc" id="L260">            case CLICK_RELEASE -&gt; MouseType.RELEASE;</span>
+<span class="nc" id="L261">            case SCROLL_UP     -&gt; MouseType.SCROLL_UP;</span>
+<span class="nc" id="L262">            case SCROLL_DOWN   -&gt; MouseType.SCROLL_DOWN;</span>
+<span class="nc" id="L263">            default            -&gt; MouseType.PRESS;  // DRAG, MOVE</span>
+        };
+<span class="nc" id="L265">        return KeyEvent.ofMouse(new MouseEvent(mType, col, row, button));</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.10.202304240956</span></div></body></html>

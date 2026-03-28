@@ -107,24 +107,6 @@ class AnsiWriterTest {
         assertTrue(output().contains(";1m") || output().contains(";1;"));
     }
 
-    // --- Mouse ---
-
-    @Test
-    void mouseEnable_writesExpectedSequences() throws IOException {
-        writer.mouseEnable();
-        String out = output();
-        assertTrue(out.contains("\033[?1000h"));
-        assertTrue(out.contains("\033[?1006h"));
-    }
-
-    @Test
-    void mouseDisable_writesExpectedSequences() throws IOException {
-        writer.mouseDisable();
-        String out = output();
-        assertTrue(out.contains("\033[?1006l"));
-        assertTrue(out.contains("\033[?1000l"));
-    }
-
     // --- SGR builder ---
 
     @Test

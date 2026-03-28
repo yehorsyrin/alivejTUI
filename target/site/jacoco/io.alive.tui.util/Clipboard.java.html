@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="uk"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Clipboard.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">AliveJTUI</a> &gt; <a href="index.source.html" class="el_package">io.alive.tui.util</a> &gt; <span class="el_source">Clipboard.java</span></div><h1>Clipboard.java</h1><pre class="source lang-java linenums">package io.alive.tui.util;
+
+import java.awt.HeadlessException;
+import java.awt.Toolkit;
+import java.awt.datatransfer.DataFlavor;
+import java.awt.datatransfer.StringSelection;
+import java.awt.datatransfer.UnsupportedFlavorException;
+import java.io.IOException;
+
+/**
+ * Utility for system clipboard access (copy / paste).
+ *
+ * &lt;p&gt;All methods are static and safe to call from the event loop thread.
+ * On headless environments (servers without a display), operations are silently
+ * degraded: {@link #copy(String)} is a no-op and {@link #paste()} returns {@code &quot;&quot;}.
+ *
+ * @author Jarvis (AI)
+ */
+public final class Clipboard {
+
+    private Clipboard() {}
+
+    /**
+     * Copies {@code text} to the system clipboard.
+     *
+     * @param text the text to copy; {@code null} is treated as an empty string
+     */
+    public static void copy(String text) {
+        try {
+<span class="fc bfc" id="L30" title="All 2 branches covered.">            StringSelection sel = new StringSelection(text != null ? text : &quot;&quot;);</span>
+<span class="fc" id="L31">            Toolkit.getDefaultToolkit().getSystemClipboard().setContents(sel, sel);</span>
+<span class="nc" id="L32">        } catch (HeadlessException | IllegalStateException ignored) {</span>
+            // Headless or clipboard temporarily unavailable — silently ignore
+<span class="fc" id="L34">        }</span>
+<span class="fc" id="L35">    }</span>
+
+    /**
+     * Pastes the current text content of the system clipboard.
+     *
+     * @return the clipboard text, or {@code &quot;&quot;} if the clipboard is empty, unavailable,
+     *         or does not contain text data
+     */
+    public static String paste() {
+        try {
+<span class="fc" id="L45">            java.awt.datatransfer.Transferable content = Toolkit.getDefaultToolkit()</span>
+<span class="fc" id="L46">                    .getSystemClipboard()</span>
+<span class="fc" id="L47">                    .getContents(null);</span>
+<span class="pc bpc" id="L48" title="2 of 4 branches missed.">            if (content != null &amp;&amp; content.isDataFlavorSupported(DataFlavor.stringFlavor)) {</span>
+<span class="fc" id="L49">                return (String) content.getTransferData(DataFlavor.stringFlavor);</span>
+            }
+<span class="nc" id="L51">        } catch (HeadlessException | IllegalStateException | UnsupportedFlavorException</span>
+                 | IOException ignored) {
+            // Silently return empty string on any failure
+<span class="nc" id="L54">        }</span>
+<span class="nc" id="L55">        return &quot;&quot;;</span>
+    }
+
+    /**
+     * Returns {@code true} if the system clipboard currently contains text data.
+     *
+     * @return {@code false} if the clipboard is unavailable, headless, or has no text
+     */
+    public static boolean hasText() {
+        try {
+            java.awt.datatransfer.Clipboard cb =
+<span class="fc" id="L66">                    Toolkit.getDefaultToolkit().getSystemClipboard();</span>
+<span class="pc bpc" id="L67" title="1 of 2 branches missed.">            return cb.getContents(null) != null</span>
+<span class="pc bpc" id="L68" title="1 of 2 branches missed.">                &amp;&amp; cb.isDataFlavorAvailable(DataFlavor.stringFlavor);</span>
+<span class="nc" id="L69">        } catch (HeadlessException | IllegalStateException ignored) {</span>
+<span class="nc" id="L70">            return false;</span>
+        }
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.10.202304240956</span></div></body></html>

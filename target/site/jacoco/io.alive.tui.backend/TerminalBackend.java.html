@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="uk"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>TerminalBackend.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">AliveJTUI</a> &gt; <a href="index.source.html" class="el_package">io.alive.tui.backend</a> &gt; <span class="el_source">TerminalBackend.java</span></div><h1>TerminalBackend.java</h1><pre class="source lang-java linenums">package io.alive.tui.backend;
+
+import io.alive.tui.event.KeyEvent;
+import io.alive.tui.style.Style;
+
+/**
+ * Abstraction over the underlying terminal library.
+ * All rendering and input operations go through this interface.
+ *
+ * &lt;h2&gt;Error handling contract&lt;/h2&gt;
+ * &lt;ul&gt;
+ *   &lt;li&gt;{@link #init()} and {@link #shutdown()} throw {@link TerminalInitException} on failure.&lt;/li&gt;
+ *   &lt;li&gt;{@link #putChar}, {@link #flush}, {@link #clear} and cursor methods throw
+ *       {@link TerminalRenderException} on failure. These are generally fatal — the event loop
+ *       should catch them, call {@link #shutdown()}, and exit.&lt;/li&gt;
+ *   &lt;li&gt;{@link #readKey()} returns {@link io.alive.tui.event.KeyType#EOF} only when the terminal
+ *       signals an orderly end of input. Any I/O error is thrown as {@link TerminalRenderException}
+ *       so the event loop can distinguish a clean EOF from a broken terminal.&lt;/li&gt;
+ * &lt;/ul&gt;
+ *
+ * @author Jarvis (AI)
+ */
+public interface TerminalBackend {
+
+    /**
+     * Initializes the terminal (raw mode, alternate screen buffer).
+     *
+     * @throws TerminalInitException if initialization fails
+     */
+    void init();
+
+    /**
+     * Restores the terminal to its original state.
+     *
+     * @throws TerminalInitException if shutdown fails
+     */
+    void shutdown();
+
+    /**
+     * Returns the current terminal width in columns.
+     * Must only be called after {@link #init()}.
+     */
+    int getWidth();
+
+    /**
+     * Returns the current terminal height in rows.
+     * Must only be called after {@link #init()}.
+     */
+    int getHeight();
+
+    /**
+     * Puts a single character at the given position with the given style.
+     *
+     * @throws TerminalRenderException on I/O failure
+     */
+    void putChar(int col, int row, char c, Style style);
+
+    /**
+     * Flushes all pending changes to the terminal screen.
+     * Also checks for terminal resize and fires the resize listener if registered.
+     *
+     * @throws TerminalRenderException on I/O failure
+     */
+    void flush();
+
+    /**
+     * Hides the terminal cursor.
+     */
+    void hideCursor();
+
+    /**
+     * Shows the terminal cursor at the position set by {@link #setCursor}.
+     * Implementations that cannot show the cursor explicitly may treat this as a no-op.
+     */
+    void showCursor();
+
+    /**
+     * Moves the cursor to the given position.
+     * Has no visible effect if the cursor is hidden.
+     */
+    void setCursor(int col, int row);
+
+    /**
+     * Clears the entire screen.
+     *
+     * @throws TerminalRenderException on I/O failure
+     */
+    void clear();
+
+    /**
+     * Blocks until a key is pressed and returns the corresponding event.
+     * Returns {@link io.alive.tui.event.KeyType#EOF} only on orderly end-of-input.
+     *
+     * @throws InterruptedException   if the thread is interrupted while waiting
+     * @throws TerminalRenderException on unexpected I/O failure
+     */
+    KeyEvent readKey() throws InterruptedException;
+
+    /**
+     * Waits up to {@code timeoutMs} milliseconds for a key event.
+     * Returns {@code null} if no key arrived within the timeout.
+     *
+     * &lt;p&gt;Default implementation ignores the timeout and delegates to {@link #readKey()}.
+     * Backends that support timed polling should override this method.
+     *
+     * @param timeoutMs maximum wait in milliseconds
+     * @throws InterruptedException if the thread is interrupted while waiting
+     */
+    default KeyEvent readKey(long timeoutMs) throws InterruptedException {
+<span class="nc" id="L110">        return readKey();</span>
+    }
+
+    /**
+     * Registers a callback invoked when the terminal is resized.
+     * Called from within {@link #flush()}, so it runs on the event loop thread.
+     */
+    void setResizeListener(Runnable onResize);
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.10.202304240956</span></div></body></html>

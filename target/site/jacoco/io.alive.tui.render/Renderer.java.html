@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="uk"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Renderer.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">AliveJTUI</a> &gt; <a href="index.source.html" class="el_package">io.alive.tui.render</a> &gt; <span class="el_source">Renderer.java</span></div><h1>Renderer.java</h1><pre class="source lang-java linenums">package io.alive.tui.render;
+
+import io.alive.tui.backend.TerminalBackend;
+import io.alive.tui.core.Node;
+import io.alive.tui.diff.CellChange;
+import io.alive.tui.diff.CellState;
+import io.alive.tui.diff.Differ;
+import io.alive.tui.layout.LayoutEngine;
+import io.alive.tui.node.InputNode;
+
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * Drives the render pipeline: layout → diff → terminal output.
+ *
+ * &lt;p&gt;Each call to {@link #render(Node)} only flushes cells that actually changed,
+ * minimising terminal I/O. {@link #forceFullRender(Node)} discards the previous
+ * frame (e.g. after a terminal resize) and redraws everything.
+ *
+ * @author Jarvis (AI)
+ */
+public class Renderer {
+
+    private final TerminalBackend backend;
+    private final Differ differ;
+    private final LayoutEngine layoutEngine;
+    private Node previousTree;
+<span class="fc" id="L30">    private Map&lt;String, CellState&gt; previousCells = Collections.emptyMap();</span>
+    private Node overlayTree;
+
+<span class="fc" id="L33">    public Renderer(TerminalBackend backend) {</span>
+<span class="fc bfc" id="L34" title="All 2 branches covered.">        if (backend == null) throw new IllegalArgumentException(&quot;backend must not be null&quot;);</span>
+<span class="fc" id="L35">        this.backend      = backend;</span>
+<span class="fc" id="L36">        this.differ       = new Differ();</span>
+<span class="fc" id="L37">        this.layoutEngine = new LayoutEngine();</span>
+<span class="fc" id="L38">    }</span>
+
+    /**
+     * Renders {@code newTree} to the terminal, emitting only the cells that changed
+     * since the last call. If an overlay has been pushed via {@link #pushOverlay(Node)},
+     * its cells are rendered on top of the base tree.
+     *
+     * @param newTree the current virtual tree (may be {@code null} to clear the screen)
+     */
+    public void render(Node newTree) {
+<span class="fc" id="L48">        int w = backend.getWidth(), h = backend.getHeight();</span>
+
+        // 1. Layout base tree
+<span class="fc bfc" id="L51" title="All 2 branches covered.">        if (newTree != null) {</span>
+<span class="fc" id="L52">            layoutEngine.layout(newTree, 0, 0, w, h);</span>
+        }
+
+        // 2. Layout overlay tree (if present)
+<span class="fc bfc" id="L56" title="All 2 branches covered.">        if (overlayTree != null) {</span>
+<span class="fc" id="L57">            layoutEngine.layout(overlayTree, 0, 0, w, h);</span>
+        }
+
+        // 3. Flatten current frame into a stable cell snapshot, then diff against previous snapshot
+<span class="fc" id="L61">        Map&lt;String, CellState&gt; newCells = differ.flattenMerged(newTree, overlayTree);</span>
+<span class="fc" id="L62">        List&lt;CellChange&gt; changes = differ.diffCells(previousCells, newCells);</span>
+<span class="fc bfc" id="L63" title="All 2 branches covered.">        if (changes.isEmpty()) return;</span>
+
+        // 4. Apply: push changes to the terminal
+<span class="fc" id="L66">        backend.hideCursor();</span>
+<span class="fc bfc" id="L67" title="All 2 branches covered.">        for (CellChange change : changes) {</span>
+<span class="fc" id="L68">            backend.putChar(change.col(), change.row(), change.character(), change.style());</span>
+<span class="fc" id="L69">        }</span>
+
+        // 5. Cursor: prefer focused InputNode inside the overlay, then in the base tree
+<span class="fc" id="L72">        InputNode focused = findFocusedInput(overlayTree);</span>
+<span class="pc bpc" id="L73" title="1 of 2 branches missed.">        if (focused == null) focused = findFocusedInput(newTree);</span>
+<span class="fc bfc" id="L74" title="All 2 branches covered.">        if (focused != null) {</span>
+<span class="fc" id="L75">            backend.setCursor(focused.getX() + focused.getCursorPos(), focused.getY());</span>
+        }
+
+<span class="fc" id="L78">        backend.flush();</span>
+
+<span class="fc" id="L80">        previousTree  = newTree;</span>
+<span class="fc" id="L81">        previousCells = newCells;</span>
+<span class="fc" id="L82">    }</span>
+
+    /**
+     * Sets a node to render as an overlay on top of the base tree.
+     * Call {@link #clearOverlay()} to remove it.
+     *
+     * @param node the overlay node (e.g., a dialog or popup)
+     */
+    public void pushOverlay(Node node) {
+<span class="fc" id="L91">        this.overlayTree = node;</span>
+<span class="fc" id="L92">    }</span>
+
+    /**
+     * Removes the current overlay. The next {@link #render(Node)} call will
+     * restore the base tree without any overlay.
+     */
+    public void clearOverlay() {
+<span class="fc" id="L99">        this.overlayTree = null;</span>
+<span class="fc" id="L100">    }</span>
+
+    /** Returns the current overlay node, or {@code null} if none is active. */
+    public Node getOverlay() {
+<span class="fc" id="L104">        return overlayTree;</span>
+    }
+
+    /**
+     * Forces a complete redraw by discarding the previous frame.
+     * Use after terminal resize or when the tree structure changes significantly.
+     */
+    public void forceFullRender(Node newTree) {
+<span class="fc" id="L112">        previousTree  = null;</span>
+<span class="fc" id="L113">        previousCells = Collections.emptyMap();</span>
+<span class="fc" id="L114">        render(newTree);</span>
+<span class="fc" id="L115">    }</span>
+
+    /**
+     * Called when the terminal is resized. Forces a full redraw using the last tree.
+     */
+    public void onResize() {
+<span class="fc" id="L121">        forceFullRender(previousTree);</span>
+<span class="fc" id="L122">    }</span>
+
+    /** Returns the most recently rendered tree (may be {@code null} before first render). */
+    public Node getPreviousTree() {
+<span class="fc" id="L126">        return previousTree;</span>
+    }
+
+    /**
+     * Walks the node tree depth-first and returns the first {@link InputNode} that is focused,
+     * or {@code null} if none is found.
+     */
+    private InputNode findFocusedInput(Node root) {
+<span class="fc bfc" id="L134" title="All 2 branches covered.">        if (root == null) return null;</span>
+<span class="fc bfc" id="L135" title="All 4 branches covered.">        if (root instanceof InputNode in &amp;&amp; in.isFocused()) return in;</span>
+<span class="fc bfc" id="L136" title="All 2 branches covered.">        for (Node child : root.getChildren()) {</span>
+<span class="fc" id="L137">            InputNode found = findFocusedInput(child);</span>
+<span class="fc bfc" id="L138" title="All 2 branches covered.">            if (found != null) return found;</span>
+<span class="fc" id="L139">        }</span>
+<span class="fc" id="L140">        return null;</span>
+    }
+
+    /**
+     * Returns the deepest node in the most recently rendered tree whose bounding box
+     * contains the given terminal position, or {@code null} if no node matches.
+     *
+     * &lt;p&gt;The overlay tree is checked before the base tree. Children are checked
+     * depth-first; the deepest (leaf) match is returned.
+     *
+     * @param col terminal column (0-based)
+     * @param row terminal row (0-based)
+     * @return the deepest node that covers {@code (col, row)}, or {@code null}
+     */
+    public Node hitTest(int col, int row) {
+<span class="fc" id="L155">        Node hit = hitTestTree(overlayTree, col, row);</span>
+<span class="fc bfc" id="L156" title="All 2 branches covered.">        if (hit == null) hit = hitTestTree(previousTree, col, row);</span>
+<span class="fc" id="L157">        return hit;</span>
+    }
+
+    private Node hitTestTree(Node root, int col, int row) {
+<span class="fc bfc" id="L161" title="All 2 branches covered.">        if (root == null) return null;</span>
+<span class="fc bfc" id="L162" title="All 2 branches covered.">        if (!contains(root, col, row)) return null;</span>
+        // depth-first: prefer deepest matching child
+<span class="fc bfc" id="L164" title="All 2 branches covered.">        for (Node child : root.getChildren()) {</span>
+<span class="fc" id="L165">            Node childHit = hitTestTree(child, col, row);</span>
+<span class="fc bfc" id="L166" title="All 2 branches covered.">            if (childHit != null) return childHit;</span>
+<span class="fc" id="L167">        }</span>
+<span class="fc" id="L168">        return root;</span>
+    }
+
+    private static boolean contains(Node node, int col, int row) {
+<span class="pc bpc" id="L172" title="1 of 2 branches missed.">        return col &gt;= node.getX()</span>
+<span class="fc bfc" id="L173" title="All 2 branches covered.">            &amp;&amp; col &lt;  node.getX() + node.getWidth()</span>
+<span class="pc bpc" id="L174" title="1 of 2 branches missed.">            &amp;&amp; row &gt;= node.getY()</span>
+<span class="fc bfc" id="L175" title="All 2 branches covered.">            &amp;&amp; row &lt;  node.getY() + node.getHeight();</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.10.202304240956</span></div></body></html>

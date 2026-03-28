@@ -576,21 +576,7 @@ public void mount(Runnable onStateChange, EventBus eventBus) {
 }
 ```
 
-**All key types:** `CHARACTER`, `ENTER`, `BACKSPACE`, `DELETE`, `ARROW_UP`, `ARROW_DOWN`, `ARROW_LEFT`, `ARROW_RIGHT`, `ESCAPE`, `TAB`, `SHIFT_TAB`, `HOME`, `END`, `PAGE_UP`, `PAGE_DOWN`, `MOUSE`, `EOF`.
-
----
-
-## Mouse Events
-
-```java
-eventBus.registerMouse(event -> {
-    if (event.type() == MouseType.CLICK) {
-        setState(() -> clickedAt = event.col() + "," + event.row());
-        return true; // consumed
-    }
-    return false;
-});
-```
+**All key types:** `CHARACTER`, `ENTER`, `BACKSPACE`, `DELETE`, `ARROW_UP`, `ARROW_DOWN`, `ARROW_LEFT`, `ARROW_RIGHT`, `ESCAPE`, `TAB`, `SHIFT_TAB`, `HOME`, `END`, `PAGE_UP`, `PAGE_DOWN`, `EOF`.
 
 ---
 
@@ -696,7 +682,7 @@ src/
                   Checkbox, RadioGroup, Select, Table, VirtualList, Viewport,
                   ProgressBar, Spinner, Dialog, Collapsible, HelpPanel, ...
     style/        Color, Style, Theme, StyleSheet, Selector
-    event/        EventBus, KeyEvent, KeyType, MouseEvent, MouseType
+    event/        EventBus, KeyEvent, KeyType
     backend/      TerminalBackend, LanternaBackend, AnsiBackend, NativeBackend,
                   MockBackend, TerminalCapabilities
     render/       Renderer, LayoutEngine, Differ, TreeFlattener

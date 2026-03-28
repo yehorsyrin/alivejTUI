@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="uk"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Differ.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">AliveJTUI</a> &gt; <a href="index.source.html" class="el_package">io.alive.tui.diff</a> &gt; <span class="el_source">Differ.java</span></div><h1>Differ.java</h1><pre class="source lang-java linenums">package io.alive.tui.diff;
+
+import io.alive.tui.core.Node;
+import io.alive.tui.style.Style;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+/**
+ * Computes the minimal set of cell changes between two virtual tree snapshots.
+ *
+ * &lt;p&gt;Algorithm:
+ * &lt;ol&gt;
+ *   &lt;li&gt;Flatten both trees into {@code Map&lt;&quot;col,row&quot;, CellState&gt;}.&lt;/li&gt;
+ *   &lt;li&gt;For every cell in the new tree that differs from the old tree → emit a change.&lt;/li&gt;
+ *   &lt;li&gt;For every cell in the old tree not present in the new tree → emit a clear (space).&lt;/li&gt;
+ * &lt;/ol&gt;
+ *
+ * @author Jarvis (AI)
+ */
+<span class="fc" id="L23">public class Differ {</span>
+
+<span class="fc" id="L25">    private final TreeFlattener flattener = new TreeFlattener();</span>
+
+    /**
+     * Returns the minimal list of cell changes to transform {@code oldTree} into {@code newTree}.
+     *
+     * @param oldTree previous frame (may be {@code null} on the first render)
+     * @param newTree current frame
+     * @return ordered list of cell changes (empty if no visual difference)
+     */
+    public List&lt;CellChange&gt; diff(Node oldTree, Node newTree) {
+<span class="fc" id="L35">        return diff(oldTree, null, newTree, null);</span>
+    }
+
+    /**
+     * Diff with optional overlay layers. Overlay cells are rendered on top of base cells.
+     * Pass {@code null} for overlay parameters when no overlay is active.
+     *
+     * @param oldBase    previous base frame
+     * @param oldOverlay previous overlay frame (may be {@code null})
+     * @param newBase    current base frame
+     * @param newOverlay current overlay frame (may be {@code null})
+     * @return ordered list of cell changes
+     */
+    public List&lt;CellChange&gt; diff(Node oldBase, Node oldOverlay, Node newBase, Node newOverlay) {
+<span class="fc" id="L49">        Map&lt;String, CellState&gt; oldCells = merged(flattener.flatten(oldBase), flattener.flatten(oldOverlay));</span>
+<span class="fc" id="L50">        Map&lt;String, CellState&gt; newCells = merged(flattener.flatten(newBase), flattener.flatten(newOverlay));</span>
+<span class="fc" id="L51">        return diffCells(oldCells, newCells);</span>
+    }
+
+    /**
+     * Flattens and merges a base tree with an optional overlay into a single cell map.
+     * The returned map is a snapshot and can be stored safely across renders.
+     *
+     * @param base    the base tree (may be {@code null})
+     * @param overlay the overlay tree (may be {@code null})
+     * @return merged cell map (overlay cells override base cells)
+     */
+    public Map&lt;String, CellState&gt; flattenMerged(Node base, Node overlay) {
+<span class="fc" id="L63">        return merged(flattener.flatten(base), flattener.flatten(overlay));</span>
+    }
+
+    /** Merges base and overlay cell maps; overlay wins on collision. */
+    private static Map&lt;String, CellState&gt; merged(Map&lt;String, CellState&gt; base,
+                                                  Map&lt;String, CellState&gt; overlay) {
+<span class="fc bfc" id="L69" title="All 2 branches covered.">        if (overlay.isEmpty()) return base;</span>
+<span class="fc" id="L70">        Map&lt;String, CellState&gt; result = new HashMap&lt;&gt;(base);</span>
+<span class="fc" id="L71">        result.putAll(overlay);</span>
+<span class="fc" id="L72">        return result;</span>
+    }
+
+    /**
+     * Returns the minimal list of cell changes between two pre-flattened cell maps.
+     * Use this overload when the caller manages cell map snapshots to avoid re-flattening
+     * mutable node trees.
+     *
+     * @param oldCells the previous frame's cell map (from {@link #flattenMerged})
+     * @param newCells the current frame's cell map (from {@link #flattenMerged})
+     * @return ordered list of cell changes
+     */
+    public List&lt;CellChange&gt; diffCells(Map&lt;String, CellState&gt; oldCells,
+                                      Map&lt;String, CellState&gt; newCells) {
+<span class="fc" id="L86">        List&lt;CellChange&gt; changes = new ArrayList&lt;&gt;();</span>
+
+        // Cells added or changed
+<span class="fc bfc" id="L89" title="All 2 branches covered.">        for (Map.Entry&lt;String, CellState&gt; entry : newCells.entrySet()) {</span>
+<span class="fc" id="L90">            String key = entry.getKey();</span>
+<span class="fc" id="L91">            CellState newState = entry.getValue();</span>
+<span class="fc" id="L92">            CellState oldState = oldCells.get(key);</span>
+
+<span class="fc bfc" id="L94" title="All 2 branches covered.">            if (!newState.equals(oldState)) {</span>
+<span class="fc" id="L95">                int[] pos = parseKey(key);</span>
+<span class="fc" id="L96">                changes.add(new CellChange(pos[0], pos[1], newState.character(), newState.style()));</span>
+            }
+<span class="fc" id="L98">        }</span>
+
+        // Cells removed (were in old, not in new) → erase with space
+<span class="fc bfc" id="L101" title="All 2 branches covered.">        for (String key : oldCells.keySet()) {</span>
+<span class="fc bfc" id="L102" title="All 2 branches covered.">            if (!newCells.containsKey(key)) {</span>
+<span class="fc" id="L103">                int[] pos = parseKey(key);</span>
+<span class="fc" id="L104">                changes.add(new CellChange(pos[0], pos[1], ' ', Style.DEFAULT));</span>
+            }
+<span class="fc" id="L106">        }</span>
+
+<span class="fc" id="L108">        return changes;</span>
+    }
+
+    private static int[] parseKey(String key) {
+<span class="fc" id="L112">        int comma = key.indexOf(',');</span>
+<span class="fc" id="L113">        return new int[]{</span>
+<span class="fc" id="L114">            Integer.parseInt(key, 0, comma, 10),</span>
+<span class="fc" id="L115">            Integer.parseInt(key, comma + 1, key.length(), 10)</span>
+        };
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.10.202304240956</span></div></body></html>

@@ -1,0 +1,4 @@
+-------------------------------------------------------------------------------
+Test set: io.alive.tui.nativeio.TerminalSizeDetectorTest
+-------------------------------------------------------------------------------
+Tests run: 13, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.039 s -- in io.alive.tui.nativeio.TerminalSizeDetectorTest

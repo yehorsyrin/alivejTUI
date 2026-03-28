@@ -21,7 +21,5 @@ public enum KeyType {
     END,
     PAGE_UP,
     PAGE_DOWN,
-    /** A mouse event — see {@link KeyEvent#mouseEvent()}. */
-    MOUSE,
     EOF
 }

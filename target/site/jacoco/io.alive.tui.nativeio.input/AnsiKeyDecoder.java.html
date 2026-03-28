@@ -1,0 +1,228 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="uk"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>AnsiKeyDecoder.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">AliveJTUI</a> &gt; <a href="index.source.html" class="el_package">io.alive.tui.nativeio.input</a> &gt; <span class="el_source">AnsiKeyDecoder.java</span></div><h1>AnsiKeyDecoder.java</h1><pre class="source lang-java linenums">package io.alive.tui.nativeio.input;
+
+import io.alive.tui.event.KeyEvent;
+import io.alive.tui.event.KeyType;
+
+import java.util.HashMap;
+import java.util.Map;
+
+/**
+ * Standalone ANSI escape sequence → {@link KeyEvent} decoder.
+ *
+ * &lt;p&gt;Accepts a byte array representing a single key press (which may be a
+ * multi-byte escape sequence) and returns the corresponding {@link KeyEvent}.
+ *
+ * &lt;p&gt;Supported sequence families:
+ * &lt;ul&gt;
+ *   &lt;li&gt;Plain ASCII printable and control characters&lt;/li&gt;
+ *   &lt;li&gt;CSI sequences: {@code ESC [ ... final} (arrows, function keys, modifiers)&lt;/li&gt;
+ *   &lt;li&gt;SS3 sequences: {@code ESC O ...} (numpad, F1–F4 on many terminals)&lt;/li&gt;
+ *   &lt;li&gt;Linux console F1–F5: {@code ESC [ [ A..E}&lt;/li&gt;
+ *   &lt;li&gt;Modifier-encoded sequences: {@code ESC [ 1 ; mod final}&lt;/li&gt;
+ *   &lt;li&gt;Bracketed paste markers: {@code ESC [ 200 ~} / {@code ESC [ 201 ~}&lt;/li&gt;
+ * &lt;/ul&gt;
+ *
+ * &lt;p&gt;Thread-safety: immutable after construction — safe to share.
+ *
+ * @author Jarvis (AI)
+ */
+public final class AnsiKeyDecoder {
+
+    // --- CSI final-byte dispatch tables ---
+
+    /** ESC [ {final}  — simple one-char final sequences */
+<span class="fc" id="L34">    private static final Map&lt;Character, KeyType&gt; CSI_SIMPLE = new HashMap&lt;&gt;();</span>
+
+    /** ESC [ {digit} ~  — tilde sequences (VT220 style) */
+<span class="fc" id="L37">    private static final Map&lt;Integer, KeyType&gt; CSI_TILDE = new HashMap&lt;&gt;();</span>
+
+    /** ESC O {final}  — SS3 sequences */
+<span class="fc" id="L40">    private static final Map&lt;Character, KeyType&gt; SS3 = new HashMap&lt;&gt;();</span>
+
+    static {
+        // CSI simple
+<span class="fc" id="L44">        CSI_SIMPLE.put('A', KeyType.ARROW_UP);</span>
+<span class="fc" id="L45">        CSI_SIMPLE.put('B', KeyType.ARROW_DOWN);</span>
+<span class="fc" id="L46">        CSI_SIMPLE.put('C', KeyType.ARROW_RIGHT);</span>
+<span class="fc" id="L47">        CSI_SIMPLE.put('D', KeyType.ARROW_LEFT);</span>
+<span class="fc" id="L48">        CSI_SIMPLE.put('H', KeyType.HOME);</span>
+<span class="fc" id="L49">        CSI_SIMPLE.put('F', KeyType.END);</span>
+<span class="fc" id="L50">        CSI_SIMPLE.put('Z', KeyType.SHIFT_TAB);  // ESC [ Z = Shift+Tab (rxvt/xterm)</span>
+
+        // CSI tilde sequences
+<span class="fc" id="L53">        CSI_TILDE.put(1,  KeyType.HOME);       // ESC [ 1 ~</span>
+<span class="fc" id="L54">        CSI_TILDE.put(2,  KeyType.EOF);        // ESC [ 2 ~ = Insert (no KeyType, map to EOF)</span>
+<span class="fc" id="L55">        CSI_TILDE.put(3,  KeyType.DELETE);     // ESC [ 3 ~</span>
+<span class="fc" id="L56">        CSI_TILDE.put(4,  KeyType.END);        // ESC [ 4 ~</span>
+<span class="fc" id="L57">        CSI_TILDE.put(5,  KeyType.PAGE_UP);    // ESC [ 5 ~</span>
+<span class="fc" id="L58">        CSI_TILDE.put(6,  KeyType.PAGE_DOWN);  // ESC [ 6 ~</span>
+<span class="fc" id="L59">        CSI_TILDE.put(7,  KeyType.HOME);       // ESC [ 7 ~ (rxvt)</span>
+<span class="fc" id="L60">        CSI_TILDE.put(8,  KeyType.END);        // ESC [ 8 ~ (rxvt)</span>
+<span class="fc" id="L61">        CSI_TILDE.put(11, KeyType.EOF);        // ESC [ 11 ~ = F1 (no F-key type)</span>
+<span class="fc" id="L62">        CSI_TILDE.put(12, KeyType.EOF);        // F2</span>
+<span class="fc" id="L63">        CSI_TILDE.put(13, KeyType.EOF);        // F3</span>
+<span class="fc" id="L64">        CSI_TILDE.put(14, KeyType.EOF);        // F4</span>
+<span class="fc" id="L65">        CSI_TILDE.put(15, KeyType.EOF);        // F5</span>
+<span class="fc" id="L66">        CSI_TILDE.put(17, KeyType.EOF);        // F6</span>
+<span class="fc" id="L67">        CSI_TILDE.put(18, KeyType.EOF);        // F7</span>
+<span class="fc" id="L68">        CSI_TILDE.put(19, KeyType.EOF);        // F8</span>
+<span class="fc" id="L69">        CSI_TILDE.put(20, KeyType.EOF);        // F9</span>
+<span class="fc" id="L70">        CSI_TILDE.put(21, KeyType.EOF);        // F10</span>
+<span class="fc" id="L71">        CSI_TILDE.put(23, KeyType.EOF);        // F11</span>
+<span class="fc" id="L72">        CSI_TILDE.put(24, KeyType.EOF);        // F12</span>
+<span class="fc" id="L73">        CSI_TILDE.put(200, KeyType.EOF);       // bracketed paste begin</span>
+<span class="fc" id="L74">        CSI_TILDE.put(201, KeyType.EOF);       // bracketed paste end</span>
+
+        // SS3 (ESC O)
+<span class="fc" id="L77">        SS3.put('A', KeyType.ARROW_UP);</span>
+<span class="fc" id="L78">        SS3.put('B', KeyType.ARROW_DOWN);</span>
+<span class="fc" id="L79">        SS3.put('C', KeyType.ARROW_RIGHT);</span>
+<span class="fc" id="L80">        SS3.put('D', KeyType.ARROW_LEFT);</span>
+<span class="fc" id="L81">        SS3.put('H', KeyType.HOME);</span>
+<span class="fc" id="L82">        SS3.put('F', KeyType.END);</span>
+<span class="fc" id="L83">        SS3.put('P', KeyType.EOF);  // F1</span>
+<span class="fc" id="L84">        SS3.put('Q', KeyType.EOF);  // F2</span>
+<span class="fc" id="L85">        SS3.put('R', KeyType.EOF);  // F3</span>
+<span class="fc" id="L86">        SS3.put('S', KeyType.EOF);  // F4</span>
+<span class="fc" id="L87">    }</span>
+
+    private AnsiKeyDecoder() {}
+
+    /** Creates a new {@code AnsiKeyDecoder}. */
+    public static AnsiKeyDecoder create() {
+<span class="fc" id="L93">        return new AnsiKeyDecoder();</span>
+    }
+
+    /**
+     * Decodes a byte sequence into a {@link KeyEvent}.
+     *
+     * @param sequence raw bytes as read from the terminal input stream.
+     *                 Must not be {@code null}.
+     * @return the decoded key event; never {@code null}.
+     *         Returns {@link KeyEvent#of(KeyType) KeyEvent.of(EOF)} for unknown sequences.
+     */
+    public KeyEvent decode(byte[] sequence) {
+<span class="fc bfc" id="L105" title="All 4 branches covered.">        if (sequence == null || sequence.length == 0) return KeyEvent.of(KeyType.EOF);</span>
+
+<span class="fc" id="L107">        int first = sequence[0] &amp; 0xFF;</span>
+
+        // --- ESC sequences ---
+<span class="fc bfc" id="L110" title="All 2 branches covered.">        if (first == 0x1B) {</span>
+<span class="fc bfc" id="L111" title="All 2 branches covered.">            if (sequence.length == 1) return KeyEvent.of(KeyType.ESCAPE);</span>
+<span class="fc" id="L112">            int second = sequence[1] &amp; 0xFF;</span>
+
+            // SS3: ESC O {x}
+<span class="pc bpc" id="L115" title="1 of 4 branches missed.">            if (second == 'O' &amp;&amp; sequence.length &gt;= 3) {</span>
+<span class="fc" id="L116">                char final_ = (char)(sequence[2] &amp; 0xFF);</span>
+<span class="fc" id="L117">                KeyType kt = SS3.get(final_);</span>
+<span class="fc bfc" id="L118" title="All 2 branches covered.">                return kt != null ? KeyEvent.of(kt) : KeyEvent.of(KeyType.ESCAPE);</span>
+            }
+
+            // CSI: ESC [ ...
+<span class="pc bpc" id="L122" title="1 of 4 branches missed.">            if (second == '[' &amp;&amp; sequence.length &gt;= 3) {</span>
+<span class="fc" id="L123">                return decodeCsi(sequence);</span>
+            }
+
+            // Alt + key: ESC {printable}
+<span class="pc bpc" id="L127" title="2 of 4 branches missed.">            if (second &gt;= 0x20 &amp;&amp; second &lt; 0x7F) {</span>
+<span class="fc" id="L128">                return KeyEvent.ofCharacter((char) second, false, true, false);</span>
+            }
+
+<span class="nc" id="L131">            return KeyEvent.of(KeyType.ESCAPE);</span>
+        }
+
+        // --- Plain ASCII ---
+<span class="fc bfc" id="L135" title="All 4 branches covered.">        return switch (first) {</span>
+<span class="fc" id="L136">            case 13  -&gt; KeyEvent.of(KeyType.ENTER);</span>
+<span class="fc" id="L137">            case 127 -&gt; KeyEvent.of(KeyType.BACKSPACE);</span>
+<span class="fc" id="L138">            case 9   -&gt; KeyEvent.of(KeyType.TAB);</span>
+<span class="fc bfc" id="L139" title="All 2 branches covered.">            default  -&gt; first &gt;= 32</span>
+<span class="fc" id="L140">                    ? KeyEvent.ofCharacter((char) first)</span>
+<span class="fc" id="L141">                    : KeyEvent.of(KeyType.EOF);</span>
+        };
+    }
+
+    // --- CSI decoder ---
+
+    private KeyEvent decodeCsi(byte[] seq) {
+        // seq[0]=ESC, seq[1]='[', seq[2..n-1]=params, seq[n-1]=final byte
+
+        // Linux console F1–F5: ESC [ [ {A..E}
+<span class="pc bpc" id="L151" title="1 of 4 branches missed.">        if (seq.length == 4 &amp;&amp; (seq[2] &amp; 0xFF) == '[') {</span>
+            // These are all function keys — no KeyType for them
+<span class="nc" id="L153">            return KeyEvent.of(KeyType.EOF);</span>
+        }
+
+<span class="fc" id="L156">        char finalByte = (char)(seq[seq.length - 1] &amp; 0xFF);</span>
+<span class="fc" id="L157">        String params = extractParams(seq); // everything between '[' and final byte</span>
+
+        // --- No params: ESC [ {final} ---
+<span class="fc bfc" id="L160" title="All 2 branches covered.">        if (params.isEmpty()) {</span>
+<span class="fc" id="L161">            KeyType kt = CSI_SIMPLE.get(finalByte);</span>
+<span class="fc bfc" id="L162" title="All 2 branches covered.">            return kt != null ? KeyEvent.of(kt) : KeyEvent.of(KeyType.ESCAPE);</span>
+        }
+
+        // --- Modifier sequences: ESC [ 1 ; {mod} {final} ---
+        // e.g. ESC[1;5A = Ctrl+Up, ESC[1;2A = Shift+Up, ESC[1;3A = Alt+Up
+<span class="fc bfc" id="L167" title="All 2 branches covered.">        if (params.contains(&quot;;&quot;)) {</span>
+<span class="fc" id="L168">            String[] parts = params.split(&quot;;&quot;);</span>
+<span class="pc bpc" id="L169" title="1 of 2 branches missed.">            if (parts.length == 2) {</span>
+<span class="fc" id="L170">                int mod = parseIntSafe(parts[1]);</span>
+<span class="fc" id="L171">                KeyType baseKey = CSI_SIMPLE.get(finalByte);</span>
+<span class="fc bfc" id="L172" title="All 2 branches covered.">                if (baseKey != null) {</span>
+<span class="fc" id="L173">                    return applyModifier(baseKey, mod);</span>
+                }
+                // Tilde with modifier: ESC [ {n} ; {mod} ~
+<span class="pc bpc" id="L176" title="1 of 2 branches missed.">                if (finalByte == '~') {</span>
+<span class="fc" id="L177">                    int n = parseIntSafe(parts[0]);</span>
+<span class="fc" id="L178">                    KeyType kt = CSI_TILDE.getOrDefault(n, KeyType.EOF);</span>
+<span class="fc" id="L179">                    return applyModifier(kt, mod);</span>
+                }
+            }
+<span class="nc" id="L182">            return KeyEvent.of(KeyType.ESCAPE);</span>
+        }
+
+        // --- Tilde sequences: ESC [ {n} ~ ---
+<span class="pc bpc" id="L186" title="1 of 2 branches missed.">        if (finalByte == '~') {</span>
+<span class="fc" id="L187">            int n = parseIntSafe(params);</span>
+<span class="fc" id="L188">            KeyType kt = CSI_TILDE.getOrDefault(n, KeyType.EOF);</span>
+<span class="fc" id="L189">            return KeyEvent.of(kt);</span>
+        }
+
+        // --- Simple CSI with numeric prefix (e.g. ESC [ 2 H) ---
+<span class="nc" id="L193">        KeyType kt = CSI_SIMPLE.get(finalByte);</span>
+<span class="nc bnc" id="L194" title="All 2 branches missed.">        return kt != null ? KeyEvent.of(kt) : KeyEvent.of(KeyType.ESCAPE);</span>
+    }
+
+    /** Extracts the parameter substring (between '[' and the final byte). */
+    private static String extractParams(byte[] seq) {
+        // seq = ESC '[' params... finalByte
+        // params start at index 2, end at index seq.length-2
+<span class="fc bfc" id="L201" title="All 2 branches covered.">        if (seq.length &lt;= 3) return &quot;&quot;;</span>
+<span class="fc" id="L202">        byte[] params = new byte[seq.length - 3];</span>
+<span class="fc" id="L203">        System.arraycopy(seq, 2, params, 0, params.length);</span>
+<span class="fc" id="L204">        return new String(params, java.nio.charset.StandardCharsets.US_ASCII);</span>
+    }
+
+    /**
+     * Applies a modifier bitmask to a key type.
+     *
+     * &lt;p&gt;Modifier encoding (xterm standard):
+     * &lt;pre&gt;
+     *   mod = shift + 2*alt + 4*ctrl - 1
+     *   1 = none, 2 = shift, 3 = alt, 4 = alt+shift,
+     *   5 = ctrl, 6 = ctrl+shift, 7 = ctrl+alt, 8 = ctrl+alt+shift
+     * &lt;/pre&gt;
+     */
+    private static KeyEvent applyModifier(KeyType kt, int mod) {
+<span class="fc bfc" id="L218" title="All 2 branches covered.">        boolean shift = ((mod - 1) &amp; 1) != 0;</span>
+<span class="fc bfc" id="L219" title="All 2 branches covered.">        boolean alt   = ((mod - 1) &amp; 2) != 0;</span>
+<span class="fc bfc" id="L220" title="All 2 branches covered.">        boolean ctrl  = ((mod - 1) &amp; 4) != 0;</span>
+<span class="fc" id="L221">        return new KeyEvent(kt, '\0', ctrl, alt, shift, null);</span>
+    }
+
+    private static int parseIntSafe(String s) {
+<span class="pc" id="L225">        try { return Integer.parseInt(s.trim()); } catch (NumberFormatException e) { return -1; }</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.10.202304240956</span></div></body></html>

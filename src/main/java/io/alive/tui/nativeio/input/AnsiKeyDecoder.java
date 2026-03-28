@@ -218,7 +218,7 @@ public final class AnsiKeyDecoder {
         boolean shift = ((mod - 1) & 1) != 0;
         boolean alt   = ((mod - 1) & 2) != 0;
         boolean ctrl  = ((mod - 1) & 4) != 0;
-        return new KeyEvent(kt, '\0', ctrl, alt, shift, null);
+        return new KeyEvent(kt, '\0', ctrl, alt, shift);
     }
 
     private static int parseIntSafe(String s) {

@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="uk"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>SelectNode.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">AliveJTUI</a> &gt; <a href="index.source.html" class="el_package">io.alive.tui.node</a> &gt; <span class="el_source">SelectNode.java</span></div><h1>SelectNode.java</h1><pre class="source lang-java linenums">package io.alive.tui.node;
+
+import io.alive.tui.core.Focusable;
+import io.alive.tui.core.Node;
+import io.alive.tui.style.Style;
+
+import java.util.List;
+
+/**
+ * A dropdown / select component that shows the selected option with an arrow indicator.
+ *
+ * &lt;p&gt;When closed the node occupies a single row:
+ * &lt;pre&gt;[ Selected Option ▾ ]&lt;/pre&gt;
+ *
+ * &lt;p&gt;When open it expands below the header to show all options, highlighting the
+ * currently hovered item:
+ * &lt;pre&gt;
+ * [ Selected Option ▴ ]
+ *   Option A
+ * › Option B          ← hovered
+ *   Option C
+ * &lt;/pre&gt;
+ *
+ * &lt;p&gt;Typical usage with keyboard handlers in a {@code Component.render()}:
+ * &lt;pre&gt;{@code
+ * if (select.isOpen()) {
+ *     bus.register(KeyType.ArrowDown, () -&gt; { select.moveDown(); markDirty(); });
+ *     bus.register(KeyType.ArrowUp,   () -&gt; { select.moveUp();   markDirty(); });
+ *     bus.register(KeyType.Enter,     () -&gt; { select.accept();   markDirty(); });
+ *     bus.register(KeyType.Escape,    () -&gt; { select.close();    markDirty(); });
+ * }
+ * }&lt;/pre&gt;
+ *
+ * @author Jarvis (AI)
+ */
+public class SelectNode extends Node implements Focusable {
+
+    /** Arrow shown when the dropdown is collapsed. */
+    public static final char ARROW_DOWN = '▾';
+    /** Arrow shown when the dropdown is expanded. */
+    public static final char ARROW_UP   = '▴';
+    /** Cursor prefix for the hovered option row. */
+    public static final String CURSOR   = &quot;› &quot;;
+    /** Padding prefix for non-hovered option rows (same width as CURSOR). */
+    public static final String PADDING  = &quot;  &quot;;
+
+    private final List&lt;String&gt; options;
+    private int selectedIndex;
+    private int hoverIndex;
+<span class="fc" id="L50">    private boolean open      = false;</span>
+<span class="fc" id="L51">    private boolean focused   = false;</span>
+
+<span class="fc" id="L53">    private Style normalStyle   = Style.DEFAULT;</span>
+<span class="fc" id="L54">    private Style focusedStyle  = Style.DEFAULT.withBold(true);</span>
+<span class="fc" id="L55">    private Style hoverStyle    = Style.DEFAULT.withBold(true);</span>
+<span class="fc" id="L56">    private Style selectedStyle = Style.DEFAULT.withBold(true);</span>
+
+    private final Runnable onChange;
+
+    /**
+     * Creates a select node.
+     *
+     * @param options       list of option labels; must not be null or empty
+     * @param selectedIndex initially selected index (clamped to valid range)
+     * @param onChange      called when the selected index changes; may be null
+     */
+<span class="fc" id="L67">    public SelectNode(List&lt;String&gt; options, int selectedIndex, Runnable onChange) {</span>
+<span class="pc bpc" id="L68" title="1 of 4 branches missed.">        if (options == null || options.isEmpty()) {</span>
+<span class="fc" id="L69">            throw new IllegalArgumentException(&quot;SelectNode requires at least one option&quot;);</span>
+        }
+<span class="fc" id="L71">        this.options       = List.copyOf(options);</span>
+<span class="fc" id="L72">        this.selectedIndex = Math.max(0, Math.min(selectedIndex, options.size() - 1));</span>
+<span class="fc" id="L73">        this.hoverIndex    = this.selectedIndex;</span>
+<span class="fc" id="L74">        this.onChange      = onChange;</span>
+<span class="fc" id="L75">    }</span>
+
+    // --- State accessors ---
+
+    /** Returns the immutable list of option labels. */
+<span class="fc" id="L80">    public List&lt;String&gt; getOptions() { return options; }</span>
+
+    /** Returns the index of the currently selected option. */
+<span class="fc" id="L83">    public int getSelectedIndex() { return selectedIndex; }</span>
+
+    /** Returns the label of the currently selected option. */
+<span class="fc" id="L86">    public String getSelectedOption() { return options.get(selectedIndex); }</span>
+
+    /** Returns the index of the currently hovered option (only meaningful when open). */
+<span class="fc" id="L89">    public int getHoverIndex() { return hoverIndex; }</span>
+
+    /** Returns {@code true} if the dropdown list is currently expanded. */
+<span class="fc" id="L92">    public boolean isOpen() { return open; }</span>
+
+    // --- Open / close ---
+
+    /** Opens the dropdown and resets the hover cursor to the selected index. */
+    public void open() {
+<span class="fc" id="L98">        this.hoverIndex = this.selectedIndex;</span>
+<span class="fc" id="L99">        this.open = true;</span>
+<span class="fc" id="L100">    }</span>
+
+    /** Closes the dropdown without changing the selected index. */
+<span class="fc" id="L103">    public void close() { this.open = false; }</span>
+
+    /** Toggles the open state. If opening, resets the hover cursor to the selected index. */
+<span class="fc bfc" id="L106" title="All 2 branches covered.">    public void toggle() { if (open) close(); else open(); }</span>
+
+    // --- Keyboard navigation (call from event handlers while open) ---
+
+    /** Moves the hover cursor down by one step (wraps around). */
+    public void moveDown() {
+<span class="fc" id="L112">        hoverIndex = (hoverIndex + 1) % options.size();</span>
+<span class="fc" id="L113">    }</span>
+
+    /** Moves the hover cursor up by one step (wraps around). */
+    public void moveUp() {
+<span class="fc" id="L117">        hoverIndex = (hoverIndex - 1 + options.size()) % options.size();</span>
+<span class="fc" id="L118">    }</span>
+
+    /**
+     * Confirms the current hover index as the selected index, closes the dropdown,
+     * and fires the {@code onChange} callback if the selection actually changed.
+     */
+    public void accept() {
+<span class="fc" id="L125">        int prev = selectedIndex;</span>
+<span class="fc" id="L126">        selectedIndex = hoverIndex;</span>
+<span class="fc" id="L127">        open = false;</span>
+<span class="fc bfc" id="L128" title="All 4 branches covered.">        if (prev != selectedIndex &amp;&amp; onChange != null) {</span>
+<span class="fc" id="L129">            onChange.run();</span>
+        }
+<span class="fc" id="L131">    }</span>
+
+    // --- Styles ---
+
+<span class="fc" id="L135">    public Style getNormalStyle()   { return normalStyle; }</span>
+<span class="nc" id="L136">    public Style getFocusedStyle()  { return focusedStyle; }</span>
+<span class="fc" id="L137">    public Style getHoverStyle()    { return hoverStyle; }</span>
+<span class="nc" id="L138">    public Style getSelectedStyle() { return selectedStyle; }</span>
+
+<span class="nc bnc" id="L140" title="All 2 branches missed.">    public SelectNode normalStyle(Style s)   { this.normalStyle   = s != null ? s : Style.DEFAULT; return this; }</span>
+<span class="nc bnc" id="L141" title="All 2 branches missed.">    public SelectNode focusedStyle(Style s)  { this.focusedStyle  = s != null ? s : Style.DEFAULT; return this; }</span>
+<span class="nc bnc" id="L142" title="All 2 branches missed.">    public SelectNode hoverStyle(Style s)    { this.hoverStyle    = s != null ? s : Style.DEFAULT; return this; }</span>
+<span class="nc bnc" id="L143" title="All 2 branches missed.">    public SelectNode selectedStyle(Style s) { this.selectedStyle = s != null ? s : Style.DEFAULT; return this; }</span>
+
+    // --- Focusable ---
+
+<span class="fc" id="L147">    @Override public boolean isFocused()           { return focused; }</span>
+<span class="fc" id="L148">    @Override public void    setFocused(boolean f) { this.focused = f; }</span>
+<span class="fc" id="L149">    @Override public String  getFocusId()          { return options.get(0); }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.10.202304240956</span></div></body></html>

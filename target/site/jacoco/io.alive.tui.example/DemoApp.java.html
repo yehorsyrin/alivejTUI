@@ -1,0 +1,525 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="uk"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>DemoApp.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">AliveJTUI</a> &gt; <a href="index.source.html" class="el_package">io.alive.tui.example</a> &gt; <span class="el_source">DemoApp.java</span></div><h1>DemoApp.java</h1><pre class="source lang-java linenums">package io.alive.tui.example;
+
+import io.alive.tui.core.*;
+import io.alive.tui.event.EventBus;
+import io.alive.tui.event.KeyType;
+import io.alive.tui.node.*;
+import io.alive.tui.style.Color;
+import io.alive.tui.style.Style;
+import io.alive.tui.style.Theme;
+
+import java.util.List;
+import java.util.stream.IntStream;
+
+import static java.util.stream.Collectors.toList;
+
+/**
+ * Comprehensive AliveJTUI demo — showcases every major component and feature.
+ *
+ * &lt;h2&gt;Navigation&lt;/h2&gt;
+ * &lt;pre&gt;
+ *   1-5   Switch tab
+ *   T     Toggle Dark/Light theme
+ *   D     Show dialog
+ *   N     Show notification
+ *   Up/Down  Navigate lists / tables
+ *   +/-   Progress bar
+ *   ESC   Quit
+ * &lt;/pre&gt;
+ *
+ * @author Jarvis (AI)
+ */
+public class DemoApp extends Component {
+
+    // --- Tabs ---
+<span class="nc" id="L35">    private static final String[] TAB_NAMES = {</span>
+        &quot;1:Widgets&quot;, &quot;2:Table&quot;, &quot;3:VirtualList&quot;, &quot;4:Text&quot;, &quot;5:Layout&quot;
+    };
+<span class="nc" id="L38">    private int activeTab = 0;</span>
+
+    // --- Tab 1: Widgets ---
+<span class="nc" id="L41">    private double  progress   = 0.4;</span>
+<span class="nc" id="L42">    private int     clickCount = 0;</span>
+<span class="nc" id="L43">    private int     spinFrame  = 0;</span>
+<span class="nc" id="L44">    private boolean cbChecked  = true;</span>
+<span class="nc" id="L45">    private int     radioIdx   = 0;</span>
+<span class="nc" id="L46">    private int     selectIdx  = 0;</span>
+<span class="nc" id="L47">    private String  inputText  = &quot;&quot;;</span>
+
+<span class="nc" id="L49">    private static final String[] SPIN = { &quot;|&quot;, &quot;/&quot;, &quot;-&quot;, &quot;\\&quot; };</span>
+<span class="nc" id="L50">    private static final String[] COLORS_OPT = { &quot;Red&quot;, &quot;Green&quot;, &quot;Blue&quot;, &quot;Cyan&quot;, &quot;Magenta&quot; };</span>
+
+    // --- Tab 2: Table ---
+<span class="nc" id="L53">    private int tableRow = 0;</span>
+<span class="nc" id="L54">    private static final List&lt;List&lt;String&gt;&gt; TABLE_DATA = List.of(</span>
+<span class="nc" id="L55">        List.of(&quot;Alice&quot;,   &quot;Engineering&quot;, &quot;Senior&quot;,   &quot;Berlin&quot;),</span>
+<span class="nc" id="L56">        List.of(&quot;Bob&quot;,     &quot;Design&quot;,      &quot;Lead&quot;,     &quot;London&quot;),</span>
+<span class="nc" id="L57">        List.of(&quot;Carol&quot;,   &quot;Product&quot;,     &quot;Director&quot;, &quot;NYC&quot;),</span>
+<span class="nc" id="L58">        List.of(&quot;Dave&quot;,    &quot;Engineering&quot;, &quot;Junior&quot;,   &quot;Tokyo&quot;),</span>
+<span class="nc" id="L59">        List.of(&quot;Eve&quot;,     &quot;Marketing&quot;,   &quot;Manager&quot;,  &quot;Paris&quot;),</span>
+<span class="nc" id="L60">        List.of(&quot;Frank&quot;,   &quot;Engineering&quot;, &quot;Senior&quot;,   &quot;Seoul&quot;),</span>
+<span class="nc" id="L61">        List.of(&quot;Grace&quot;,   &quot;Design&quot;,      &quot;Junior&quot;,   &quot;Sydney&quot;),</span>
+<span class="nc" id="L62">        List.of(&quot;Heidi&quot;,   &quot;Product&quot;,     &quot;Senior&quot;,   &quot;Toronto&quot;)</span>
+    );
+
+    // --- Tab 3: VirtualList ---
+<span class="nc" id="L66">    private final List&lt;String&gt; bigList = IntStream.range(1, 10_001)</span>
+<span class="nc" id="L67">            .mapToObj(i -&gt; String.format(&quot;  %5d  |  Item number %d&quot;, i, i))</span>
+<span class="nc" id="L68">            .collect(toList());</span>
+<span class="nc" id="L69">    private final VirtualListNode vList = VirtualList.of(bigList, 12);</span>
+
+    // --- Tab 5: Viewport ---
+    private final ViewportNode viewport;
+
+    // --- Tab 1: Button ---
+    private final ButtonNode clickBtn;
+
+    // --- Notifications ---
+    private final NotificationManager notifications;
+
+    // --- Overlay management ---
+    // dialogNode != null means dialog is showing; notification overlay is separate
+<span class="nc" id="L82">    private Node dialogNode   = null;</span>
+<span class="nc" id="L83">    private boolean notifShowing = false;</span>
+
+    // --- Layout collapsible ---
+<span class="nc" id="L86">    private boolean colExpanded = true;</span>
+
+<span class="nc" id="L88">    public DemoApp() {</span>
+<span class="nc" id="L89">        notifications = new NotificationManager(() -&gt; setState(() -&gt; {}));</span>
+<span class="nc" id="L90">        clickBtn = new ButtonNode(&quot;[ Click Me! ]&quot;, () -&gt; setState(() -&gt; {</span>
+<span class="nc" id="L91">            clickCount++;</span>
+<span class="nc" id="L92">            notifications.show(&quot;Clicked! Count: &quot; + clickCount, 1500);</span>
+<span class="nc" id="L93">        }));</span>
+<span class="nc" id="L94">        viewport = new ViewportNode(</span>
+<span class="nc" id="L95">            VBox.of(IntStream.range(1, 21)</span>
+<span class="nc" id="L96">                .mapToObj(i -&gt; Text.of(&quot;  Line &quot; + i + &quot;:  &quot; + &quot;=&quot;.repeat(i) + &quot; &quot; + i + &quot;%&quot;)</span>
+<span class="nc bnc" id="L97" title="All 2 branches missed.">                    .color(i % 2 == 0 ? Color.BRIGHT_BLACK : Color.WHITE))</span>
+<span class="nc" id="L98">                .toArray(Node[]::new)),</span>
+            5
+        );
+<span class="nc" id="L101">    }</span>
+
+    @Override
+    public void mount(Runnable onStateChange, EventBus eventBus) {
+<span class="nc" id="L105">        super.mount(onStateChange, eventBus);</span>
+
+        // Focus
+<span class="nc" id="L108">        registerFocusable(clickBtn);</span>
+
+        // Tab switching
+<span class="nc" id="L111">        eventBus.registerCharacter(c -&gt; {</span>
+<span class="nc bnc" id="L112" title="All 4 branches missed.">            if (c &gt;= '1' &amp;&amp; c &lt;= '5') setState(() -&gt; activeTab = c - '1');</span>
+<span class="nc" id="L113">        });</span>
+
+        // Theme toggle
+<span class="nc" id="L116">        eventBus.registerCharacter(c -&gt; {</span>
+<span class="nc bnc" id="L117" title="All 4 branches missed.">            if (c == 't' || c == 'T') setState(() -&gt; {</span>
+<span class="nc bnc" id="L118" title="All 2 branches missed.">                boolean isDark = AliveJTUI.getTheme() == Theme.DARK;</span>
+<span class="nc bnc" id="L119" title="All 2 branches missed.">                AliveJTUI.setTheme(isDark ? Theme.LIGHT : Theme.DARK);</span>
+<span class="nc" id="L120">            });</span>
+<span class="nc" id="L121">        });</span>
+
+        // Dialog open
+<span class="nc" id="L124">        eventBus.registerCharacter(c -&gt; {</span>
+<span class="nc bnc" id="L125" title="All 6 branches missed.">            if ((c == 'd' || c == 'D') &amp;&amp; dialogNode == null) {</span>
+<span class="nc" id="L126">                setState(() -&gt; dialogNode = buildConfirmDialog());</span>
+            }
+<span class="nc" id="L128">        });</span>
+
+        // Notification
+<span class="nc" id="L131">        eventBus.registerCharacter(c -&gt; {</span>
+<span class="nc bnc" id="L132" title="All 4 branches missed.">            if (c == 'n' || c == 'N') {</span>
+<span class="nc" id="L133">                notifications.show(&quot;Hello from AliveJTUI! &quot; +</span>
+<span class="nc" id="L134">                        java.time.LocalTime.now().toString().substring(0, 8),</span>
+                        3000, NotificationType.INFO);
+            }
+<span class="nc" id="L137">        });</span>
+
+        // Progress
+<span class="nc" id="L140">        eventBus.registerCharacter(c -&gt; {</span>
+<span class="nc bnc" id="L141" title="All 2 branches missed.">            if (c == '+') setState(() -&gt; progress = Math.min(1.0, progress + 0.05));</span>
+<span class="nc bnc" id="L142" title="All 2 branches missed.">            if (c == '-') setState(() -&gt; progress = Math.max(0.0, progress - 0.05));</span>
+<span class="nc" id="L143">        });</span>
+
+        // Input (tab 1 only, ignore reserved keys)
+<span class="nc" id="L146">        eventBus.registerCharacter(c -&gt; {</span>
+<span class="nc bnc" id="L147" title="All 32 branches missed.">            if (activeTab == 0 &amp;&amp; c &gt;= 32</span>
+                    &amp;&amp; c != '+' &amp;&amp; c != '-'
+                    &amp;&amp; c != 't' &amp;&amp; c != 'T'
+                    &amp;&amp; c != 'd' &amp;&amp; c != 'D'
+                    &amp;&amp; c != 'n' &amp;&amp; c != 'N'
+                    &amp;&amp; c != 'c' &amp;&amp; c != 'C'
+                    &amp;&amp; c != 'x' &amp;&amp; c != 'X'
+                    &amp;&amp; c != 's' &amp;&amp; c != 'S') {
+<span class="nc" id="L155">                setState(() -&gt; inputText += c);</span>
+            }
+<span class="nc" id="L157">        });</span>
+<span class="nc" id="L158">        onKey(KeyType.BACKSPACE, () -&gt; {</span>
+<span class="nc bnc" id="L159" title="All 4 branches missed.">            if (activeTab == 0 &amp;&amp; !inputText.isEmpty())</span>
+<span class="nc" id="L160">                setState(() -&gt; inputText = inputText.substring(0, inputText.length() - 1));</span>
+<span class="nc" id="L161">        });</span>
+
+        // Navigation
+<span class="nc" id="L164">        onKey(KeyType.ARROW_DOWN, () -&gt; {</span>
+<span class="nc bnc" id="L165" title="All 2 branches missed.">            if (activeTab == 1) setState(() -&gt; tableRow = Math.min(TABLE_DATA.size() - 1, tableRow + 1));</span>
+<span class="nc bnc" id="L166" title="All 2 branches missed.">            if (activeTab == 2) setState(() -&gt; vList.selectDown());</span>
+<span class="nc bnc" id="L167" title="All 2 branches missed.">            if (activeTab == 4) setState(() -&gt; viewport.scrollDown());</span>
+<span class="nc bnc" id="L168" title="All 2 branches missed.">            if (activeTab == 0) setState(() -&gt; {</span>
+<span class="nc" id="L169">                radioIdx   = (radioIdx + 1) % 2;</span>
+<span class="nc" id="L170">                spinFrame  = (spinFrame + 1) % SPIN.length;</span>
+<span class="nc" id="L171">            });</span>
+<span class="nc" id="L172">        });</span>
+<span class="nc" id="L173">        onKey(KeyType.ARROW_UP, () -&gt; {</span>
+<span class="nc bnc" id="L174" title="All 2 branches missed.">            if (activeTab == 1) setState(() -&gt; tableRow = Math.max(0, tableRow - 1));</span>
+<span class="nc bnc" id="L175" title="All 2 branches missed.">            if (activeTab == 2) setState(() -&gt; vList.selectUp());</span>
+<span class="nc bnc" id="L176" title="All 2 branches missed.">            if (activeTab == 4) setState(() -&gt; viewport.scrollUp());</span>
+<span class="nc bnc" id="L177" title="All 2 branches missed.">            if (activeTab == 0) setState(() -&gt; {</span>
+<span class="nc" id="L178">                radioIdx  = (radioIdx + 1) % 2;</span>
+<span class="nc" id="L179">                spinFrame = (spinFrame + 1) % SPIN.length;</span>
+<span class="nc" id="L180">            });</span>
+<span class="nc" id="L181">        });</span>
+<span class="nc" id="L182">        onKey(KeyType.PAGE_DOWN, () -&gt; {</span>
+<span class="nc bnc" id="L183" title="All 2 branches missed.">            if (activeTab == 2) setState(() -&gt; vList.pageDown());</span>
+<span class="nc bnc" id="L184" title="All 2 branches missed.">            if (activeTab == 4) setState(() -&gt; viewport.pageDown());</span>
+<span class="nc" id="L185">        });</span>
+<span class="nc" id="L186">        onKey(KeyType.PAGE_UP, () -&gt; {</span>
+<span class="nc bnc" id="L187" title="All 2 branches missed.">            if (activeTab == 2) setState(() -&gt; vList.pageUp());</span>
+<span class="nc bnc" id="L188" title="All 2 branches missed.">            if (activeTab == 4) setState(() -&gt; viewport.pageUp());</span>
+<span class="nc" id="L189">        });</span>
+<span class="nc bnc" id="L190" title="All 2 branches missed.">        onKey(KeyType.HOME,      () -&gt; { if (activeTab == 2) setState(() -&gt; vList.selectFirst()); });</span>
+<span class="nc bnc" id="L191" title="All 2 branches missed.">        onKey(KeyType.END,       () -&gt; { if (activeTab == 2) setState(() -&gt; vList.selectLast()); });</span>
+
+        // Collapsible
+<span class="nc" id="L194">        eventBus.registerCharacter(c -&gt; {</span>
+<span class="nc bnc" id="L195" title="All 6 branches missed.">            if (c == 'c' || c == 'C') setState(() -&gt; colExpanded = !colExpanded);</span>
+<span class="nc" id="L196">        });</span>
+
+        // Checkbox
+<span class="nc" id="L199">        eventBus.registerCharacter(c -&gt; {</span>
+<span class="nc bnc" id="L200" title="All 6 branches missed.">            if (c == 'x' || c == 'X') setState(() -&gt; cbChecked = !cbChecked);</span>
+<span class="nc" id="L201">        });</span>
+
+        // Select cycle
+<span class="nc" id="L204">        eventBus.registerCharacter(c -&gt; {</span>
+<span class="nc bnc" id="L205" title="All 4 branches missed.">            if (c == 's' || c == 'S') setState(() -&gt; selectIdx = (selectIdx + 1) % COLORS_OPT.length);</span>
+<span class="nc" id="L206">        });</span>
+
+        // Spinner auto-tick
+<span class="nc" id="L209">        AliveJTUI.scheduleRepeating(150, () -&gt; setState(() -&gt; spinFrame = (spinFrame + 1) % SPIN.length));</span>
+<span class="nc" id="L210">    }</span>
+
+    // ==========================================================================
+    //  RENDER
+    // ==========================================================================
+
+    @Override
+    public Node render() {
+        // ---- Overlay management ----
+<span class="nc" id="L219">        Node notifOverlay = notifications.buildOverlay();</span>
+
+<span class="nc bnc" id="L221" title="All 2 branches missed.">        if (dialogNode != null) {</span>
+            // Dialog takes priority
+<span class="nc" id="L223">            AliveJTUI.pushOverlay(dialogNode);</span>
+<span class="nc" id="L224">            notifShowing = false;</span>
+<span class="nc bnc" id="L225" title="All 2 branches missed.">        } else if (notifOverlay != null) {</span>
+<span class="nc" id="L226">            AliveJTUI.pushOverlay(notifOverlay);</span>
+<span class="nc" id="L227">            notifShowing = true;</span>
+<span class="nc bnc" id="L228" title="All 2 branches missed.">        } else if (notifShowing) {</span>
+            // Notification just expired — clear overlay
+<span class="nc" id="L230">            AliveJTUI.popOverlay();</span>
+<span class="nc" id="L231">            notifShowing = false;</span>
+        }
+
+<span class="nc" id="L234">        return VBox.of(</span>
+<span class="nc" id="L235">            renderHeader(),</span>
+<span class="nc" id="L236">            renderTabBar(),</span>
+<span class="nc" id="L237">            Divider.horizontal(),</span>
+<span class="nc" id="L238">            renderTabContent(),</span>
+<span class="nc" id="L239">            Divider.horizontal(),</span>
+<span class="nc" id="L240">            renderFooter()</span>
+        );
+    }
+
+    // --- Header ---
+    private Node renderHeader() {
+<span class="nc bnc" id="L246" title="All 2 branches missed.">        boolean dark = AliveJTUI.getTheme() == Theme.DARK;</span>
+<span class="nc bnc" id="L247" title="All 2 branches missed.">        String themeLabel = dark ? &quot;[Dark]&quot; : &quot;[Light]&quot;;</span>
+<span class="nc bnc" id="L248" title="All 2 branches missed.">        Color titleColor = dark ? Color.CYAN : Color.BLUE;</span>
+<span class="nc" id="L249">        return HBox.of(</span>
+<span class="nc" id="L250">            Text.of(&quot;  AliveJTUI Demo v0.1.0&quot;).bold().color(titleColor),</span>
+<span class="nc" id="L251">            Text.of(&quot;  theme: &quot; + themeLabel).dim()</span>
+        );
+    }
+
+    // --- Tab bar ---
+    private Node renderTabBar() {
+<span class="nc bnc" id="L257" title="All 2 branches missed.">        boolean dark = AliveJTUI.getTheme() == Theme.DARK;</span>
+<span class="nc bnc" id="L258" title="All 2 branches missed.">        Color activeColor = dark ? Color.BRIGHT_CYAN : Color.BLUE;</span>
+<span class="nc" id="L259">        Node[] tabs = new Node[TAB_NAMES.length];</span>
+<span class="nc bnc" id="L260" title="All 2 branches missed.">        for (int i = 0; i &lt; TAB_NAMES.length; i++) {</span>
+<span class="nc bnc" id="L261" title="All 2 branches missed.">            boolean active = i == activeTab;</span>
+<span class="nc" id="L262">            TextNode t = Text.of(&quot; &quot; + TAB_NAMES[i] + &quot; &quot;)</span>
+<span class="nc bnc" id="L263" title="All 2 branches missed.">                    .color(active ? activeColor : Color.BRIGHT_BLACK);</span>
+<span class="nc bnc" id="L264" title="All 2 branches missed.">            if (active) t = t.bold();</span>
+<span class="nc" id="L265">            tabs[i] = t;</span>
+        }
+<span class="nc" id="L267">        return HBox.of(tabs);</span>
+    }
+
+    // --- Tab content ---
+    private Node renderTabContent() {
+<span class="nc bnc" id="L272" title="All 6 branches missed.">        return switch (activeTab) {</span>
+<span class="nc" id="L273">            case 0 -&gt; renderWidgetsTab();</span>
+<span class="nc" id="L274">            case 1 -&gt; renderTableTab();</span>
+<span class="nc" id="L275">            case 2 -&gt; renderVirtualListTab();</span>
+<span class="nc" id="L276">            case 3 -&gt; renderTextTab();</span>
+<span class="nc" id="L277">            case 4 -&gt; renderLayoutTab();</span>
+<span class="nc" id="L278">            default -&gt; Text.of(&quot;Unknown tab&quot;);</span>
+        };
+    }
+
+    // ==========================================================================
+    //  TAB 1 — Widgets
+    // ==========================================================================
+    private Node renderWidgetsTab() {
+<span class="nc" id="L286">        int pct = (int) Math.round(progress * 100);</span>
+<span class="nc bnc" id="L287" title="All 4 branches missed.">        Color pctColor = pct &gt;= 80 ? Color.GREEN : pct &lt;= 20 ? Color.RED : Color.YELLOW;</span>
+
+<span class="nc" id="L289">        return VBox.of(</span>
+<span class="nc" id="L290">            Text.of(&quot;&quot;),</span>
+<span class="nc" id="L291">            HBox.of(</span>
+<span class="nc" id="L292">                Text.of(&quot;  &quot;),</span>
+                clickBtn,
+<span class="nc" id="L294">                Text.of(&quot;  Clicked: &quot;).dim(),</span>
+<span class="nc" id="L295">                Text.of(String.valueOf(clickCount)).bold().color(Color.GREEN),</span>
+<span class="nc" id="L296">                Text.of(&quot;  Spin: &quot; + SPIN[spinFrame]).color(Color.CYAN)</span>
+            ),
+<span class="nc" id="L298">            Text.of(&quot;&quot;),</span>
+<span class="nc" id="L299">            HBox.of(</span>
+<span class="nc" id="L300">                Text.of(&quot;  Progress &quot;),</span>
+<span class="nc" id="L301">                Text.of(&quot;[+][-]&quot;).dim()</span>
+            ),
+<span class="nc" id="L303">            HBox.of(</span>
+<span class="nc" id="L304">                Text.of(&quot;  &quot;),</span>
+                new ProgressBarNode(progress),
+<span class="nc" id="L306">                Text.of(&quot;  &quot; + pct + &quot;%&quot;).bold().color(pctColor)</span>
+            ),
+<span class="nc" id="L308">            Text.of(&quot;&quot;),</span>
+<span class="nc" id="L309">            HBox.of(</span>
+<span class="nc" id="L310">                Text.of(&quot;  &quot;),</span>
+<span class="nc" id="L311">                Checkbox.of(&quot;Notifications enabled [X]&quot;, cbChecked, () -&gt; {}),</span>
+<span class="nc" id="L312">                Text.of(&quot;    Input: &quot;).dim(),</span>
+<span class="nc" id="L313">                Text.of(&quot;[&quot; + inputText + &quot;_]&quot;).color(Color.YELLOW)</span>
+            ),
+<span class="nc" id="L315">            Text.of(&quot;&quot;),</span>
+<span class="nc" id="L316">            HBox.of(</span>
+<span class="nc" id="L317">                Text.of(&quot;  Theme radio [Up/Down]:  &quot;),</span>
+<span class="nc bnc" id="L318" title="All 2 branches missed.">                Text.of(radioIdx == 0 ? &quot;(x) Dark  ( ) Light&quot; : &quot;( ) Dark  (x) Light&quot;)</span>
+<span class="nc" id="L319">                    .color(Color.BRIGHT_CYAN)</span>
+            ),
+<span class="nc" id="L321">            HBox.of(</span>
+<span class="nc" id="L322">                Text.of(&quot;  Color select [S]:  &quot;),</span>
+<span class="nc" id="L323">                Text.of(&quot;&lt;&lt; &quot; + COLORS_OPT[selectIdx] + &quot; &gt;&gt;&quot;).bold()</span>
+<span class="nc" id="L324">                    .color(nameToColor(COLORS_OPT[selectIdx]))</span>
+            ),
+<span class="nc" id="L326">            Text.of(&quot;&quot;)</span>
+        );
+    }
+
+    private Color nameToColor(String name) {
+<span class="nc bnc" id="L331" title="All 6 branches missed.">        return switch (name) {</span>
+<span class="nc" id="L332">            case &quot;Red&quot;     -&gt; Color.RED;</span>
+<span class="nc" id="L333">            case &quot;Green&quot;   -&gt; Color.GREEN;</span>
+<span class="nc" id="L334">            case &quot;Blue&quot;    -&gt; Color.BLUE;</span>
+<span class="nc" id="L335">            case &quot;Cyan&quot;    -&gt; Color.CYAN;</span>
+<span class="nc" id="L336">            case &quot;Magenta&quot; -&gt; Color.MAGENTA;</span>
+<span class="nc" id="L337">            default        -&gt; Color.WHITE;</span>
+        };
+    }
+
+    // ==========================================================================
+    //  TAB 2 — Table
+    // ==========================================================================
+    private Node renderTableTab() {
+<span class="nc" id="L345">        TableNode table = Table.of(</span>
+<span class="nc" id="L346">                List.of(&quot;Name&quot;, &quot;Dept&quot;, &quot;Level&quot;, &quot;City&quot;),</span>
+                TABLE_DATA,
+                8
+        );
+<span class="nc bnc" id="L350" title="All 2 branches missed.">        for (int i = 0; i &lt; tableRow; i++) table.selectDown();</span>
+
+<span class="nc" id="L352">        return VBox.of(</span>
+<span class="nc" id="L353">            Text.of(&quot;&quot;),</span>
+<span class="nc" id="L354">            Text.of(&quot;  Up/Down: Navigate  |  8 employees&quot;).dim(),</span>
+<span class="nc" id="L355">            Text.of(&quot;&quot;),</span>
+            table,
+<span class="nc" id="L357">            Text.of(&quot;&quot;),</span>
+<span class="nc" id="L358">            HBox.of(</span>
+<span class="nc" id="L359">                Text.of(&quot;  Selected: &quot;).dim(),</span>
+<span class="nc" id="L360">                Text.of(TABLE_DATA.get(tableRow).get(0) + &quot;  -  &quot;</span>
+<span class="nc" id="L361">                        + TABLE_DATA.get(tableRow).get(1)).bold().color(Color.BRIGHT_CYAN)</span>
+            )
+        );
+    }
+
+    // ==========================================================================
+    //  TAB 3 — VirtualList
+    // ==========================================================================
+    private Node renderVirtualListTab() {
+<span class="nc" id="L370">        return VBox.of(</span>
+<span class="nc" id="L371">            Text.of(&quot;&quot;),</span>
+<span class="nc" id="L372">            HBox.of(</span>
+<span class="nc" id="L373">                Text.of(&quot;  10,000 items — only visible rows rendered  &quot;).dim(),</span>
+<span class="nc" id="L374">                Text.of(&quot;Up/Down  PgUp/PgDn  Home/End&quot;).color(Color.BRIGHT_BLACK)</span>
+            ),
+<span class="nc" id="L376">            Text.of(&quot;&quot;),</span>
+            vList,
+<span class="nc" id="L378">            Text.of(&quot;&quot;),</span>
+<span class="nc" id="L379">            HBox.of(</span>
+<span class="nc" id="L380">                Text.of(&quot;  Item &quot;).dim(),</span>
+<span class="nc" id="L381">                Text.of(String.valueOf(vList.getSelectedIndex() + 1)).bold().color(Color.CYAN),</span>
+<span class="nc" id="L382">                Text.of(&quot; / &quot; + vList.itemCount()).dim()</span>
+            )
+        );
+    }
+
+    // ==========================================================================
+    //  TAB 4 — Text
+    // ==========================================================================
+    private Node renderTextTab() {
+<span class="nc" id="L391">        return VBox.of(</span>
+<span class="nc" id="L392">            Text.of(&quot;&quot;),</span>
+<span class="nc" id="L393">            Text.of(&quot;  STYLED TEXT&quot;).bold().color(Color.YELLOW),</span>
+<span class="nc" id="L394">            HBox.of(</span>
+<span class="nc" id="L395">                Text.of(&quot;  &quot;),</span>
+<span class="nc" id="L396">                Text.of(&quot;Bold &quot;).bold(),</span>
+<span class="nc" id="L397">                Text.of(&quot;Italic &quot;).italic(),</span>
+<span class="nc" id="L398">                Text.of(&quot;Underline &quot;).underline(),</span>
+<span class="nc" id="L399">                Text.of(&quot;Strike &quot;).strikethrough(),</span>
+<span class="nc" id="L400">                Text.of(&quot;Dim&quot;).dim()</span>
+            ),
+<span class="nc" id="L402">            HBox.of(</span>
+<span class="nc" id="L403">                Text.of(&quot;  &quot;),</span>
+<span class="nc" id="L404">                Text.of(&quot;Red &quot;).color(Color.RED),</span>
+<span class="nc" id="L405">                Text.of(&quot;Green &quot;).color(Color.GREEN),</span>
+<span class="nc" id="L406">                Text.of(&quot;Yellow &quot;).color(Color.YELLOW),</span>
+<span class="nc" id="L407">                Text.of(&quot;Blue &quot;).color(Color.BLUE),</span>
+<span class="nc" id="L408">                Text.of(&quot;Cyan &quot;).color(Color.CYAN),</span>
+<span class="nc" id="L409">                Text.of(&quot;Magenta &quot;).color(Color.MAGENTA),</span>
+<span class="nc" id="L410">                Text.of(&quot;BrightGreen &quot;).color(Color.BRIGHT_GREEN)</span>
+            ),
+<span class="nc" id="L412">            Text.of(&quot;&quot;),</span>
+<span class="nc" id="L413">            Divider.horizontal(),</span>
+<span class="nc" id="L414">            Text.of(&quot;&quot;),</span>
+<span class="nc" id="L415">            Text.of(&quot;  MARKDOWN&quot;).bold().color(Color.YELLOW),</span>
+<span class="nc" id="L416">            Text.of(&quot;  &quot;),</span>
+<span class="nc" id="L417">            Paragraph.ofMarkdown(</span>
+                &quot;**AliveJTUI** is a *declarative* TUI library for Java. &quot; +
+                &quot;Build terminal UIs as component trees -- just like React, &quot; +
+                &quot;but for the terminal. Supports **bold**, *italic*, and `code`.&quot;
+            ),
+<span class="nc" id="L422">            Text.of(&quot;&quot;),</span>
+<span class="nc" id="L423">            Divider.horizontal(),</span>
+<span class="nc" id="L424">            Text.of(&quot;&quot;),</span>
+<span class="nc" id="L425">            Text.of(&quot;  WORD-WRAPPED&quot;).bold().color(Color.YELLOW),</span>
+<span class="nc" id="L426">            Text.of(&quot;  &quot;),</span>
+            new TextNode(
+                &quot;Word wrapping automatically breaks long lines to fit the terminal width. &quot; +
+                &quot;This is useful for descriptions, help text, and any prose content &quot; +
+                &quot;that should reflow when the window is resized.&quot;,
+<span class="nc" id="L431">                Style.DEFAULT.withForeground(Color.BRIGHT_BLACK)</span>
+<span class="nc" id="L432">            ).wrap()</span>
+        );
+    }
+
+    // ==========================================================================
+    //  TAB 5 — Layout
+    // ==========================================================================
+    private Node renderLayoutTab() {
+<span class="nc" id="L440">        return VBox.of(</span>
+<span class="nc" id="L441">            Text.of(&quot;&quot;),</span>
+<span class="nc" id="L442">            Text.of(&quot;  BOX LAYOUT&quot;).bold().color(Color.YELLOW),</span>
+<span class="nc" id="L443">            HBox.of(</span>
+<span class="nc" id="L444">                new BoxNode(VBox.of(</span>
+<span class="nc" id="L445">                    Text.of(&quot; Panel A &quot;).bold().color(Color.BLUE),</span>
+<span class="nc" id="L446">                    Text.of(&quot; alpha   &quot;).dim(),</span>
+<span class="nc" id="L447">                    Text.of(&quot; beta    &quot;).dim()</span>
+<span class="nc" id="L448">                ), true, Style.DEFAULT.withForeground(Color.BLUE)),</span>
+<span class="nc" id="L449">                Text.of(&quot; &quot;),</span>
+<span class="nc" id="L450">                new BoxNode(VBox.of(</span>
+<span class="nc" id="L451">                    Text.of(&quot; Panel B &quot;).bold().color(Color.CYAN),</span>
+<span class="nc" id="L452">                    Text.of(&quot; gamma   &quot;).dim(),</span>
+<span class="nc" id="L453">                    Text.of(&quot; delta   &quot;).dim()</span>
+<span class="nc" id="L454">                ), true, Style.DEFAULT.withForeground(Color.CYAN)),</span>
+<span class="nc" id="L455">                Text.of(&quot; &quot;),</span>
+<span class="nc" id="L456">                new BoxNode(VBox.of(</span>
+<span class="nc" id="L457">                    Text.of(&quot; Panel C &quot;).bold().color(Color.MAGENTA),</span>
+<span class="nc" id="L458">                    Text.of(&quot; epsilon &quot;).dim(),</span>
+<span class="nc" id="L459">                    Text.of(&quot; zeta    &quot;).dim()</span>
+<span class="nc" id="L460">                ), true, Style.DEFAULT.withForeground(Color.MAGENTA))</span>
+            ),
+<span class="nc" id="L462">            Text.of(&quot;&quot;),</span>
+<span class="nc" id="L463">            Divider.horizontal(),</span>
+<span class="nc" id="L464">            Text.of(&quot;&quot;),</span>
+<span class="nc" id="L465">            HBox.of(</span>
+<span class="nc" id="L466">                Text.of(&quot;  COLLAPSIBLE [C] &quot;).bold().color(Color.YELLOW),</span>
+<span class="nc bnc" id="L467" title="All 2 branches missed.">                Text.of(colExpanded ? &quot;v expanded&quot; : &quot;&gt; collapsed&quot;).color(Color.BRIGHT_BLACK)</span>
+            ),
+<span class="nc bnc" id="L469" title="All 2 branches missed.">            colExpanded</span>
+<span class="nc" id="L470">                ? VBox.of(</span>
+<span class="nc" id="L471">                    Text.of(&quot;  * Feature flags configuration&quot;),</span>
+<span class="nc" id="L472">                    Text.of(&quot;  * Database connection pool settings&quot;),</span>
+<span class="nc" id="L473">                    Text.of(&quot;  * Logging level overrides&quot;),</span>
+<span class="nc" id="L474">                    Text.of(&quot;  * Performance tuning knobs&quot;)</span>
+                  )
+<span class="nc" id="L476">                : Text.of(&quot;  (hidden -- press C to expand)&quot;).dim(),</span>
+<span class="nc" id="L477">            Text.of(&quot;&quot;),</span>
+<span class="nc" id="L478">            Divider.horizontal(),</span>
+<span class="nc" id="L479">            Text.of(&quot;&quot;),</span>
+<span class="nc" id="L480">            Text.of(&quot;  VIEWPORT (scrollable) — Up/Down PgUp/PgDn&quot;).bold().color(Color.YELLOW),</span>
+            viewport
+        );
+    }
+
+    // --- Confirm dialog (built inline so callbacks can capture `this`) ---
+    private Node buildConfirmDialog() {
+<span class="nc" id="L487">        return Dialog.of(&quot;Confirm Action&quot;,</span>
+<span class="nc" id="L488">            VBox.of(</span>
+<span class="nc" id="L489">                Paragraph.ofMarkdown(&quot;Are you sure you want to proceed?&quot;),</span>
+<span class="nc" id="L490">                Text.of(&quot;&quot;),</span>
+<span class="nc" id="L491">                HBox.of(</span>
+<span class="nc" id="L492">                    Button.of(&quot;[Yes]&quot;, () -&gt; setState(() -&gt; {</span>
+<span class="nc" id="L493">                        dialogNode = null;</span>
+<span class="nc" id="L494">                        notifications.show(&quot;Action confirmed!&quot;, 2500, NotificationType.SUCCESS);</span>
+<span class="nc" id="L495">                    })),</span>
+<span class="nc" id="L496">                    Text.of(&quot;   &quot;),</span>
+<span class="nc" id="L497">                    Button.of(&quot;[No]&quot;, () -&gt; setState(() -&gt; dialogNode = null))</span>
+                )
+            )
+        );
+    }
+
+    // --- Footer ---
+    private Node renderFooter() {
+<span class="nc" id="L505">        return HBox.of(</span>
+<span class="nc" id="L506">            Text.of(&quot;  1-5:Tab &quot;).dim(),</span>
+<span class="nc" id="L507">            Text.of(&quot;T:Theme &quot;).dim(),</span>
+<span class="nc" id="L508">            Text.of(&quot;D:Dialog &quot;).dim(),</span>
+<span class="nc" id="L509">            Text.of(&quot;N:Notify &quot;).dim(),</span>
+<span class="nc" id="L510">            Text.of(&quot;C:Collapse &quot;).dim(),</span>
+<span class="nc" id="L511">            Text.of(&quot;X:Checkbox &quot;).dim(),</span>
+<span class="nc" id="L512">            Text.of(&quot;S:Select &quot;).dim(),</span>
+<span class="nc" id="L513">            Text.of(&quot;+/-:Progress &quot;).dim(),</span>
+<span class="nc" id="L514">            Text.of(&quot;ESC:Quit&quot;).dim()</span>
+        );
+    }
+
+    // ==========================================================================
+    //  Entry point
+    // ==========================================================================
+    public static void main(String[] args) {
+<span class="nc" id="L522">        AliveJTUI.run(new DemoApp());</span>
+<span class="nc" id="L523">    }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.10.202304240956</span></div></body></html>

@@ -84,20 +84,6 @@ public final class AnsiWriter {
         write(CSI + "0m");
     }
 
-    // --- Mouse ---
-
-    /** Enable SGR mouse reporting (button events + extended coordinates). */
-    public void mouseEnable() throws IOException {
-        write(CSI + "?1000h"); // button events
-        write(CSI + "?1006h"); // SGR extended mode
-    }
-
-    /** Disable mouse reporting. */
-    public void mouseDisable() throws IOException {
-        write(CSI + "?1006l");
-        write(CSI + "?1000l");
-    }
-
     // --- Flush ---
 
     public void flush() throws IOException {

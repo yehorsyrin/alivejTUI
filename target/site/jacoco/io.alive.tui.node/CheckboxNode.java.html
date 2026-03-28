@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="uk"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CheckboxNode.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">AliveJTUI</a> &gt; <a href="index.source.html" class="el_package">io.alive.tui.node</a> &gt; <span class="el_source">CheckboxNode.java</span></div><h1>CheckboxNode.java</h1><pre class="source lang-java linenums">package io.alive.tui.node;
+
+import io.alive.tui.core.Focusable;
+import io.alive.tui.core.Node;
+import io.alive.tui.style.Color;
+import io.alive.tui.style.Style;
+
+/**
+ * A toggleable checkbox node with a label and an optional change callback.
+ *
+ * &lt;p&gt;Rendered as {@code [✓] Label} when checked, or {@code [ ] Label} when unchecked.
+ * Space or Enter toggles the state when this node has keyboard focus.
+ *
+ * @author Jarvis (AI)
+ */
+public class CheckboxNode extends Node implements Focusable {
+
+    private final String label;
+    private boolean checked;
+    private final Runnable onChange;
+    private boolean focused;
+    private Style style;
+    private Style focusedStyle;
+
+    /**
+     * Creates a new checkbox node.
+     *
+     * @param label    the display label (must not be {@code null})
+     * @param checked  initial checked state
+     * @param onChange optional callback invoked after each toggle; may be {@code null}
+     */
+<span class="fc" id="L32">    public CheckboxNode(String label, boolean checked, Runnable onChange) {</span>
+<span class="fc bfc" id="L33" title="All 2 branches covered.">        this.label = label != null ? label : &quot;&quot;;</span>
+<span class="fc" id="L34">        this.checked = checked;</span>
+<span class="fc" id="L35">        this.onChange = onChange;</span>
+<span class="fc" id="L36">        this.style = Style.DEFAULT;</span>
+<span class="fc" id="L37">        this.focusedStyle = Style.DEFAULT.withForeground(Color.YELLOW).withBold(true);</span>
+<span class="fc" id="L38">    }</span>
+
+    /** Returns the checkbox label. */
+<span class="fc" id="L41">    public String getLabel() { return label; }</span>
+
+    /** Returns {@code true} if this checkbox is currently checked. */
+<span class="fc" id="L44">    public boolean isChecked() { return checked; }</span>
+
+    /**
+     * Toggles the checked state and invokes the {@code onChange} callback if present.
+     */
+    public void toggle() {
+<span class="fc bfc" id="L50" title="All 2 branches covered.">        checked = !checked;</span>
+<span class="fc bfc" id="L51" title="All 2 branches covered.">        if (onChange != null) onChange.run();</span>
+<span class="fc" id="L52">    }</span>
+
+    @Override
+<span class="fc" id="L55">    public boolean isFocused() { return focused; }</span>
+
+    @Override
+<span class="fc" id="L58">    public void setFocused(boolean focused) { this.focused = focused; }</span>
+
+    @Override
+<span class="fc" id="L61">    public String getFocusId() { return label; }</span>
+
+    /** Returns the normal (unfocused) style. */
+<span class="fc" id="L64">    public Style getStyle() { return style; }</span>
+
+    /** Returns the focused style. */
+<span class="fc" id="L67">    public Style getFocusedStyle() { return focusedStyle; }</span>
+
+    /** Fluent setter for the normal style. */
+    public CheckboxNode style(Style style) {
+<span class="nc" id="L71">        this.style = style;</span>
+<span class="nc" id="L72">        return this;</span>
+    }
+
+    /** Fluent setter for the focused style. */
+    public CheckboxNode focusedStyle(Style style) {
+<span class="nc" id="L77">        this.focusedStyle = style;</span>
+<span class="nc" id="L78">        return this;</span>
+    }
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.10.202304240956</span></div></body></html>
