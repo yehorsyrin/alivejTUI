@@ -65,6 +65,8 @@ class TreeFlattener {
             flattenDialog(dialog, cells);
         } else if (node instanceof ViewportNode vp) {
             flattenViewport(vp, cells);
+        } else if (node instanceof SelectNode sel) {
+            flattenSelect(sel, cells);
         } else {
             // Container node (VBox, HBox) — recurse into children
             for (Node child : node.getChildren()) visit(child, cells);
@@ -277,6 +279,35 @@ class TreeFlattener {
             for (int col = 0; col < w; col++) {
                 char c = col < line.length() ? line.charAt(col) : SPACE;
                 put(cells, x + col, y + row, c, Style.DEFAULT);
+            }
+        }
+    }
+
+    private void flattenSelect(SelectNode sel, Map<String, CellState> cells) {
+        int x = sel.getX(), y = sel.getY(), w = sel.getWidth();
+        Style headerStyle = sel.isFocused() ? sel.getFocusedStyle() : sel.getNormalStyle();
+        char arrow = sel.isOpen() ? SelectNode.ARROW_UP : SelectNode.ARROW_DOWN;
+
+        // Header row: "[ Selected Option ▾ ]" or similar
+        // Format: "[ " + label + " " + arrow + " ]"  — simplified to fitting within w
+        String label = sel.getSelectedOption();
+        String header = "[ " + label + " " + arrow + " ]";
+        for (int col = 0; col < w; col++) {
+            char c = col < header.length() ? header.charAt(col) : SPACE;
+            put(cells, x + col, y, c, headerStyle);
+        }
+
+        // Option rows (only when open)
+        if (sel.isOpen()) {
+            List<String> options = sel.getOptions();
+            for (int i = 0; i < options.size(); i++) {
+                String prefix = (i == sel.getHoverIndex()) ? SelectNode.CURSOR : SelectNode.PADDING;
+                String row = prefix + options.get(i);
+                Style style = (i == sel.getHoverIndex()) ? sel.getHoverStyle() : sel.getNormalStyle();
+                for (int col = 0; col < w; col++) {
+                    char c = col < row.length() ? row.charAt(col) : SPACE;
+                    put(cells, x + col, y + 1 + i, c, style);
+                }
             }
         }
     }

@@ -68,6 +68,8 @@ public class LayoutEngine {
             layoutDialog(dialog, x, y, availableWidth, availableHeight);
         } else if (root instanceof ViewportNode vp) {
             layoutViewport(vp, x, y, availableWidth, availableHeight);
+        } else if (root instanceof SelectNode sel) {
+            layoutSelect(sel, availableWidth);
         } else {
             // Unknown node type — fill available space
             root.setWidth(availableWidth);
@@ -258,6 +260,14 @@ public class LayoutEngine {
     private void layoutRadioGroup(RadioGroupNode rg, int availableWidth) {
         rg.setWidth(availableWidth);
         rg.setHeight(Math.max(1, rg.getOptions().size()));
+    }
+
+    // --- SelectNode ---
+
+    private void layoutSelect(SelectNode sel, int availableWidth) {
+        sel.setWidth(availableWidth);
+        // Closed: 1 row (the header). Open: 1 header + n options.
+        sel.setHeight(sel.isOpen() ? 1 + sel.getOptions().size() : 1);
     }
 
     // --- ViewportNode ---
