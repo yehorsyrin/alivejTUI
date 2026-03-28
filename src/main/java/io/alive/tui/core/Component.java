@@ -140,6 +140,20 @@ public abstract class Component {
     }
 
     /**
+     * Called when {@link #render()} throws an exception.
+     * Override to provide a fallback node instead of crashing the event loop.
+     *
+     * <p>The default implementation returns a single-line error text node so the
+     * application degrades gracefully rather than exiting.
+     *
+     * @param ex the exception thrown by {@link #render()}
+     * @return a fallback node to display in place of the failed render
+     */
+    protected Node onError(Exception ex) {
+        return io.alive.tui.node.Text.of("Error: " + ex.getMessage());
+    }
+
+    /**
      * Override to skip re-renders when state has not meaningfully changed.
      * Called by {@link #renderAndCache()} before invoking {@link #render()}.
      *
@@ -159,10 +173,17 @@ public abstract class Component {
      * Renders the component, caches the result, and returns it.
      * If {@link #shouldUpdate()} returns {@code false} and a cached tree exists,
      * the cached tree is returned without calling {@link #render()}.
+     *
+     * <p>If {@link #render()} throws an exception, {@link #onError(Exception)} is called
+     * and its fallback node is cached and returned instead.
      */
     public Node renderAndCache() {
         if (previousTree != null && !shouldUpdate()) return previousTree;
-        previousTree = render();
+        try {
+            previousTree = render();
+        } catch (Exception ex) {
+            previousTree = onError(ex);
+        }
         return previousTree;
     }
 

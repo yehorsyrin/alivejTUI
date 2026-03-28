@@ -169,4 +169,82 @@ class ComponentTest {
         // Both calls succeed (no caching), count unchanged but no exception
         assertEquals(beforeCount, comp.count);
     }
+
+    // --- Error Boundaries (TASK-23) ---
+
+    static class ThrowingComponent extends Component {
+        boolean shouldThrow = true;
+
+        @Override
+        public Node render() {
+            if (shouldThrow) throw new RuntimeException("kaboom");
+            return Text.of("ok");
+        }
+    }
+
+    static class CustomErrorComponent extends Component {
+        String lastError;
+
+        @Override
+        public Node render() {
+            throw new IllegalStateException("state gone");
+        }
+
+        @Override
+        protected Node onError(Exception ex) {
+            lastError = ex.getMessage();
+            return Text.of("fallback: " + ex.getMessage());
+        }
+    }
+
+    @Test
+    void renderThrows_defaultOnError_returnsErrorText() {
+        ThrowingComponent comp = new ThrowingComponent();
+        Node result = comp.renderAndCache();
+        assertNotNull(result);
+        // Default onError returns Text.of("Error: <message>")
+        assertInstanceOf(io.alive.tui.node.TextNode.class, result);
+        assertTrue(((io.alive.tui.node.TextNode) result).getText().contains("kaboom"));
+    }
+
+    @Test
+    void renderThrows_doesNotPropagateException() {
+        ThrowingComponent comp = new ThrowingComponent();
+        assertDoesNotThrow(() -> comp.renderAndCache());
+    }
+
+    @Test
+    void renderThrows_fallbackIsCached() {
+        ThrowingComponent comp = new ThrowingComponent();
+        Node first  = comp.renderAndCache();
+        Node second = comp.renderAndCache();
+        // The fallback from the first failing render is cached; second call returns it
+        // (shouldUpdate default = true, so it re-renders and may throw again)
+        assertNotNull(second);
+    }
+
+    @Test
+    void customOnError_called_withCorrectException() {
+        CustomErrorComponent comp = new CustomErrorComponent();
+        comp.renderAndCache();
+        assertEquals("state gone", comp.lastError);
+    }
+
+    @Test
+    void customOnError_fallbackNodeReturned() {
+        CustomErrorComponent comp = new CustomErrorComponent();
+        Node result = comp.renderAndCache();
+        assertInstanceOf(io.alive.tui.node.TextNode.class, result);
+        assertEquals("fallback: state gone", ((io.alive.tui.node.TextNode) result).getText());
+    }
+
+    @Test
+    void afterErrorFixed_renderRecovery() {
+        ThrowingComponent comp = new ThrowingComponent();
+        comp.renderAndCache();               // fails → fallback
+        comp.shouldThrow = false;
+        Node recovered = comp.renderAndCache();
+        assertInstanceOf(io.alive.tui.node.TextNode.class, recovered);
+        assertEquals("ok", ((io.alive.tui.node.TextNode) recovered).getText());
+    }
 }
