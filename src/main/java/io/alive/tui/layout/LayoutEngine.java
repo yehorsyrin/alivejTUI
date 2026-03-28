@@ -66,6 +66,8 @@ public class LayoutEngine {
             layoutHelpPanel(help, availableWidth);
         } else if (root instanceof DialogNode dialog) {
             layoutDialog(dialog, x, y, availableWidth, availableHeight);
+        } else if (root instanceof ViewportNode vp) {
+            layoutViewport(vp, x, y, availableWidth, availableHeight);
         } else {
             // Unknown node type — fill available space
             root.setWidth(availableWidth);
@@ -256,6 +258,27 @@ public class LayoutEngine {
     private void layoutRadioGroup(RadioGroupNode rg, int availableWidth) {
         rg.setWidth(availableWidth);
         rg.setHeight(Math.max(1, rg.getOptions().size()));
+    }
+
+    // --- ViewportNode ---
+
+    private void layoutViewport(ViewportNode vp, int x, int y,
+                                int availableWidth, int availableHeight) {
+        boolean hasSb = vp.isShowScrollbar();
+        int contentW = hasSb ? Math.max(0, availableWidth - 1) : availableWidth;
+
+        if (!vp.getChildren().isEmpty()) {
+            // Lay out content with effectively unlimited height so it shows its natural size
+            layout(vp.getChildren().get(0), x, y, contentW, Integer.MAX_VALUE / 2);
+            int contentH = vp.getChildren().get(0).getHeight();
+            vp.setContentHeight(contentH);
+            vp.setWidth(availableWidth);
+            vp.setHeight(Math.min(vp.getMaxHeight(), contentH));
+        } else {
+            vp.setContentHeight(0);
+            vp.setWidth(availableWidth);
+            vp.setHeight(Math.min(vp.getMaxHeight(), availableHeight));
+        }
     }
 
     // --- DialogNode ---

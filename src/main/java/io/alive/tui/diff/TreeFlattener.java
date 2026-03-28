@@ -63,6 +63,8 @@ class TreeFlattener {
             flattenHelpPanel(help, cells);
         } else if (node instanceof DialogNode dialog) {
             flattenDialog(dialog, cells);
+        } else if (node instanceof ViewportNode vp) {
+            flattenViewport(vp, cells);
         } else {
             // Container node (VBox, HBox) — recurse into children
             for (Node child : node.getChildren()) visit(child, cells);
@@ -275,6 +277,50 @@ class TreeFlattener {
             for (int col = 0; col < w; col++) {
                 char c = col < line.length() ? line.charAt(col) : SPACE;
                 put(cells, x + col, y + row, c, Style.DEFAULT);
+            }
+        }
+    }
+
+    private void flattenViewport(ViewportNode vp, Map<String, CellState> cells) {
+        int nodeX     = vp.getX();
+        int nodeY     = vp.getY();
+        int offset    = vp.getScrollOffset();
+        int visH      = vp.getHeight();
+        boolean hasSb = vp.isShowScrollbar() && vp.isScrollable();
+        int contentW  = hasSb ? vp.getWidth() - 1 : vp.getWidth();
+
+        int minAbsY  = nodeY + offset;
+        int maxAbsYEx = minAbsY + visH;
+
+        // Render children into a temp map, then clip + remap rows (and clip cols)
+        Map<String, CellState> childCells = new HashMap<>();
+        for (Node child : vp.getChildren()) visit(child, childCells);
+
+        for (Map.Entry<String, CellState> entry : childCells.entrySet()) {
+            String key = entry.getKey();
+            int comma = key.indexOf(',');
+            int col   = Integer.parseInt(key.substring(0, comma));
+            int row   = Integer.parseInt(key.substring(comma + 1));
+            if (row >= minAbsY && row < maxAbsYEx && col < nodeX + contentW) {
+                int remappedRow = nodeY + (row - minAbsY);
+                cells.put(col + "," + remappedRow, entry.getValue());
+            }
+        }
+
+        // Draw scroll bar when content is scrollable
+        if (hasSb) {
+            int sbX       = nodeX + vp.getWidth() - 1;
+            int trackH    = visH;
+            int contentH  = vp.getContentHeight();
+            int thumbSize = Math.max(1, (int) Math.round((double) visH / contentH * trackH));
+            int maxThumbStart = trackH - thumbSize;
+            int thumbStart = vp.scrollableRows() == 0 ? 0
+                    : (int) Math.round((double) vp.getScrollOffset() / vp.scrollableRows() * maxThumbStart);
+
+            for (int row = 0; row < trackH; row++) {
+                char ch = (row >= thumbStart && row < thumbStart + thumbSize)
+                        ? ViewportNode.THUMB_CHAR : ViewportNode.TRACK_CHAR;
+                put(cells, sbX, nodeY + row, ch, Style.DEFAULT);
             }
         }
     }
