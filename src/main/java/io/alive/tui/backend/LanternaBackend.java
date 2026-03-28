@@ -150,6 +150,23 @@ public class LanternaBackend implements TerminalBackend {
     }
 
     @Override
+    public KeyEvent readKey(long timeoutMs) throws InterruptedException {
+        requireInitialized();
+        long deadline = System.nanoTime() + timeoutMs * 1_000_000L;
+        try {
+            while (true) {
+                KeyStroke ks = screen.pollInput();
+                if (ks != null) return toKeyEvent(ks);
+                long remaining = deadline - System.nanoTime();
+                if (remaining <= 0) return null;
+                Thread.sleep(Math.min(10L, remaining / 1_000_000L + 1));
+            }
+        } catch (IOException e) {
+            throw new TerminalRenderException("Terminal I/O error while reading input", e);
+        }
+    }
+
+    @Override
     public void setResizeListener(Runnable onResize) {
         this.resizeListener = onResize;
     }

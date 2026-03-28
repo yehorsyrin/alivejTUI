@@ -97,6 +97,20 @@ public interface TerminalBackend {
     KeyEvent readKey() throws InterruptedException;
 
     /**
+     * Waits up to {@code timeoutMs} milliseconds for a key event.
+     * Returns {@code null} if no key arrived within the timeout.
+     *
+     * <p>Default implementation ignores the timeout and delegates to {@link #readKey()}.
+     * Backends that support timed polling should override this method.
+     *
+     * @param timeoutMs maximum wait in milliseconds
+     * @throws InterruptedException if the thread is interrupted while waiting
+     */
+    default KeyEvent readKey(long timeoutMs) throws InterruptedException {
+        return readKey();
+    }
+
+    /**
      * Registers a callback invoked when the terminal is resized.
      * Called from within {@link #flush()}, so it runs on the event loop thread.
      */

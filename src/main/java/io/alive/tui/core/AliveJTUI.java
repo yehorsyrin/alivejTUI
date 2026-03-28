@@ -26,8 +26,12 @@ public class AliveJTUI {
 
     // --- Overlay API (single-instance, single-threaded) ---
 
-    private static Renderer   activeRenderer;
-    private static Runnable   activeRerenderCallback;
+    private static Renderer      activeRenderer;
+    private static Runnable      activeRerenderCallback;
+
+    // --- Timer API ---
+
+    private static TimerManager  activeTimerManager;
 
     /**
      * Pushes a node to be rendered as an overlay on top of the current root tree.
@@ -51,6 +55,41 @@ public class AliveJTUI {
             activeRenderer.clearOverlay();
             if (activeRerenderCallback != null) activeRerenderCallback.run();
         }
+    }
+
+    // --- Timer API ---
+
+    /**
+     * Schedules a one-shot callback to run after {@code delayMs} milliseconds.
+     * Must be called from within the event loop thread (e.g. inside a key handler or setState).
+     * A re-render is triggered automatically after the callback fires.
+     *
+     * @param delayMs delay in milliseconds
+     * @param task    the callback to run
+     */
+    public static void schedule(long delayMs, Runnable task) {
+        if (activeTimerManager != null) activeTimerManager.schedule(delayMs, task);
+    }
+
+    /**
+     * Schedules a repeating callback that fires every {@code intervalMs} milliseconds.
+     * Useful for animations (e.g. advancing a {@link io.alive.tui.node.SpinnerNode} frame).
+     * A re-render is triggered automatically after each firing.
+     *
+     * @param intervalMs interval in milliseconds
+     * @param task       the callback to run on each interval
+     */
+    public static void scheduleRepeating(long intervalMs, Runnable task) {
+        if (activeTimerManager != null) activeTimerManager.scheduleRepeating(intervalMs, task);
+    }
+
+    /**
+     * Cancels all scheduled occurrences of the given task (by reference equality).
+     *
+     * @param task the task to cancel
+     */
+    public static void cancelTimer(Runnable task) {
+        if (activeTimerManager != null) activeTimerManager.cancel(task);
     }
 
     /**
@@ -91,9 +130,10 @@ public class AliveJTUI {
         eventBus.register(KeyType.TAB,       focusManager::focusNext);
         eventBus.register(KeyType.SHIFT_TAB, focusManager::focusPrev);
 
-        // Expose overlay API
-        activeRenderer = renderer;
+        // Expose overlay and timer APIs
+        activeRenderer         = renderer;
         activeRerenderCallback = () -> renderer.render(root.renderAndCache());
+        activeTimerManager     = new TimerManager();
 
         // Mount root component
         root.mount(activeRerenderCallback, eventBus, focusManager);
@@ -102,12 +142,14 @@ public class AliveJTUI {
         renderer.render(root.renderAndCache());
 
         try {
-            eventLoop(backend, eventBus);
+            eventLoop(backend, eventBus, activeTimerManager, activeRerenderCallback);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         } finally {
-            activeRenderer          = null;
-            activeRerenderCallback  = null;
+            activeRenderer         = null;
+            activeRerenderCallback = null;
+            activeTimerManager.clear();
+            activeTimerManager     = null;
             root.unmount();
             eventBus.clear();
             try {
@@ -119,15 +161,23 @@ public class AliveJTUI {
         }
     }
 
-    private static void eventLoop(TerminalBackend backend, EventBus eventBus)
+    private static void eventLoop(TerminalBackend backend, EventBus eventBus,
+                                  TimerManager timers, Runnable onTick)
         throws InterruptedException {
         while (true) {
-            KeyEvent event = backend.readKey();
-
-            if (event.type() == KeyType.ESCAPE || event.type() == KeyType.EOF) {
-                break;
+            KeyEvent event;
+            if (timers.hasPendingTimers()) {
+                long waitMs = Math.max(1L, timers.msUntilNext());
+                event = backend.readKey(waitMs);  // returns null on timeout
+            } else {
+                event = backend.readKey();         // blocks until key arrives
             }
 
+            // Fire any due timers; triggers re-render if any fired
+            timers.tick(onTick);
+
+            if (event == null) continue;  // timeout — timer(s) may have fired
+            if (event.type() == KeyType.ESCAPE || event.type() == KeyType.EOF) break;
             eventBus.dispatch(event);
         }
     }
