@@ -16,6 +16,13 @@
 
 # AliveJTUI
 
+[![SonarCloud](https://github.com/yehorsyrin/alivejTUI/actions/workflows/sonar.yml/badge.svg)](https://github.com/yehorsyrin/alivejTUI/actions/workflows/sonar.yml)
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=yehorsyrin_alivejTUI&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=yehorsyrin_alivejTUI)
+[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=yehorsyrin_alivejTUI&metric=coverage)](https://sonarcloud.io/summary/new_code?id=yehorsyrin_alivejTUI)
+[![Bugs](https://sonarcloud.io/api/project_badges/measure?project=yehorsyrin_alivejTUI&metric=bugs)](https://sonarcloud.io/summary/new_code?id=yehorsyrin_alivejTUI)
+[![Java](https://img.shields.io/badge/Java-17%2B-blue)](https://openjdk.org/)
+[![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+
 A declarative TUI (Terminal User Interface) library for Java.
 Build terminal UIs as component trees — like React, but for the terminal.
 
