@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.time.Instant;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Optional debug logger for AliveJTUI.
@@ -26,7 +27,7 @@ import java.time.Instant;
  */
 public final class DebugLogger implements Closeable {
 
-    private static volatile DebugLogger instance;
+    private static final AtomicReference<DebugLogger> INSTANCE = new AtomicReference<>();
 
     private final PrintWriter writer;
     private long renderCount  = 0;
@@ -51,7 +52,7 @@ public final class DebugLogger implements Closeable {
             throw new IllegalArgumentException("filePath must not be blank");
         disable();  // close any previous logger
         try {
-            instance = new DebugLogger(filePath);
+            INSTANCE.set(new DebugLogger(filePath));
         } catch (IOException e) {
             throw new IllegalStateException("Cannot open debug log: " + filePath, e);
         }
@@ -62,17 +63,17 @@ public final class DebugLogger implements Closeable {
      * No-op if logging is already disabled.
      */
     public static synchronized void disable() {
-        if (instance != null) {
-            instance.log("DebugLogger stopped");
-            instance.writer.flush();
-            instance.writer.close();
-            instance = null;
+        DebugLogger current = INSTANCE.getAndSet(null);
+        if (current != null) {
+            current.log("DebugLogger stopped");
+            current.writer.flush();
+            current.writer.close();
         }
     }
 
     /** Returns {@code true} if debug logging is currently enabled. */
     public static boolean isEnabled() {
-        return instance != null;
+        return INSTANCE.get() != null;
     }
 
     /**
@@ -82,7 +83,7 @@ public final class DebugLogger implements Closeable {
      * @param nodeCount    total number of nodes in the tree
      */
     public static void logRender(int changedCells, int nodeCount) {
-        DebugLogger l = instance;
+        DebugLogger l = INSTANCE.get();
         if (l == null) return;
         synchronized (l) {
             l.renderCount++;
@@ -96,7 +97,7 @@ public final class DebugLogger implements Closeable {
      * @param description human-readable event description
      */
     public static void logEvent(String description) {
-        DebugLogger l = instance;
+        DebugLogger l = INSTANCE.get();
         if (l == null) return;
         synchronized (l) {
             l.eventCount++;
@@ -110,7 +111,7 @@ public final class DebugLogger implements Closeable {
      * @param message the message to log
      */
     public static void logMessage(String message) {
-        DebugLogger l = instance;
+        DebugLogger l = INSTANCE.get();
         if (l == null) return;
         synchronized (l) {
             l.log(message);
@@ -124,7 +125,7 @@ public final class DebugLogger implements Closeable {
      * @param ex    the exception
      */
     public static void logError(String label, Throwable ex) {
-        DebugLogger l = instance;
+        DebugLogger l = INSTANCE.get();
         if (l == null) return;
         synchronized (l) {
             StringWriter sw = new StringWriter();
