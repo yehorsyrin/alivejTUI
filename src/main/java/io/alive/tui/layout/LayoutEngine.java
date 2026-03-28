@@ -72,6 +72,11 @@ public class LayoutEngine {
             layoutSelect(sel, availableWidth);
         } else if (root instanceof CollapsibleNode col) {
             layoutCollapsible(col, x, y, availableWidth, availableHeight);
+        } else if (root instanceof io.alive.tui.node.TextAreaNode ta) {
+            layoutTextArea(ta, availableWidth);
+        } else if (root instanceof NotificationNode notif) {
+            notif.setWidth(Math.min(notif.renderText().length(), availableWidth));
+            notif.setHeight(1);
         } else {
             // Unknown node type — fill available space
             root.setWidth(availableWidth);
@@ -336,6 +341,13 @@ public class LayoutEngine {
         int maxLen = help.maxLineLength();
         help.setWidth(Math.min(maxLen, availableWidth));
         help.setHeight(Math.max(1, help.getBindings().size()));
+    }
+
+    // --- TextAreaNode ---
+
+    private void layoutTextArea(io.alive.tui.node.TextAreaNode ta, int availableWidth) {
+        ta.setWidth(availableWidth);
+        ta.setHeight(Math.min(ta.getMaxHeight(), Math.max(1, ta.getLines().size())));
     }
 
     // --- DividerNode ---

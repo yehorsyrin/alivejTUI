@@ -69,6 +69,10 @@ class TreeFlattener {
             flattenSelect(sel, cells);
         } else if (node instanceof CollapsibleNode col) {
             flattenCollapsible(col, cells);
+        } else if (node instanceof io.alive.tui.node.TextAreaNode ta) {
+            flattenTextArea(ta, cells);
+        } else if (node instanceof NotificationNode notif) {
+            flattenNotification(notif, cells);
         } else {
             // Container node (VBox, HBox) — recurse into children
             for (Node child : node.getChildren()) visit(child, cells);
@@ -416,6 +420,43 @@ class TreeFlattener {
 
         // Recurse into children
         for (Node child : dialog.getChildren()) visit(child, cells);
+    }
+
+    private void flattenTextArea(io.alive.tui.node.TextAreaNode ta, Map<String, CellState> cells) {
+        int baseX     = ta.getX();
+        int baseY     = ta.getY();
+        int w         = ta.getWidth();
+        int maxH      = ta.getMaxHeight();
+        int scrollRow = ta.getScrollRow();
+        int cursorRow = ta.getCursorRow();
+        int cursorCol = ta.getCursorCol();
+        boolean focused = ta.isFocused();
+        Style normalStyle = focused ? ta.getFocusedStyle() : ta.getStyle();
+        Style cursorStyle = ta.getCursorStyle();
+        java.util.List<String> lines = ta.getLines();
+
+        int visibleRows = Math.min(maxH, lines.size());
+        for (int visRow = 0; visRow < visibleRows; visRow++) {
+            int lineIdx = scrollRow + visRow;
+            if (lineIdx >= lines.size()) break;
+            String line = lines.get(lineIdx);
+            for (int col = 0; col < w; col++) {
+                char c = col < line.length() ? line.charAt(col) : SPACE;
+                boolean isCursorCell = focused && lineIdx == cursorRow && col == cursorCol;
+                Style cellStyle = isCursorCell ? cursorStyle : normalStyle;
+                put(cells, baseX + col, baseY + visRow, c, cellStyle);
+            }
+        }
+    }
+
+    private void flattenNotification(NotificationNode notif, Map<String, CellState> cells) {
+        String text  = notif.renderText();
+        Style  style = notif.getStyle();
+        int x = notif.getX(), y = notif.getY(), w = notif.getWidth();
+        for (int i = 0; i < w; i++) {
+            char c = i < text.length() ? text.charAt(i) : SPACE;
+            put(cells, x + i, y, c, style);
+        }
     }
 
     private static void put(Map<String, CellState> cells, int col, int row, char ch, Style style) {
