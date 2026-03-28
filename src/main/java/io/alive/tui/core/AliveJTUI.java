@@ -46,6 +46,7 @@ public class AliveJTUI {
         backend.init();
 
         EventBus eventBus = new EventBus();
+        FocusManager focusManager = new FocusManager();
         Renderer renderer = new Renderer(backend);
 
         // Wire resize: on resize, do a full redraw
@@ -61,7 +62,7 @@ public class AliveJTUI {
         root.mount(() -> {
             Node tree = root.renderAndCache();
             renderer.render(tree);
-        }, eventBus);
+        }, eventBus, focusManager);
 
         // Initial render
         renderer.render(root.renderAndCache());

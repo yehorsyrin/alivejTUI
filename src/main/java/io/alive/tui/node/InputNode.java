@@ -1,5 +1,6 @@
 package io.alive.tui.node;
 
+import io.alive.tui.core.Focusable;
 import io.alive.tui.core.Node;
 
 import java.util.function.Consumer;
@@ -9,7 +10,7 @@ import java.util.function.Consumer;
  *
  * @author Jarvis (AI)
  */
-public class InputNode extends Node {
+public class InputNode extends Node implements Focusable {
 
     private String value;
     private final Consumer<String> onChange;
@@ -45,4 +46,7 @@ public class InputNode extends Node {
         this.placeholder = placeholder != null ? placeholder : "";
         return this;
     }
+
+    @Override
+    public String getFocusId() { return getKey(); }
 }

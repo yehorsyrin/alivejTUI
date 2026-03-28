@@ -3,6 +3,8 @@ package io.alive.tui.core;
 import io.alive.tui.event.EventBus;
 import io.alive.tui.event.KeyHandler;
 import io.alive.tui.event.KeyType;
+import io.alive.tui.core.Focusable;
+import io.alive.tui.core.FocusManager;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -23,6 +25,7 @@ public abstract class Component {
     private Runnable onStateChange;
     private Node previousTree;
     private EventBus eventBus;
+    private FocusManager focusManager;
 
     /** Tracks Runnable handlers registered by this component so they can be removed on unmount. */
     private final List<RunnableRegistration> runnableRegistrations = new ArrayList<>();
@@ -40,6 +43,25 @@ public abstract class Component {
         if (onStateChange != null) {
             onStateChange.run();
         }
+    }
+
+    /**
+     * Registers a focusable node with the application-wide {@link FocusManager}.
+     *
+     * <p>Call from {@link #render()} or {@link #mount(Runnable, EventBus)} to make a node
+     * participate in TAB-based focus cycling. Duplicate registrations are silently ignored.
+     *
+     * @param node the focusable node; {@code null} is ignored
+     */
+    protected void registerFocusable(Focusable node) {
+        if (focusManager != null) focusManager.register(node);
+    }
+
+    /**
+     * Returns the application-wide {@link FocusManager}, or {@code null} if not mounted.
+     */
+    protected FocusManager getFocusManager() {
+        return focusManager;
     }
 
     /**
@@ -79,8 +101,20 @@ public abstract class Component {
      * @param eventBus      the application-wide event bus
      */
     public void mount(Runnable onStateChange, EventBus eventBus) {
+        mount(onStateChange, eventBus, null);
+    }
+
+    /**
+     * Called by the framework when the component is mounted into the UI tree.
+     *
+     * @param onStateChange callback to invoke when {@link #setState} is called
+     * @param eventBus      the application-wide event bus
+     * @param focusManager  the application-wide focus manager (may be {@code null})
+     */
+    public void mount(Runnable onStateChange, EventBus eventBus, FocusManager focusManager) {
         this.onStateChange = onStateChange;
         this.eventBus = eventBus;
+        this.focusManager = focusManager;
     }
 
     /**
@@ -98,6 +132,7 @@ public abstract class Component {
         keyHandlerRegistrations.clear();
         this.onStateChange = null;
         this.eventBus = null;
+        this.focusManager = null;
     }
 
     /**

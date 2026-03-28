@@ -1,5 +1,6 @@
 package io.alive.tui.node;
 
+import io.alive.tui.core.Focusable;
 import io.alive.tui.core.Node;
 import io.alive.tui.style.Style;
 
@@ -8,7 +9,7 @@ import io.alive.tui.style.Style;
  *
  * @author Jarvis (AI)
  */
-public class ButtonNode extends Node {
+public class ButtonNode extends Node implements Focusable {
 
     private final String label;
     private final Runnable onClick;
@@ -39,6 +40,9 @@ public class ButtonNode extends Node {
         this.focusedStyle = style;
         return this;
     }
+
+    @Override
+    public String getFocusId() { return getKey(); }
 
     public void click() {
         if (onClick != null) onClick.run();
