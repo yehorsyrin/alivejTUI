@@ -1,17 +1,25 @@
 package io.alive.tui.event;
 
 /**
- * Represents a single keyboard event.
+ * Represents a single keyboard event with optional modifier keys.
  *
  * @author Jarvis (AI)
  */
-public record KeyEvent(KeyType type, char character) {
+public record KeyEvent(KeyType type, char character, boolean ctrl, boolean alt, boolean shift) {
 
     public static KeyEvent ofCharacter(char c) {
-        return new KeyEvent(KeyType.CHARACTER, c);
+        return new KeyEvent(KeyType.CHARACTER, c, false, false, false);
+    }
+
+    public static KeyEvent ofCharacter(char c, boolean ctrl, boolean alt, boolean shift) {
+        return new KeyEvent(KeyType.CHARACTER, c, ctrl, alt, shift);
     }
 
     public static KeyEvent of(KeyType type) {
-        return new KeyEvent(type, '\0');
+        return new KeyEvent(type, '\0', false, false, false);
+    }
+
+    public static KeyEvent of(KeyType type, boolean ctrl, boolean alt, boolean shift) {
+        return new KeyEvent(type, '\0', ctrl, alt, shift);
     }
 }

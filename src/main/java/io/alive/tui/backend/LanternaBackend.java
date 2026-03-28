@@ -204,23 +204,26 @@ public class LanternaBackend implements TerminalBackend {
     }
 
     KeyEvent toKeyEvent(KeyStroke ks) {
+        boolean ctrl  = ks.isCtrlDown();
+        boolean alt   = ks.isAltDown();
+        boolean shift = ks.isShiftDown();
         return switch (ks.getKeyType()) {
-            case Character  -> KeyEvent.ofCharacter(ks.getCharacter());
-            case Enter      -> KeyEvent.of(KeyType.ENTER);
-            case Backspace  -> KeyEvent.of(KeyType.BACKSPACE);
-            case Delete     -> KeyEvent.of(KeyType.DELETE);
-            case ArrowUp    -> KeyEvent.of(KeyType.ARROW_UP);
-            case ArrowDown  -> KeyEvent.of(KeyType.ARROW_DOWN);
-            case ArrowLeft  -> KeyEvent.of(KeyType.ARROW_LEFT);
-            case ArrowRight -> KeyEvent.of(KeyType.ARROW_RIGHT);
-            case Escape     -> KeyEvent.of(KeyType.ESCAPE);
-            case Tab        -> ks.isShiftDown()
-                                   ? KeyEvent.of(KeyType.SHIFT_TAB)
-                                   : KeyEvent.of(KeyType.TAB);
-            case Home       -> KeyEvent.of(KeyType.HOME);
-            case End        -> KeyEvent.of(KeyType.END);
-            case PageUp     -> KeyEvent.of(KeyType.PAGE_UP);
-            case PageDown   -> KeyEvent.of(KeyType.PAGE_DOWN);
+            case Character  -> KeyEvent.ofCharacter(ks.getCharacter(), ctrl, alt, shift);
+            case Enter      -> KeyEvent.of(KeyType.ENTER,       ctrl, alt, shift);
+            case Backspace  -> KeyEvent.of(KeyType.BACKSPACE,   ctrl, alt, shift);
+            case Delete     -> KeyEvent.of(KeyType.DELETE,      ctrl, alt, shift);
+            case ArrowUp    -> KeyEvent.of(KeyType.ARROW_UP,    ctrl, alt, shift);
+            case ArrowDown  -> KeyEvent.of(KeyType.ARROW_DOWN,  ctrl, alt, shift);
+            case ArrowLeft  -> KeyEvent.of(KeyType.ARROW_LEFT,  ctrl, alt, shift);
+            case ArrowRight -> KeyEvent.of(KeyType.ARROW_RIGHT, ctrl, alt, shift);
+            case Escape     -> KeyEvent.of(KeyType.ESCAPE,      ctrl, alt, shift);
+            case Tab        -> shift
+                                 ? KeyEvent.of(KeyType.SHIFT_TAB, ctrl, alt, true)
+                                 : KeyEvent.of(KeyType.TAB,       ctrl, alt, false);
+            case Home       -> KeyEvent.of(KeyType.HOME,        ctrl, alt, shift);
+            case End        -> KeyEvent.of(KeyType.END,         ctrl, alt, shift);
+            case PageUp     -> KeyEvent.of(KeyType.PAGE_UP,     ctrl, alt, shift);
+            case PageDown   -> KeyEvent.of(KeyType.PAGE_DOWN,   ctrl, alt, shift);
             case EOF        -> KeyEvent.of(KeyType.EOF);
             default         -> KeyEvent.of(KeyType.EOF);
         };

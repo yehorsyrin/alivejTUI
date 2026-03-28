@@ -32,4 +32,39 @@ class KeyEventTest {
             assertNotNull(kt);
         }
     }
+
+    @Test
+    void modifiers_defaultFalse() {
+        KeyEvent e = KeyEvent.of(KeyType.ENTER);
+        assertFalse(e.ctrl());
+        assertFalse(e.alt());
+        assertFalse(e.shift());
+    }
+
+    @Test
+    void ofCharacterWithModifiers() {
+        KeyEvent e = KeyEvent.ofCharacter('c', true, false, false);
+        assertEquals(KeyType.CHARACTER, e.type());
+        assertEquals('c', e.character());
+        assertTrue(e.ctrl());
+        assertFalse(e.alt());
+        assertFalse(e.shift());
+    }
+
+    @Test
+    void ofTypeWithModifiers() {
+        KeyEvent e = KeyEvent.of(KeyType.ARROW_UP, false, true, true);
+        assertEquals(KeyType.ARROW_UP, e.type());
+        assertFalse(e.ctrl());
+        assertTrue(e.alt());
+        assertTrue(e.shift());
+    }
+
+    @Test
+    void modifiersCombined() {
+        KeyEvent e = KeyEvent.of(KeyType.DELETE, true, true, true);
+        assertTrue(e.ctrl());
+        assertTrue(e.alt());
+        assertTrue(e.shift());
+    }
 }

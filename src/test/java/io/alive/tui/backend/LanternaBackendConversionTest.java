@@ -200,6 +200,44 @@ class LanternaBackendConversionTest {
         assertEquals(KeyType.EOF, backend.toKeyEvent(ks).type());
     }
 
+    // --- toKeyEvent modifier tests ---
+
+    @Test
+    void toKeyEvent_ctrlModifier() {
+        KeyStroke ks = new KeyStroke('a', true, false);
+        KeyEvent result = backend.toKeyEvent(ks);
+        assertTrue(result.ctrl());
+        assertFalse(result.alt());
+        assertFalse(result.shift());
+    }
+
+    @Test
+    void toKeyEvent_altModifier() {
+        KeyStroke ks = new KeyStroke(com.googlecode.lanterna.input.KeyType.Enter, false, true);
+        KeyEvent result = backend.toKeyEvent(ks);
+        assertFalse(result.ctrl());
+        assertTrue(result.alt());
+        assertFalse(result.shift());
+    }
+
+    @Test
+    void toKeyEvent_shiftModifier() {
+        KeyStroke ks = new KeyStroke(com.googlecode.lanterna.input.KeyType.ArrowUp, false, false, true);
+        KeyEvent result = backend.toKeyEvent(ks);
+        assertFalse(result.ctrl());
+        assertFalse(result.alt());
+        assertTrue(result.shift());
+    }
+
+    @Test
+    void toKeyEvent_noModifiers() {
+        KeyStroke ks = new KeyStroke(com.googlecode.lanterna.input.KeyType.Escape, false, false);
+        KeyEvent result = backend.toKeyEvent(ks);
+        assertFalse(result.ctrl());
+        assertFalse(result.alt());
+        assertFalse(result.shift());
+    }
+
     // --- requireInitialized (via public methods) ---
 
     @Test
