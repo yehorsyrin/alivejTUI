@@ -1,6 +1,5 @@
 package io.alive.tui.example;
 
-import io.alive.tui.backend.AnsiBackend;
 import io.alive.tui.core.*;
 import io.alive.tui.event.EventBus;
 import io.alive.tui.event.KeyType;
@@ -500,6 +499,6 @@ public class DemoApp extends Component {
     //  Entry point
     // ==========================================================================
     public static void main(String[] args) {
-        AliveJTUI.run(new DemoApp(), new AnsiBackend());
+        AliveJTUI.run(new DemoApp());
     }
 }
