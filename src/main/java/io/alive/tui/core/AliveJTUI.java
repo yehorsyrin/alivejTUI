@@ -5,6 +5,7 @@ import io.alive.tui.backend.TerminalBackend;
 import io.alive.tui.event.EventBus;
 import io.alive.tui.event.KeyEvent;
 import io.alive.tui.event.KeyType;
+import io.alive.tui.node.ButtonNode;
 import io.alive.tui.render.Renderer;
 import io.alive.tui.style.Theme;
 
@@ -230,6 +231,16 @@ public class AliveJTUI {
         // Wire TAB / Shift+TAB to focus cycling
         eventBus.register(KeyType.TAB,       focusManager::focusNext);
         eventBus.register(KeyType.SHIFT_TAB, focusManager::focusPrev);
+
+        // Wire ENTER to trigger the currently-focused button's onClick
+        eventBus.register(KeyType.ENTER, () -> {
+            if (focusManager.getFocused() instanceof ButtonNode btn) {
+                btn.click();
+                Runnable cb = activeRerenderCallback;
+                if (cb != null) cb.run();
+            }
+            return false; // don't consume — let other ENTER handlers run
+        });
 
         // Expose overlay and timer APIs
         activeRenderer         = renderer;
