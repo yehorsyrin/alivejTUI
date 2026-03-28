@@ -1,6 +1,7 @@
 package io.alive.tui.core;
 
 import io.alive.tui.event.EventBus;
+import io.alive.tui.event.KeyHandler;
 import io.alive.tui.event.KeyType;
 
 import java.util.ArrayList;
@@ -23,8 +24,11 @@ public abstract class Component {
     private Node previousTree;
     private EventBus eventBus;
 
-    /** Tracks key handlers registered by this component so they can be removed on unmount. */
-    private final List<KeyRegistration> keyRegistrations = new ArrayList<>();
+    /** Tracks Runnable handlers registered by this component so they can be removed on unmount. */
+    private final List<RunnableRegistration> runnableRegistrations = new ArrayList<>();
+
+    /** Tracks KeyHandler handlers registered by this component so they can be removed on unmount. */
+    private final List<KeyHandlerRegistration> keyHandlerRegistrations = new ArrayList<>();
 
     /**
      * Triggers a state mutation and schedules a re-render.
@@ -39,7 +43,7 @@ public abstract class Component {
     }
 
     /**
-     * Registers a handler for the given key type.
+     * Registers a non-consuming handler for the given key type.
      * The handler is automatically removed when this component is {@link #unmount() unmounted}.
      *
      * <p>Call from the constructor or {@link #render()} (though constructor is preferred
@@ -48,7 +52,18 @@ public abstract class Component {
     protected void onKey(KeyType key, Runnable handler) {
         if (eventBus == null || key == null || handler == null) return;
         eventBus.register(key, handler);
-        keyRegistrations.add(new KeyRegistration(key, handler));
+        runnableRegistrations.add(new RunnableRegistration(key, handler));
+    }
+
+    /**
+     * Registers a consumable handler for the given key type.
+     * Return {@code true} from the handler to consume the event and stop propagation.
+     * The handler is automatically removed when this component is {@link #unmount() unmounted}.
+     */
+    protected void onKey(KeyType key, KeyHandler handler) {
+        if (eventBus == null || key == null || handler == null) return;
+        eventBus.register(key, handler);
+        keyHandlerRegistrations.add(new KeyHandlerRegistration(key, handler));
     }
 
     /**
@@ -73,10 +88,14 @@ public abstract class Component {
      * Unregisters all key handlers.
      */
     public void unmount() {
-        for (KeyRegistration reg : keyRegistrations) {
+        for (RunnableRegistration reg : runnableRegistrations) {
             if (eventBus != null) eventBus.unregister(reg.key(), reg.handler());
         }
-        keyRegistrations.clear();
+        runnableRegistrations.clear();
+        for (KeyHandlerRegistration reg : keyHandlerRegistrations) {
+            if (eventBus != null) eventBus.unregister(reg.key(), reg.handler());
+        }
+        keyHandlerRegistrations.clear();
         this.onStateChange = null;
         this.eventBus = null;
     }
@@ -94,5 +113,6 @@ public abstract class Component {
         return previousTree;
     }
 
-    private record KeyRegistration(KeyType key, Runnable handler) {}
+    private record RunnableRegistration(KeyType key, Runnable handler) {}
+    private record KeyHandlerRegistration(KeyType key, KeyHandler handler) {}
 }

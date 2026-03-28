@@ -3,6 +3,7 @@ package io.alive.tui.event;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
+import io.alive.tui.event.KeyHandler;
 
 class EventBusTest {
 
@@ -85,7 +86,8 @@ class EventBusTest {
 
     @Test
     void nullHandlerIgnored() {
-        assertDoesNotThrow(() -> bus.register(KeyType.ENTER, null));
+        assertDoesNotThrow(() -> bus.register(KeyType.ENTER, (Runnable) null));
+        assertDoesNotThrow(() -> bus.register(KeyType.ENTER, (KeyHandler) null));
         assertDoesNotThrow(() -> bus.registerCharacter(null));
         assertEquals(0, bus.handlerCount(KeyType.ENTER));
     }
@@ -126,5 +128,35 @@ class EventBusTest {
         bus.registerCharacter(h);  // duplicate — should be ignored
         bus.dispatch(KeyEvent.ofCharacter('a'));
         assertEquals(1, count[0]);
+    }
+
+    @Test
+    void consumingHandlerStopsPropagation() {
+        int[] count = {0};
+        // first handler consumes the event
+        bus.register(KeyType.ENTER, (KeyHandler) () -> { count[0]++; return true; });
+        // second handler should NOT fire
+        bus.register(KeyType.ENTER, (KeyHandler) () -> { count[0]++; return false; });
+        bus.dispatch(KeyEvent.of(KeyType.ENTER));
+        assertEquals(1, count[0]);
+    }
+
+    @Test
+    void nonConsumingKeyHandlerContinuesPropagation() {
+        int[] count = {0};
+        bus.register(KeyType.ENTER, (KeyHandler) () -> { count[0]++; return false; });
+        bus.register(KeyType.ENTER, (KeyHandler) () -> { count[0]++; return false; });
+        bus.dispatch(KeyEvent.of(KeyType.ENTER));
+        assertEquals(2, count[0]);
+    }
+
+    @Test
+    void keyHandlerUnregisteredByReference() {
+        int[] count = {0};
+        KeyHandler h = () -> { count[0]++; return false; };
+        bus.register(KeyType.ENTER, h);
+        bus.unregister(KeyType.ENTER, h);
+        bus.dispatch(KeyEvent.of(KeyType.ENTER));
+        assertEquals(0, count[0]);
     }
 }
