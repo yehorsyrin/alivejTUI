@@ -67,6 +67,8 @@ class TreeFlattener {
             flattenViewport(vp, cells);
         } else if (node instanceof SelectNode sel) {
             flattenSelect(sel, cells);
+        } else if (node instanceof CollapsibleNode col) {
+            flattenCollapsible(col, cells);
         } else {
             // Container node (VBox, HBox) — recurse into children
             for (Node child : node.getChildren()) visit(child, cells);
@@ -280,6 +282,24 @@ class TreeFlattener {
                 char c = col < line.length() ? line.charAt(col) : SPACE;
                 put(cells, x + col, y + row, c, Style.DEFAULT);
             }
+        }
+    }
+
+    private void flattenCollapsible(CollapsibleNode col, Map<String, CellState> cells) {
+        int x = col.getX(), y = col.getY(), w = col.getWidth();
+        Style style = col.isFocused() ? col.getFocusedStyle() : col.getTitleStyle();
+
+        // Title row: "▶ Title" or "▼ Title"
+        char arrow = col.isExpanded() ? CollapsibleNode.EXPANDED_ARROW : CollapsibleNode.COLLAPSED_ARROW;
+        String header = arrow + CollapsibleNode.ARROW_PADDING + col.getTitle();
+        for (int i = 0; i < w; i++) {
+            char c = i < header.length() ? header.charAt(i) : SPACE;
+            put(cells, x + i, y, c, style);
+        }
+
+        // Children (only when expanded)
+        if (col.isExpanded()) {
+            for (Node child : col.getChildren()) visit(child, cells);
         }
     }
 

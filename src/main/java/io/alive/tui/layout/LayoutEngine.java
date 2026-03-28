@@ -70,6 +70,8 @@ public class LayoutEngine {
             layoutViewport(vp, x, y, availableWidth, availableHeight);
         } else if (root instanceof SelectNode sel) {
             layoutSelect(sel, availableWidth);
+        } else if (root instanceof CollapsibleNode col) {
+            layoutCollapsible(col, x, y, availableWidth, availableHeight);
         } else {
             // Unknown node type — fill available space
             root.setWidth(availableWidth);
@@ -260,6 +262,28 @@ public class LayoutEngine {
     private void layoutRadioGroup(RadioGroupNode rg, int availableWidth) {
         rg.setWidth(availableWidth);
         rg.setHeight(Math.max(1, rg.getOptions().size()));
+    }
+
+    // --- CollapsibleNode ---
+
+    private void layoutCollapsible(CollapsibleNode col, int x, int y,
+                                   int availableWidth, int availableHeight) {
+        col.setWidth(availableWidth);
+        if (!col.isExpanded()) {
+            col.setHeight(1);
+            return;
+        }
+        // Expanded: title row + lay out children stacked below
+        int currentY    = y + 1;
+        int totalHeight = 1;
+        for (int i = 0; i < col.getChildren().size(); i++) {
+            Node child = col.getChildren().get(i);
+            int remaining = Math.max(0, availableHeight - totalHeight);
+            layout(child, x, currentY, availableWidth, remaining);
+            currentY    += child.getHeight();
+            totalHeight += child.getHeight();
+        }
+        col.setHeight(totalHeight);
     }
 
     // --- SelectNode ---
