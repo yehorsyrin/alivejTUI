@@ -57,6 +57,15 @@ public final class Style {
         return new Style(foreground, background, bold, italic, underline, dim, strikethrough);
     }
 
+    /**
+     * Returns a copy of this style with the dim (faint) decoration set.
+     *
+     * @apiNote Dim is silently ignored by the default Lanterna backend.
+     *          Check {@link io.alive.tui.backend.TerminalCapabilities#supportsDim()} before use
+     *          if rendering fidelity matters.
+     * @param dim {@code true} to enable dim
+     * @return new {@link Style} with updated dim flag
+     */
     public Style withDim(boolean dim) {
         return new Style(foreground, background, bold, italic, underline, dim, strikethrough);
     }
