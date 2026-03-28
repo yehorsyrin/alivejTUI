@@ -68,6 +68,12 @@ public class DemoApp extends Component {
             .collect(toList());
     private final VirtualListNode vList = VirtualList.of(bigList, 12);
 
+    // --- Tab 5: Viewport ---
+    private final ViewportNode viewport;
+
+    // --- Tab 1: Button ---
+    private final ButtonNode clickBtn;
+
     // --- Notifications ---
     private final NotificationManager notifications;
 
@@ -81,11 +87,25 @@ public class DemoApp extends Component {
 
     public DemoApp() {
         notifications = new NotificationManager(() -> setState(() -> {}));
+        clickBtn = new ButtonNode("[ Click Me! ]", () -> setState(() -> {
+            clickCount++;
+            notifications.show("Clicked! Count: " + clickCount, 1500);
+        }));
+        viewport = new ViewportNode(
+            VBox.of(IntStream.range(1, 21)
+                .mapToObj(i -> Text.of("  Line " + i + ":  " + "=".repeat(i) + " " + i + "%")
+                    .color(i % 2 == 0 ? Color.BRIGHT_BLACK : Color.WHITE))
+                .toArray(Node[]::new)),
+            5
+        );
     }
 
     @Override
     public void mount(Runnable onStateChange, EventBus eventBus) {
         super.mount(onStateChange, eventBus);
+
+        // Focus
+        registerFocusable(clickBtn);
 
         // Tab switching
         eventBus.registerCharacter(c -> {
@@ -144,6 +164,7 @@ public class DemoApp extends Component {
         onKey(KeyType.ARROW_DOWN, () -> {
             if (activeTab == 1) setState(() -> tableRow = Math.min(TABLE_DATA.size() - 1, tableRow + 1));
             if (activeTab == 2) setState(() -> vList.selectDown());
+            if (activeTab == 4) setState(() -> viewport.scrollDown());
             if (activeTab == 0) setState(() -> {
                 radioIdx   = (radioIdx + 1) % 2;
                 spinFrame  = (spinFrame + 1) % SPIN.length;
@@ -152,13 +173,20 @@ public class DemoApp extends Component {
         onKey(KeyType.ARROW_UP, () -> {
             if (activeTab == 1) setState(() -> tableRow = Math.max(0, tableRow - 1));
             if (activeTab == 2) setState(() -> vList.selectUp());
+            if (activeTab == 4) setState(() -> viewport.scrollUp());
             if (activeTab == 0) setState(() -> {
                 radioIdx  = (radioIdx + 1) % 2;
                 spinFrame = (spinFrame + 1) % SPIN.length;
             });
         });
-        onKey(KeyType.PAGE_DOWN, () -> { if (activeTab == 2) setState(() -> vList.pageDown()); });
-        onKey(KeyType.PAGE_UP,   () -> { if (activeTab == 2) setState(() -> vList.pageUp()); });
+        onKey(KeyType.PAGE_DOWN, () -> {
+            if (activeTab == 2) setState(() -> vList.pageDown());
+            if (activeTab == 4) setState(() -> viewport.pageDown());
+        });
+        onKey(KeyType.PAGE_UP, () -> {
+            if (activeTab == 2) setState(() -> vList.pageUp());
+            if (activeTab == 4) setState(() -> viewport.pageUp());
+        });
         onKey(KeyType.HOME,      () -> { if (activeTab == 2) setState(() -> vList.selectFirst()); });
         onKey(KeyType.END,       () -> { if (activeTab == 2) setState(() -> vList.selectLast()); });
 
@@ -215,20 +243,24 @@ public class DemoApp extends Component {
 
     // --- Header ---
     private Node renderHeader() {
-        String themeLabel = AliveJTUI.getTheme() == Theme.DARK ? "[Dark]" : "[Light]";
+        boolean dark = AliveJTUI.getTheme() == Theme.DARK;
+        String themeLabel = dark ? "[Dark]" : "[Light]";
+        Color titleColor = dark ? Color.CYAN : Color.BLUE;
         return HBox.of(
-            Text.of("  AliveJTUI Demo v0.1.0").bold().color(Color.CYAN),
+            Text.of("  AliveJTUI Demo v0.1.0").bold().color(titleColor),
             Text.of("  theme: " + themeLabel).dim()
         );
     }
 
     // --- Tab bar ---
     private Node renderTabBar() {
+        boolean dark = AliveJTUI.getTheme() == Theme.DARK;
+        Color activeColor = dark ? Color.BRIGHT_CYAN : Color.BLUE;
         Node[] tabs = new Node[TAB_NAMES.length];
         for (int i = 0; i < TAB_NAMES.length; i++) {
             boolean active = i == activeTab;
             TextNode t = Text.of(" " + TAB_NAMES[i] + " ")
-                    .color(active ? Color.BRIGHT_CYAN : Color.BRIGHT_BLACK);
+                    .color(active ? activeColor : Color.BRIGHT_BLACK);
             if (active) t = t.bold();
             tabs[i] = t;
         }
@@ -258,10 +290,7 @@ public class DemoApp extends Component {
             Text.of(""),
             HBox.of(
                 Text.of("  "),
-                Button.of("[ Click Me! ]", () -> setState(() -> {
-                    clickCount++;
-                    notifications.show("Clicked! Count: " + clickCount, 1500);
-                })),
+                clickBtn,
                 Text.of("  Clicked: ").dim(),
                 Text.of(String.valueOf(clickCount)).bold().color(Color.GREEN),
                 Text.of("  Spin: " + SPIN[spinFrame]).color(Color.CYAN)
@@ -448,17 +477,8 @@ public class DemoApp extends Component {
             Text.of(""),
             Divider.horizontal(),
             Text.of(""),
-            Text.of("  VIEWPORT (scrollable)").bold().color(Color.YELLOW),
-            Viewport.of(
-                VBox.of(
-                    IntStream.range(1, 21)
-                        .mapToObj(i -> Text.of("  Line " + i + ":  " +
-                            "=".repeat(i) + " " + i + "%")
-                            .color(i % 2 == 0 ? Color.BRIGHT_BLACK : Color.WHITE))
-                        .toArray(Node[]::new)
-                ),
-                5
-            )
+            Text.of("  VIEWPORT (scrollable) — Up/Down PgUp/PgDn").bold().color(Color.YELLOW),
+            viewport
         );
     }
 

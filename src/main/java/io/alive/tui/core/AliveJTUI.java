@@ -68,25 +68,23 @@ public class AliveJTUI {
 
     /**
      * Pushes a node to be rendered as an overlay on top of the current root tree.
-     * Triggers an immediate re-render. Must be called from within the event loop thread.
+     * Takes effect on the next render pass. Must be called from within the event loop thread.
      *
      * @param node the overlay node (e.g. a dialog or popup)
      */
     public static void pushOverlay(Node node) {
         if (activeRenderer != null) {
             activeRenderer.pushOverlay(node);
-            if (activeRerenderCallback != null) activeRerenderCallback.run();
         }
     }
 
     /**
-     * Removes the current overlay and triggers an immediate re-render.
+     * Removes the current overlay.
      * Must be called from within the event loop thread.
      */
     public static void popOverlay() {
         if (activeRenderer != null) {
             activeRenderer.clearOverlay();
-            if (activeRerenderCallback != null) activeRerenderCallback.run();
         }
     }
 

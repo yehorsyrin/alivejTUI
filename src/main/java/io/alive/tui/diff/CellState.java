@@ -7,4 +7,4 @@ import io.alive.tui.style.Style;
  *
  * @author Jarvis (AI)
  */
-record CellState(char character, Style style) {}
+public record CellState(char character, Style style) {}

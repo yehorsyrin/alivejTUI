@@ -3,11 +3,14 @@ package io.alive.tui.render;
 import io.alive.tui.backend.TerminalBackend;
 import io.alive.tui.core.Node;
 import io.alive.tui.diff.CellChange;
+import io.alive.tui.diff.CellState;
 import io.alive.tui.diff.Differ;
 import io.alive.tui.layout.LayoutEngine;
 import io.alive.tui.node.InputNode;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Drives the render pipeline: layout → diff → terminal output.
@@ -24,7 +27,7 @@ public class Renderer {
     private final Differ differ;
     private final LayoutEngine layoutEngine;
     private Node previousTree;
-    private Node previousOverlayTree;
+    private Map<String, CellState> previousCells = Collections.emptyMap();
     private Node overlayTree;
 
     public Renderer(TerminalBackend backend) {
@@ -54,8 +57,9 @@ public class Renderer {
             layoutEngine.layout(overlayTree, 0, 0, w, h);
         }
 
-        // 3. Diff: find what changed (overlay cells override base)
-        List<CellChange> changes = differ.diff(previousTree, previousOverlayTree, newTree, overlayTree);
+        // 3. Flatten current frame into a stable cell snapshot, then diff against previous snapshot
+        Map<String, CellState> newCells = differ.flattenMerged(newTree, overlayTree);
+        List<CellChange> changes = differ.diffCells(previousCells, newCells);
         if (changes.isEmpty()) return;
 
         // 4. Apply: push changes to the terminal
@@ -73,8 +77,8 @@ public class Renderer {
 
         backend.flush();
 
-        previousTree = newTree;
-        previousOverlayTree = overlayTree;
+        previousTree  = newTree;
+        previousCells = newCells;
     }
 
     /**
@@ -105,8 +109,8 @@ public class Renderer {
      * Use after terminal resize or when the tree structure changes significantly.
      */
     public void forceFullRender(Node newTree) {
-        previousTree        = null;
-        previousOverlayTree = null;
+        previousTree  = null;
+        previousCells = Collections.emptyMap();
         render(newTree);
     }
 
