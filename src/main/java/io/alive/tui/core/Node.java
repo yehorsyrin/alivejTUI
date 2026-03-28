@@ -18,6 +18,13 @@ public abstract class Node {
     protected String key;
     protected final List<Node> children = new ArrayList<>();
 
+    // CSS-like identity / classification
+    private String id;
+    private String className;
+
+    // Style resolved by a StyleSheet (set externally; renderers may use it)
+    private io.alive.tui.style.Style computedStyle;
+
     public int getX() { return x; }
     public void setX(int x) { this.x = x; }
 
@@ -32,6 +39,26 @@ public abstract class Node {
 
     public String getKey() { return key; }
     public void setKey(String key) { this.key = key; }
+
+    // --- CSS-like selectors ---
+
+    /** Returns this node's id, or {@code null} if not set. */
+    public String getId() { return id; }
+
+    /** Returns this node's class name, or {@code null} if not set. */
+    public String getClassName() { return className; }
+
+    /** Sets the id and returns {@code this} for fluent use. */
+    public Node withId(String id) { this.id = id; return this; }
+
+    /** Sets the class name and returns {@code this} for fluent use. */
+    public Node withClassName(String className) { this.className = className; return this; }
+
+    /** Returns the computed style set by a {@link io.alive.tui.style.StyleSheet}, or {@code null}. */
+    public io.alive.tui.style.Style getComputedStyle() { return computedStyle; }
+
+    /** Called by {@link io.alive.tui.style.StyleSheet} to store the resolved style. */
+    public void setComputedStyle(io.alive.tui.style.Style style) { this.computedStyle = style; }
 
     public List<Node> getChildren() { return Collections.unmodifiableList(children); }
 
