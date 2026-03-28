@@ -3,6 +3,8 @@ package io.alive.tui.example;
 import io.alive.tui.core.*;
 import io.alive.tui.event.EventBus;
 import io.alive.tui.event.KeyType;
+import io.alive.tui.event.MouseEvent;
+import io.alive.tui.event.MouseType;
 import io.alive.tui.node.*;
 import io.alive.tui.style.Color;
 import io.alive.tui.style.Style;
@@ -18,7 +20,7 @@ import static java.util.stream.Collectors.toList;
  *
  * <h2>Navigation</h2>
  * <pre>
- *   1-5   Switch tab
+ *   1-6   Switch tab
  *   T     Toggle Dark/Light theme
  *   D     Show dialog
  *   N     Show notification
@@ -33,7 +35,7 @@ public class DemoApp extends Component {
 
     // --- Tabs ---
     private static final String[] TAB_NAMES = {
-        "1:Widgets", "2:Table", "3:VirtualList", "4:Text", "5:Layout"
+        "1:Widgets", "2:Table", "3:VirtualList", "4:Text", "5:Layout", "6:Mouse"
     };
     private int activeTab = 0;
 
@@ -48,6 +50,15 @@ public class DemoApp extends Component {
 
     private static final String[] SPIN = { "|", "/", "-", "\\" };
     private static final String[] COLORS_OPT = { "Red", "Green", "Blue", "Cyan", "Magenta" };
+
+    // --- Tab 6: Mouse ---
+    private String  mouseLastType   = "—";
+    private int     mouseLastCol    = -1;
+    private int     mouseLastRow    = -1;
+    private int     mouseClickCount = 0;
+    private int     mouseScrollUp   = 0;
+    private int     mouseScrollDown = 0;
+    private String  mouseLastBtn    = "—";
 
     // --- Tab 2: Table ---
     private int tableRow = 0;
@@ -109,7 +120,7 @@ public class DemoApp extends Component {
 
         // Tab switching
         eventBus.registerCharacter(c -> {
-            if (c >= '1' && c <= '5') setState(() -> activeTab = c - '1');
+            if (c >= '1' && c <= '6') setState(() -> activeTab = c - '1');
         });
 
         // Theme toggle
@@ -207,6 +218,20 @@ public class DemoApp extends Component {
 
         // Spinner auto-tick
         AliveJTUI.scheduleRepeating(150, () -> setState(() -> spinFrame = (spinFrame + 1) % SPIN.length));
+
+        // Mouse events
+        eventBus.registerMouse(e -> {
+            setState(() -> {
+                mouseLastType = e.type().name();
+                mouseLastCol  = e.col();
+                mouseLastRow  = e.row();
+                mouseLastBtn  = e.button() == 0 ? "Left" : e.button() == 1 ? "Middle" : e.button() == 2 ? "Right" : String.valueOf(e.button());
+                if (e.type() == MouseType.CLICK)       mouseClickCount++;
+                if (e.type() == MouseType.SCROLL_UP)   mouseScrollUp++;
+                if (e.type() == MouseType.SCROLL_DOWN) mouseScrollDown++;
+            });
+            return false; // non-consuming — let other handlers run
+        });
     }
 
     // ==========================================================================
@@ -275,6 +300,7 @@ public class DemoApp extends Component {
             case 2 -> renderVirtualListTab();
             case 3 -> renderTextTab();
             case 4 -> renderLayoutTab();
+            case 5 -> renderMouseTab();
             default -> Text.of("Unknown tab");
         };
     }
@@ -482,6 +508,50 @@ public class DemoApp extends Component {
         );
     }
 
+    // ==========================================================================
+    //  TAB 6 — Mouse
+    // ==========================================================================
+    private Node renderMouseTab() {
+        String pos = mouseLastCol < 0 ? "—" : mouseLastCol + " , " + mouseLastRow;
+        return VBox.of(
+            Text.of(""),
+            Text.of("  MOUSE EVENTS").bold().color(Color.YELLOW),
+            Text.of("  Click, scroll, or move the mouse anywhere in the terminal.").dim(),
+            Text.of(""),
+            HBox.of(
+                Text.of("  Last event:  ").dim(),
+                Text.of(mouseLastType).bold().color(Color.CYAN)
+            ),
+            HBox.of(
+                Text.of("  Position:    ").dim(),
+                Text.of("col=" + (mouseLastCol < 0 ? "—" : mouseLastCol)
+                        + "  row=" + (mouseLastRow < 0 ? "—" : mouseLastRow))
+                    .bold().color(Color.GREEN)
+            ),
+            HBox.of(
+                Text.of("  Button:      ").dim(),
+                Text.of(mouseLastBtn).bold().color(Color.MAGENTA)
+            ),
+            Text.of(""),
+            Divider.horizontal(),
+            Text.of(""),
+            Text.of("  COUNTERS").bold().color(Color.YELLOW),
+            HBox.of(
+                Text.of("  Clicks:       ").dim(),
+                Text.of(String.valueOf(mouseClickCount)).bold().color(Color.BRIGHT_CYAN)
+            ),
+            HBox.of(
+                Text.of("  Scroll Up:    ").dim(),
+                Text.of(String.valueOf(mouseScrollUp)).bold().color(Color.BRIGHT_GREEN)
+            ),
+            HBox.of(
+                Text.of("  Scroll Down:  ").dim(),
+                Text.of(String.valueOf(mouseScrollDown)).bold().color(Color.BRIGHT_RED)
+            ),
+            Text.of("")
+        );
+    }
+
     // --- Confirm dialog (built inline so callbacks can capture `this`) ---
     private Node buildConfirmDialog() {
         return Dialog.of("Confirm Action",
@@ -503,7 +573,7 @@ public class DemoApp extends Component {
     // --- Footer ---
     private Node renderFooter() {
         return HBox.of(
-            Text.of("  1-5:Tab ").dim(),
+            Text.of("  1-6:Tab ").dim(),
             Text.of("T:Theme ").dim(),
             Text.of("D:Dialog ").dim(),
             Text.of("N:Notify ").dim(),
