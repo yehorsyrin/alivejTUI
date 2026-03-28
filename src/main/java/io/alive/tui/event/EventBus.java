@@ -33,6 +33,7 @@ public class EventBus {
     private final Map<KeyType, Map<Runnable, KeyHandler>> runnableWrappers = new EnumMap<>(KeyType.class);
 
     private final Set<CharacterHandler> characterHandlers = new LinkedHashSet<>();
+    private final Set<MouseHandler>     mouseHandlers     = new LinkedHashSet<>();
 
     /**
      * Register a non-consuming handler for a specific non-character key.
@@ -99,6 +100,38 @@ public class EventBus {
         characterHandlers.remove(handler);
     }
 
+    // --- Mouse handlers ---
+
+    /**
+     * Register a mouse event handler.
+     *
+     * <p>Duplicate registrations of the same handler reference are silently ignored.
+     * Return {@code true} from the handler to stop propagation.
+     */
+    public void registerMouse(MouseHandler handler) {
+        if (handler != null) mouseHandlers.add(handler);
+    }
+
+    /**
+     * Unregister a mouse event handler previously registered via {@link #registerMouse}.
+     */
+    public void unregisterMouse(MouseHandler handler) {
+        mouseHandlers.remove(handler);
+    }
+
+    /**
+     * Dispatch a mouse event to all registered {@link MouseHandler}s.
+     *
+     * <p>Handlers are invoked in registration order. A handler that returns {@code true}
+     * consumes the event — subsequent handlers will not be called.
+     */
+    public void dispatchMouse(MouseEvent event) {
+        if (event == null) return;
+        for (MouseHandler h : new ArrayList<>(mouseHandlers)) {
+            if (h.handle(event)) break;
+        }
+    }
+
     /**
      * Dispatch an event to registered handlers.
      *
@@ -112,6 +145,8 @@ public class EventBus {
             for (CharacterHandler h : new ArrayList<>(characterHandlers)) {
                 h.handle(event.character());
             }
+        } else if (event.type() == KeyType.MOUSE && event.mouseEvent() != null) {
+            dispatchMouse(event.mouseEvent());
         } else {
             Set<KeyHandler> set = handlers.get(event.type());
             if (set != null) {
@@ -129,6 +164,7 @@ public class EventBus {
         handlers.clear();
         runnableWrappers.clear();
         characterHandlers.clear();
+        mouseHandlers.clear();
     }
 
     /**
@@ -159,6 +195,10 @@ public class EventBus {
 
     public int characterHandlerCount() {
         return characterHandlers.size();
+    }
+
+    public int mouseHandlerCount() {
+        return mouseHandlers.size();
     }
 
     @FunctionalInterface

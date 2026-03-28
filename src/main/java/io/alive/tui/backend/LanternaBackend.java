@@ -6,6 +6,7 @@ import com.googlecode.lanterna.TerminalSize;
 import com.googlecode.lanterna.TextCharacter;
 import com.googlecode.lanterna.TextColor;
 import com.googlecode.lanterna.input.KeyStroke;
+import com.googlecode.lanterna.input.MouseAction;
 import com.googlecode.lanterna.screen.Screen;
 import com.googlecode.lanterna.screen.TerminalScreen;
 import com.googlecode.lanterna.terminal.DefaultTerminalFactory;
@@ -19,6 +20,8 @@ import java.awt.Font;
 
 import io.alive.tui.event.KeyEvent;
 import io.alive.tui.event.KeyType;
+import io.alive.tui.event.MouseEvent;
+import io.alive.tui.event.MouseType;
 import io.alive.tui.style.Color;
 import io.alive.tui.style.Style;
 
@@ -242,7 +245,23 @@ public class LanternaBackend implements TerminalBackend {
             case PageUp     -> KeyEvent.of(KeyType.PAGE_UP,     ctrl, alt, shift);
             case PageDown   -> KeyEvent.of(KeyType.PAGE_DOWN,   ctrl, alt, shift);
             case EOF        -> KeyEvent.of(KeyType.EOF);
+            case MouseEvent -> toMouseKeyEvent(ks);
             default         -> KeyEvent.of(KeyType.EOF);
         };
+    }
+
+    private KeyEvent toMouseKeyEvent(KeyStroke ks) {
+        if (!(ks instanceof MouseAction ma)) return KeyEvent.of(KeyType.EOF);
+        int col    = ma.getPosition().getColumn();
+        int row    = ma.getPosition().getRow();
+        int button = ma.getButton();
+        MouseType mType = switch (ma.getActionType()) {
+            case CLICK_DOWN    -> MouseType.PRESS;
+            case CLICK_RELEASE -> MouseType.RELEASE;
+            case SCROLL_UP     -> MouseType.SCROLL_UP;
+            case SCROLL_DOWN   -> MouseType.SCROLL_DOWN;
+            default            -> MouseType.PRESS;  // DRAG, MOVE
+        };
+        return KeyEvent.ofMouse(new MouseEvent(mType, col, row, button));
     }
 }

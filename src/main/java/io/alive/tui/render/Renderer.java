@@ -135,4 +135,39 @@ public class Renderer {
         }
         return null;
     }
+
+    /**
+     * Returns the deepest node in the most recently rendered tree whose bounding box
+     * contains the given terminal position, or {@code null} if no node matches.
+     *
+     * <p>The overlay tree is checked before the base tree. Children are checked
+     * depth-first; the deepest (leaf) match is returned.
+     *
+     * @param col terminal column (0-based)
+     * @param row terminal row (0-based)
+     * @return the deepest node that covers {@code (col, row)}, or {@code null}
+     */
+    public Node hitTest(int col, int row) {
+        Node hit = hitTestTree(overlayTree, col, row);
+        if (hit == null) hit = hitTestTree(previousTree, col, row);
+        return hit;
+    }
+
+    private Node hitTestTree(Node root, int col, int row) {
+        if (root == null) return null;
+        if (!contains(root, col, row)) return null;
+        // depth-first: prefer deepest matching child
+        for (Node child : root.getChildren()) {
+            Node childHit = hitTestTree(child, col, row);
+            if (childHit != null) return childHit;
+        }
+        return root;
+    }
+
+    private static boolean contains(Node node, int col, int row) {
+        return col >= node.getX()
+            && col <  node.getX() + node.getWidth()
+            && row >= node.getY()
+            && row <  node.getY() + node.getHeight();
+    }
 }
