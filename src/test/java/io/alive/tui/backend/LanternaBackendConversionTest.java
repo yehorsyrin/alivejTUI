@@ -188,6 +188,13 @@ class LanternaBackendConversionTest {
     }
 
     @Test
+    void toKeyEvent_shiftTab() {
+        // 4-arg constructor: (KeyType, ctrlDown, altDown, shiftDown)
+        KeyStroke ks = new KeyStroke(com.googlecode.lanterna.input.KeyType.Tab, false, false, true);
+        assertEquals(KeyType.SHIFT_TAB, backend.toKeyEvent(ks).type());
+    }
+
+    @Test
     void toKeyEvent_eof() {
         KeyStroke ks = new KeyStroke(com.googlecode.lanterna.input.KeyType.EOF, false, false);
         assertEquals(KeyType.EOF, backend.toKeyEvent(ks).type());

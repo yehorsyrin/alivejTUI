@@ -58,6 +58,10 @@ public class AliveJTUI {
         });
         Runtime.getRuntime().addShutdownHook(shutdownHook);
 
+        // Wire TAB / Shift+TAB to focus cycling
+        eventBus.register(KeyType.TAB,       focusManager::focusNext);
+        eventBus.register(KeyType.SHIFT_TAB, focusManager::focusPrev);
+
         // Mount root component
         root.mount(() -> {
             Node tree = root.renderAndCache();

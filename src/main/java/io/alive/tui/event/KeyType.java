@@ -16,6 +16,7 @@ public enum KeyType {
     ARROW_RIGHT,
     ESCAPE,
     TAB,
+    SHIFT_TAB,
     HOME,
     END,
     PAGE_UP,

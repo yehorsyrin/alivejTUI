@@ -9,6 +9,13 @@ import com.googlecode.lanterna.input.KeyStroke;
 import com.googlecode.lanterna.screen.Screen;
 import com.googlecode.lanterna.screen.TerminalScreen;
 import com.googlecode.lanterna.terminal.DefaultTerminalFactory;
+import com.googlecode.lanterna.terminal.swing.SwingTerminalFrame;
+import com.googlecode.lanterna.terminal.swing.SwingTerminalFontConfiguration;
+import com.googlecode.lanterna.terminal.swing.TerminalEmulatorAutoCloseTrigger;
+import com.googlecode.lanterna.terminal.swing.TerminalEmulatorColorConfiguration;
+import com.googlecode.lanterna.terminal.swing.TerminalEmulatorDeviceConfiguration;
+
+import java.awt.Font;
 
 import io.alive.tui.event.KeyEvent;
 import io.alive.tui.event.KeyType;
@@ -39,7 +46,19 @@ public class LanternaBackend implements TerminalBackend {
     @Override
     public void init() {
         try {
-            screen = new DefaultTerminalFactory().createScreen();
+            SwingTerminalFontConfiguration fontConfig = SwingTerminalFontConfiguration.newInstance(
+                    new Font("Consolas", Font.PLAIN, 16),
+                    new Font("Courier New", Font.PLAIN, 16),
+                    new Font("Monospaced", Font.PLAIN, 16)
+            );
+            SwingTerminalFrame terminal = new SwingTerminalFrame("AliveJTUI",
+                    new TerminalSize(120, 35),
+                    TerminalEmulatorDeviceConfiguration.getDefault(),
+                    fontConfig,
+                    TerminalEmulatorColorConfiguration.getDefault(),
+                    TerminalEmulatorAutoCloseTrigger.CloseOnExitPrivateMode);
+            terminal.setVisible(true);
+            screen = new TerminalScreen(terminal);
             screen.startScreen();
             screen.setCursorPosition(null);
         } catch (IOException e) {
@@ -195,7 +214,9 @@ public class LanternaBackend implements TerminalBackend {
             case ArrowLeft  -> KeyEvent.of(KeyType.ARROW_LEFT);
             case ArrowRight -> KeyEvent.of(KeyType.ARROW_RIGHT);
             case Escape     -> KeyEvent.of(KeyType.ESCAPE);
-            case Tab        -> KeyEvent.of(KeyType.TAB);
+            case Tab        -> ks.isShiftDown()
+                                   ? KeyEvent.of(KeyType.SHIFT_TAB)
+                                   : KeyEvent.of(KeyType.TAB);
             case Home       -> KeyEvent.of(KeyType.HOME);
             case End        -> KeyEvent.of(KeyType.END);
             case PageUp     -> KeyEvent.of(KeyType.PAGE_UP);
