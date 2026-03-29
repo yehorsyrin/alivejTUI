@@ -1319,11 +1319,11 @@
   
 
 
-<h1 id="advanced-features">Advanced Features<a class="headerlink" href="#advanced-features" title="Permanent link">#</a></h1>
+<h1 id="advanced-features">Advanced Features</h1>
 <hr />
-<h2 id="focus-management">Focus Management<a class="headerlink" href="#focus-management" title="Permanent link">#</a></h2>
+<h2 id="focus-management">Focus Management</h2>
 <p>AliveJTUI provides automatic <code>Tab</code> / <code>Shift+Tab</code> focus cycling. Register focusable nodes in <code>mount()</code> to include them in the cycle.</p>
-<h3 id="registering-focusable-nodes">Registering Focusable Nodes<a class="headerlink" href="#registering-focusable-nodes" title="Permanent link">#</a></h3>
+<h3 id="registering-focusable-nodes">Registering Focusable Nodes</h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nd">@Override</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">mount</span><span class="p">(</span><span class="n">Runnable</span><span class="w"> </span><span class="n">onStateChange</span><span class="p">,</span><span class="w"> </span><span class="n">EventBus</span><span class="w"> </span><span class="n">eventBus</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">    </span><span class="kd">super</span><span class="p">.</span><span class="na">mount</span><span class="p">(</span><span class="n">onStateChange</span><span class="p">,</span><span class="w"> </span><span class="n">eventBus</span><span class="p">);</span>
@@ -1338,7 +1338,7 @@
 <a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a><span class="w">    </span><span class="n">registerFocusable</span><span class="p">(</span><span class="n">cancelBtn</span><span class="p">);</span>
 <a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="p">}</span>
 </code></pre></div>
-<h3 id="how-focus-works">How Focus Works<a class="headerlink" href="#how-focus-works" title="Permanent link">#</a></h3>
+<h3 id="how-focus-works">How Focus Works</h3>
 <table>
 <thead>
 <tr>
@@ -1365,7 +1365,7 @@
 </tr>
 </tbody>
 </table>
-<h3 id="focusable-node-types">Focusable Node Types<a class="headerlink" href="#focusable-node-types" title="Permanent link">#</a></h3>
+<h3 id="focusable-node-types">Focusable Node Types</h3>
 <p>The following node types implement <code>Focusable</code> and can be registered:</p>
 <ul>
 <li><code>ButtonNode</code></li>
@@ -1381,15 +1381,15 @@
 <p>Nodes cycle in the order they were registered. Register them in the logical reading order of your UI (top to bottom, left to right).</p>
 </div>
 <hr />
-<h2 id="timers">Timers<a class="headerlink" href="#timers" title="Permanent link">#</a></h2>
+<h2 id="timers">Timers</h2>
 <p>AliveJTUI provides one-shot and repeating timers that fire on the event loop thread — so you can safely call <code>setState()</code> inside them.</p>
-<h3 id="one-shot-timer">One-shot Timer<a class="headerlink" href="#one-shot-timer" title="Permanent link">#</a></h3>
+<h3 id="one-shot-timer">One-shot Timer</h3>
 <p>Fires once after the specified delay (milliseconds).</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1">// Show a message for 2 seconds, then clear it</span>
 <a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="n">setState</span><span class="p">(()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="na">statusMessage</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;Saved!&quot;</span><span class="p">);</span>
 <a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="n">AliveJTUI</span><span class="p">.</span><span class="na">schedule</span><span class="p">(</span><span class="mi">2000</span><span class="p">,</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">setState</span><span class="p">(()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="na">statusMessage</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;&quot;</span><span class="p">));</span>
 </code></pre></div>
-<h3 id="repeating-timer">Repeating Timer<a class="headerlink" href="#repeating-timer" title="Permanent link">#</a></h3>
+<h3 id="repeating-timer">Repeating Timer</h3>
 <p>Fires repeatedly at the given interval until cancelled.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1">// Animate a spinner at 10 fps</span>
 <a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="n">Runnable</span><span class="w"> </span><span class="n">tick</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">setState</span><span class="p">(()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">spinFrame</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="n">spinFrame</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"> </span><span class="o">%</span><span class="w"> </span><span class="n">SPIN_FRAMES</span><span class="p">.</span><span class="na">length</span><span class="p">);</span>
@@ -1405,7 +1405,7 @@
 <a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="n">AliveJTUI</span><span class="p">.</span><span class="na">scheduleRepeating</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">setState</span><span class="p">(()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">spin</span><span class="p">.</span><span class="na">nextFrame</span><span class="p">()));</span>
 </code></pre></div>
 </div>
-<h3 id="cancelling-timers">Cancelling Timers<a class="headerlink" href="#cancelling-timers" title="Permanent link">#</a></h3>
+<h3 id="cancelling-timers">Cancelling Timers</h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">Runnable</span><span class="w"> </span><span class="n">tick</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">setState</span><span class="p">(()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">doSomething</span><span class="p">());</span>
 <a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="n">AliveJTUI</span><span class="p">.</span><span class="na">scheduleRepeating</span><span class="p">(</span><span class="mi">500</span><span class="p">,</span><span class="w"> </span><span class="n">tick</span><span class="p">);</span>
 <a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>
@@ -1432,22 +1432,22 @@
 </code></pre></div>
 </div>
 <hr />
-<h2 id="notifications-toast-messages">Notifications (Toast Messages)<a class="headerlink" href="#notifications-toast-messages" title="Permanent link">#</a></h2>
+<h2 id="notifications-toast-messages">Notifications (Toast Messages)</h2>
 <p>The <code>NotificationManager</code> renders non-blocking toast messages over your UI.</p>
-<h3 id="setup">Setup<a class="headerlink" href="#setup" title="Permanent link">#</a></h3>
+<h3 id="setup">Setup</h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">MyApp</span><span class="w"> </span><span class="kd">extends</span><span class="w"> </span><span class="n">Component</span><span class="w"> </span><span class="p">{</span>
 <a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a>
 <a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="n">NotificationManager</span><span class="w"> </span><span class="n">notif</span><span class="w"> </span><span class="o">=</span>
 <a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a><span class="w">        </span><span class="k">new</span><span class="w"> </span><span class="n">NotificationManager</span><span class="p">(()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">setState</span><span class="p">(()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="p">{}));</span>
 </code></pre></div>
 <p>The constructor takes a state-change trigger so notifications can dismiss themselves after their timeout.</p>
-<h3 id="showing-notifications">Showing Notifications<a class="headerlink" href="#showing-notifications" title="Permanent link">#</a></h3>
+<h3 id="showing-notifications">Showing Notifications</h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="n">notif</span><span class="p">.</span><span class="na">show</span><span class="p">(</span><span class="s">&quot;File saved successfully!&quot;</span><span class="p">,</span><span class="w"> </span><span class="mi">2000</span><span class="p">);</span>
 <a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="n">notif</span><span class="p">.</span><span class="na">show</span><span class="p">(</span><span class="s">&quot;Warning: disk almost full&quot;</span><span class="p">,</span><span class="w">   </span><span class="mi">4000</span><span class="p">,</span><span class="w"> </span><span class="n">NotificationType</span><span class="p">.</span><span class="na">WARNING</span><span class="p">);</span>
 <a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="n">notif</span><span class="p">.</span><span class="na">show</span><span class="p">(</span><span class="s">&quot;Connection failed&quot;</span><span class="p">,</span><span class="w">           </span><span class="mi">5000</span><span class="p">,</span><span class="w"> </span><span class="n">NotificationType</span><span class="p">.</span><span class="na">ERROR</span><span class="p">);</span>
 <a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a><span class="n">notif</span><span class="p">.</span><span class="na">show</span><span class="p">(</span><span class="s">&quot;Upload complete&quot;</span><span class="p">,</span><span class="w">             </span><span class="mi">2500</span><span class="p">,</span><span class="w"> </span><span class="n">NotificationType</span><span class="p">.</span><span class="na">SUCCESS</span><span class="p">);</span>
 </code></pre></div>
-<h3 id="notification-types">Notification Types<a class="headerlink" href="#notification-types" title="Permanent link">#</a></h3>
+<h3 id="notification-types">Notification Types</h3>
 <table>
 <thead>
 <tr>
@@ -1474,7 +1474,7 @@
 </tr>
 </tbody>
 </table>
-<h3 id="rendering-in-render">Rendering in render()<a class="headerlink" href="#rendering-in-render" title="Permanent link">#</a></h3>
+<h3 id="rendering-in-render">Rendering in render()</h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="nd">@Override</span>
 <a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="kd">public</span><span class="w"> </span><span class="n">Node</span><span class="w"> </span><span class="nf">render</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
 <a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="w">    </span><span class="n">Node</span><span class="w"> </span><span class="n">root</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">VBox</span><span class="p">.</span><span class="na">of</span><span class="p">(</span><span class="cm">/* your UI */</span><span class="p">);</span>
@@ -1493,7 +1493,7 @@
 <p>Call <code>notif.buildOverlay()</code> once per render and only push if non-null. Pushing multiple overlays is fine — they stack — but for notifications you only need one.</p>
 </div>
 <hr />
-<h2 id="overlays-dialogs">Overlays (Dialogs)<a class="headerlink" href="#overlays-dialogs" title="Permanent link">#</a></h2>
+<h2 id="overlays-dialogs">Overlays (Dialogs)</h2>
 <p>The overlay API lets you push any <code>Node</code> as a full-screen overlay. Dialogs, notifications, and help screens all use this mechanism.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="c1">// Push an overlay</span>
 <a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="n">AliveJTUI</span><span class="p">.</span><span class="na">pushOverlay</span><span class="p">(</span><span class="n">dialogNode</span><span class="p">);</span>
@@ -1501,7 +1501,7 @@
 <a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="c1">// Remove the topmost overlay</span>
 <a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a><span class="n">AliveJTUI</span><span class="p">.</span><span class="na">popOverlay</span><span class="p">();</span>
 </code></pre></div>
-<h3 id="confirmation-dialog-pattern">Confirmation Dialog Pattern<a class="headerlink" href="#confirmation-dialog-pattern" title="Permanent link">#</a></h3>
+<h3 id="confirmation-dialog-pattern">Confirmation Dialog Pattern</h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="kd">private</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">showConfirmDialog</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
 <a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="w">    </span><span class="n">Node</span><span class="w"> </span><span class="n">dialog</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Dialog</span><span class="p">.</span><span class="na">of</span><span class="p">(</span><span class="s">&quot;Confirm&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">VBox</span><span class="p">.</span><span class="na">of</span><span class="p">(</span>
 <a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="w">        </span><span class="n">Text</span><span class="p">.</span><span class="na">of</span><span class="p">(</span><span class="s">&quot;  Delete this item?&quot;</span><span class="p">),</span>
@@ -1518,13 +1518,13 @@
 <a id="__codelineno-10-14" name="__codelineno-10-14" href="#__codelineno-10-14"></a><span class="p">}</span>
 </code></pre></div>
 <hr />
-<h2 id="undo-redo">Undo / Redo<a class="headerlink" href="#undo-redo" title="Permanent link">#</a></h2>
+<h2 id="undo-redo">Undo / Redo</h2>
 <p><code>UndoManager</code> provides a simple command-pattern undo stack.</p>
-<h3 id="setup_1">Setup<a class="headerlink" href="#setup_1" title="Permanent link">#</a></h3>
+<h3 id="setup_1">Setup</h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="n">UndoManager</span><span class="w"> </span><span class="n">undo</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">UndoManager</span><span class="p">();</span><span class="w">      </span><span class="c1">// default: 100 entries</span>
 <a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="n">UndoManager</span><span class="w"> </span><span class="n">undo</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">UndoManager</span><span class="p">(</span><span class="mi">50</span><span class="p">);</span><span class="w">    </span><span class="c1">// custom capacity</span>
 </code></pre></div>
-<h3 id="recording-operations">Recording Operations<a class="headerlink" href="#recording-operations" title="Permanent link">#</a></h3>
+<h3 id="recording-operations">Recording Operations</h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="n">String</span><span class="w"> </span><span class="n">prevText</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="na">text</span><span class="p">;</span>
 <a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="k">this</span><span class="p">.</span><span class="na">text</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;new value&quot;</span><span class="p">;</span>
 <a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a>
@@ -1533,7 +1533,7 @@
 <a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a><span class="w">    </span><span class="p">()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">setState</span><span class="p">(()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="na">text</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;new value&quot;</span><span class="p">)</span><span class="w">      </span><span class="c1">// redo action</span>
 <a id="__codelineno-12-7" name="__codelineno-12-7" href="#__codelineno-12-7"></a><span class="p">);</span>
 </code></pre></div>
-<h3 id="triggering-undoredo">Triggering Undo/Redo<a class="headerlink" href="#triggering-undoredo" title="Permanent link">#</a></h3>
+<h3 id="triggering-undoredo">Triggering Undo/Redo</h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="c1">// In mount():</span>
 <a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="n">onKey</span><span class="p">(</span><span class="n">KeyType</span><span class="p">.</span><span class="na">CHARACTER</span><span class="p">,</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="p">{</span>
 <a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a><span class="w">    </span><span class="c1">// Ctrl+Z = undo, Ctrl+Y = redo</span>
@@ -1541,12 +1541,12 @@
 <a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a><span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">event</span><span class="p">.</span><span class="na">ctrl</span><span class="p">()</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">event</span><span class="p">.</span><span class="na">character</span><span class="p">()</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="sc">&#39;y&#39;</span><span class="p">)</span><span class="w"> </span><span class="n">undo</span><span class="p">.</span><span class="na">redo</span><span class="p">();</span>
 <a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a><span class="p">});</span>
 </code></pre></div>
-<h3 id="querying-state">Querying State<a class="headerlink" href="#querying-state" title="Permanent link">#</a></h3>
+<h3 id="querying-state">Querying State</h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="kt">boolean</span><span class="w"> </span><span class="n">canUndo</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">undo</span><span class="p">.</span><span class="na">canUndo</span><span class="p">();</span>
 <a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a><span class="kt">boolean</span><span class="w"> </span><span class="n">canRedo</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">undo</span><span class="p">.</span><span class="na">canRedo</span><span class="p">();</span>
 <a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a><span class="n">undo</span><span class="p">.</span><span class="na">clear</span><span class="p">();</span><span class="w">   </span><span class="c1">// wipe the stack</span>
 </code></pre></div>
-<h3 id="showing-undo-status">Showing Undo Status<a class="headerlink" href="#showing-undo-status" title="Permanent link">#</a></h3>
+<h3 id="showing-undo-status">Showing Undo Status</h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="n">HBox</span><span class="p">.</span><span class="na">of</span><span class="p">(</span>
 <a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a><span class="w">    </span><span class="n">Button</span><span class="p">.</span><span class="na">of</span><span class="p">(</span><span class="s">&quot;[ Undo ]&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">undo</span><span class="p">.</span><span class="na">canUndo</span><span class="p">())</span><span class="w"> </span><span class="n">undo</span><span class="p">.</span><span class="na">undo</span><span class="p">();</span><span class="w"> </span><span class="p">})</span>
 <a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a><span class="w">          </span><span class="p">.</span><span class="na">style</span><span class="p">(</span><span class="n">undo</span><span class="p">.</span><span class="na">canUndo</span><span class="p">()</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="n">activeStyle</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="n">dimStyle</span><span class="p">),</span>
@@ -1555,7 +1555,7 @@
 <a id="__codelineno-15-6" name="__codelineno-15-6" href="#__codelineno-15-6"></a><span class="p">)</span>
 </code></pre></div>
 <hr />
-<h2 id="virtual-lists">Virtual Lists<a class="headerlink" href="#virtual-lists" title="Permanent link">#</a></h2>
+<h2 id="virtual-lists">Virtual Lists</h2>
 <p><code>VirtualListNode</code> renders only the rows currently visible on screen. It handles millions of items efficiently because the layout engine never measures off-screen rows.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="n">List</span><span class="o">&lt;</span><span class="n">MyItem</span><span class="o">&gt;</span><span class="w"> </span><span class="n">items</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">loadAllItems</span><span class="p">();</span><span class="w">  </span><span class="c1">// could be 100,000 items</span>
 <a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a>
@@ -1582,7 +1582,7 @@
 <p>The virtual list's rendering cost is proportional to the number of <em>visible</em> rows, not the total item count. A list of 1,000,000 items with 20 visible rows renders the same as a list of 20 items.</p>
 </div>
 <hr />
-<h2 id="async-background-work">Async Background Work<a class="headerlink" href="#async-background-work" title="Permanent link">#</a></h2>
+<h2 id="async-background-work">Async Background Work</h2>
 <p>See <a href="../component-model/#async-state">Component Model — Async State</a> for full details.</p>
 <p>Quick reference:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="c1">// Pattern 1: setStateAsync (simple)</span>
@@ -1599,7 +1599,7 @@
 <a id="__codelineno-17-12" name="__codelineno-17-12" href="#__codelineno-17-12"></a><span class="p">));</span>
 </code></pre></div>
 <hr />
-<h2 id="custom-backend">Custom Backend<a class="headerlink" href="#custom-backend" title="Permanent link">#</a></h2>
+<h2 id="custom-backend">Custom Backend</h2>
 <p>Implement <code>TerminalBackend</code> to integrate any rendering layer:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">MyBackend</span><span class="w"> </span><span class="kd">implements</span><span class="w"> </span><span class="n">TerminalBackend</span><span class="w"> </span><span class="p">{</span>
 <a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a><span class="w">    </span><span class="c1">// ... implement the interface</span>
@@ -1690,7 +1690,7 @@
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.expand", "navigation.top", "content.code.copy", "content.code.annotate", "search.highlight", "search.suggest", "toc.follow"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.expand", "navigation.top", "content.code.copy", "content.code.annotate", "search.highlight", "search.suggest", "toc.follow", "toc.permalink"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
       <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>

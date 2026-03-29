@@ -1053,12 +1053,12 @@
   
 
 
-<h1 id="testing">Testing<a class="headerlink" href="#testing" title="Permanent link">#</a></h1>
+<h1 id="testing">Testing</h1>
 <p>AliveJTUI is designed to be testable without a real terminal. The <code>MockBackend</code> provides a virtual 2D screen buffer and a key event queue, so you can write deterministic unit tests for your components.</p>
 <hr />
-<h2 id="mockbackend">MockBackend<a class="headerlink" href="#mockbackend" title="Permanent link">#</a></h2>
+<h2 id="mockbackend">MockBackend</h2>
 <p><code>MockBackend</code> simulates a terminal of a given size. It captures rendered output in a cell buffer and lets you inject key events programmatically.</p>
-<h3 id="basic-setup">Basic Setup<a class="headerlink" href="#basic-setup" title="Permanent link">#</a></h3>
+<h3 id="basic-setup">Basic Setup</h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">io.github.yehorsyrin.tui.backend.MockBackend</span><span class="p">;</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">import</span><span class="w"> </span><span class="nn">io.github.yehorsyrin.tui.core.AliveJTUI</span><span class="p">;</span>
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="kn">import</span><span class="w"> </span><span class="nn">io.github.yehorsyrin.tui.event.*</span><span class="p">;</span>
@@ -1066,7 +1066,7 @@
 <a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">MockBackend</span><span class="w"> </span><span class="n">backend</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">MockBackend</span><span class="p">(</span><span class="mi">80</span><span class="p">,</span><span class="w"> </span><span class="mi">24</span><span class="p">);</span><span class="w">  </span><span class="c1">// 80 cols × 24 rows</span>
 <a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="n">AliveJTUI</span><span class="p">.</span><span class="na">run</span><span class="p">(</span><span class="k">new</span><span class="w"> </span><span class="n">MyApp</span><span class="p">(),</span><span class="w"> </span><span class="n">backend</span><span class="p">);</span>
 </code></pre></div>
-<h3 id="simulating-key-presses">Simulating Key Presses<a class="headerlink" href="#simulating-key-presses" title="Permanent link">#</a></h3>
+<h3 id="simulating-key-presses">Simulating Key Presses</h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1">// Named key</span>
 <a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="n">backend</span><span class="p">.</span><span class="na">sendKey</span><span class="p">(</span><span class="n">KeyEvent</span><span class="p">.</span><span class="na">of</span><span class="p">(</span><span class="n">KeyType</span><span class="p">.</span><span class="na">ARROW_DOWN</span><span class="p">));</span>
 <a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="n">backend</span><span class="p">.</span><span class="na">sendKey</span><span class="p">(</span><span class="n">KeyEvent</span><span class="p">.</span><span class="na">of</span><span class="p">(</span><span class="n">KeyType</span><span class="p">.</span><span class="na">ENTER</span><span class="p">));</span>
@@ -1076,7 +1076,7 @@
 <a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="n">backend</span><span class="p">.</span><span class="na">sendKey</span><span class="p">(</span><span class="n">KeyEvent</span><span class="p">.</span><span class="na">ofCharacter</span><span class="p">(</span><span class="sc">&#39;x&#39;</span><span class="p">));</span>
 <a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="n">backend</span><span class="p">.</span><span class="na">sendKey</span><span class="p">(</span><span class="n">KeyEvent</span><span class="p">.</span><span class="na">ofCharacter</span><span class="p">(</span><span class="sc">&#39;A&#39;</span><span class="p">));</span>
 </code></pre></div>
-<h3 id="inspecting-rendered-output">Inspecting Rendered Output<a class="headerlink" href="#inspecting-rendered-output" title="Permanent link">#</a></h3>
+<h3 id="inspecting-rendered-output">Inspecting Rendered Output</h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1">// Character at column=0, row=0</span>
 <a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="n">String</span><span class="w"> </span><span class="n">cell</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">backend</span><span class="p">.</span><span class="na">getCell</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span>
 <a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
@@ -1084,8 +1084,8 @@
 <a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="n">assertEquals</span><span class="p">(</span><span class="s">&quot;H&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">backend</span><span class="p">.</span><span class="na">getCell</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">));</span>
 </code></pre></div>
 <hr />
-<h2 id="writing-unit-tests">Writing Unit Tests<a class="headerlink" href="#writing-unit-tests" title="Permanent link">#</a></h2>
-<h3 id="junit-5-example">JUnit 5 Example<a class="headerlink" href="#junit-5-example" title="Permanent link">#</a></h3>
+<h2 id="writing-unit-tests">Writing Unit Tests</h2>
+<h3 id="junit-5-example">JUnit 5 Example</h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">org.junit.jupiter.api.*</span><span class="p">;</span>
 <a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="kn">import static</span><span class="w"> </span><span class="nn">org.junit.jupiter.api.Assertions.*</span><span class="p">;</span>
 <a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>
@@ -1146,8 +1146,8 @@
 <a id="__codelineno-3-58" name="__codelineno-3-58" href="#__codelineno-3-58"></a><span class="p">}</span>
 </code></pre></div>
 <hr />
-<h2 id="testing-patterns">Testing Patterns<a class="headerlink" href="#testing-patterns" title="Permanent link">#</a></h2>
-<h3 id="test-state-changes-via-key-events">Test State Changes via Key Events<a class="headerlink" href="#test-state-changes-via-key-events" title="Permanent link">#</a></h3>
+<h2 id="testing-patterns">Testing Patterns</h2>
+<h3 id="test-state-changes-via-key-events">Test State Changes via Key Events</h3>
 <p>The most reliable way to test a component is to simulate key presses and verify that the rendered output changes accordingly.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="nd">@Test</span>
 <a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="kt">void</span><span class="w"> </span><span class="nf">checkboxToggles</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
@@ -1160,7 +1160,7 @@
 <a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="w">    </span><span class="c1">// Now look for ☑</span>
 <a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a><span class="p">}</span>
 </code></pre></div>
-<h3 id="test-async-operations">Test Async Operations<a class="headerlink" href="#test-async-operations" title="Permanent link">#</a></h3>
+<h3 id="test-async-operations">Test Async Operations</h3>
 <p><code>setStateAsync</code> uses a background thread. In tests, you may need to wait for the state to settle:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="nd">@Test</span>
 <a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="kt">void</span><span class="w"> </span><span class="nf">asyncDataLoads</span><span class="p">()</span><span class="w"> </span><span class="kd">throws</span><span class="w"> </span><span class="n">InterruptedException</span><span class="w"> </span><span class="p">{</span>
@@ -1181,7 +1181,7 @@
 <p class="admonition-title">Deterministic async tests</p>
 <p>For more deterministic async tests, inject a fake data source via constructor or setter that returns immediately, rather than relying on <code>Thread.sleep</code>.</p>
 </div>
-<h3 id="test-focus-navigation">Test Focus Navigation<a class="headerlink" href="#test-focus-navigation" title="Permanent link">#</a></h3>
+<h3 id="test-focus-navigation">Test Focus Navigation</h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="nd">@Test</span>
 <a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="kt">void</span><span class="w"> </span><span class="nf">tabCyclesFocus</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
 <a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="w">    </span><span class="n">MockBackend</span><span class="w"> </span><span class="n">backend</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">MockBackend</span><span class="p">(</span><span class="mi">80</span><span class="p">,</span><span class="w"> </span><span class="mi">24</span><span class="p">);</span>
@@ -1199,7 +1199,7 @@
 <a id="__codelineno-6-15" name="__codelineno-6-15" href="#__codelineno-6-15"></a><span class="w">    </span><span class="c1">// Shift+Tab moves back</span>
 <a id="__codelineno-6-16" name="__codelineno-6-16" href="#__codelineno-6-16"></a><span class="p">}</span>
 </code></pre></div>
-<h3 id="test-dialog-interactions">Test Dialog Interactions<a class="headerlink" href="#test-dialog-interactions" title="Permanent link">#</a></h3>
+<h3 id="test-dialog-interactions">Test Dialog Interactions</h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="nd">@Test</span>
 <a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="kt">void</span><span class="w"> </span><span class="nf">dialogConfirmationDeletesItem</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
 <a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="w">    </span><span class="n">MockBackend</span><span class="w"> </span><span class="n">backend</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">MockBackend</span><span class="p">(</span><span class="mi">80</span><span class="p">,</span><span class="w"> </span><span class="mi">24</span><span class="p">);</span>
@@ -1215,7 +1215,7 @@
 <a id="__codelineno-7-13" name="__codelineno-7-13" href="#__codelineno-7-13"></a><span class="p">}</span>
 </code></pre></div>
 <hr />
-<h2 id="available-backends">Available Backends<a class="headerlink" href="#available-backends" title="Permanent link">#</a></h2>
+<h2 id="available-backends">Available Backends</h2>
 <table>
 <thead>
 <tr>
@@ -1248,7 +1248,7 @@
 <a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a><span class="n">AliveJTUI</span><span class="p">.</span><span class="na">run</span><span class="p">(</span><span class="k">new</span><span class="w"> </span><span class="n">MyApp</span><span class="p">(),</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">MyCustomBackend</span><span class="p">());</span>
 </code></pre></div>
 <hr />
-<h2 id="tips-for-testable-components">Tips for Testable Components<a class="headerlink" href="#tips-for-testable-components" title="Permanent link">#</a></h2>
+<h2 id="tips-for-testable-components">Tips for Testable Components</h2>
 <div class="admonition tip">
 <p class="admonition-title">Keep render() pure</p>
 <p><code>render()</code> should only read state fields — no I/O, no side effects. Pure render functions are easy to reason about in tests.</p>
@@ -1347,7 +1347,7 @@
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.expand", "navigation.top", "content.code.copy", "content.code.annotate", "search.highlight", "search.suggest", "toc.follow"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.expand", "navigation.top", "content.code.copy", "content.code.annotate", "search.highlight", "search.suggest", "toc.follow", "toc.permalink"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
       <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>

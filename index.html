@@ -839,22 +839,16 @@
   
 
 
-<h1 id="alivejtui">AliveJTUI<a class="headerlink" href="#alivejtui" title="Permanent link">#</a></h1>
-<div align="center">
-
-[![Maven Central](https://img.shields.io/maven-central/v/io.github.yehorsyrin/alivejTUI)](https://central.sonatype.com/artifact/io.github.yehorsyrin/alivejTUI)
-[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=yehorsyrin_alivejTUI&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=yehorsyrin_alivejTUI)
-[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=yehorsyrin_alivejTUI&metric=coverage)](https://sonarcloud.io/summary/new_code?id=yehorsyrin_alivejTUI)
-[![Java](https://img.shields.io/badge/Java-17%2B-blue)](https://openjdk.org/)
-[![License](https://img.shields.io/badge/license-MIT-green)](https://github.com/yehorsyrin/alivejTUI/blob/master/LICENSE)
-
-**A declarative TUI (Terminal User Interface) library for Java.**
-Build terminal UIs as component trees — like React, but for the terminal.
-
-</div>
-
+<h1 id="alivejtui">AliveJTUI</h1>
+<p><a href="https://central.sonatype.com/artifact/io.github.yehorsyrin/alivejTUI"><img alt="Maven Central" src="https://img.shields.io/maven-central/v/io.github.yehorsyrin/alivejTUI" /></a>
+<a href="https://sonarcloud.io/summary/new_code?id=yehorsyrin_alivejTUI"><img alt="Quality Gate Status" src="https://sonarcloud.io/api/project_badges/measure?project=yehorsyrin_alivejTUI&amp;metric=alert_status" /></a>
+<a href="https://sonarcloud.io/summary/new_code?id=yehorsyrin_alivejTUI"><img alt="Coverage" src="https://sonarcloud.io/api/project_badges/measure?project=yehorsyrin_alivejTUI&amp;metric=coverage" /></a>
+<a href="https://openjdk.org/"><img alt="Java" src="https://img.shields.io/badge/Java-17%2B-blue" /></a>
+<a href="https://github.com/yehorsyrin/alivejTUI/blob/master/LICENSE"><img alt="License" src="https://img.shields.io/badge/license-MIT-green" /></a></p>
+<p><strong>A declarative TUI (Terminal User Interface) library for Java.</strong>
+Build terminal UIs as component trees — like React, but for the terminal.</p>
 <hr />
-<h2 id="what-is-alivejtui">What is AliveJTUI?<a class="headerlink" href="#what-is-alivejtui" title="Permanent link">#</a></h2>
+<h2 id="what-is-alivejtui">What is AliveJTUI?</h2>
 <p>AliveJTUI brings a React-style component model to the Java terminal. You describe your UI as a tree of nodes, call <code>setState()</code> when data changes, and the framework diffs and redraws only the cells that actually changed — no full-screen flicker, no manual cursor positioning.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a> AliveJTUI Demo v0.1.0  theme: [Dark]
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a> 1:Widgets  2:Table  3:VirtualList  4:Text  5:Layout
@@ -869,7 +863,7 @@ Build terminal UIs as component trees — like React, but for the terminal.
 <a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>  1-5:Tab  T:Theme  D:Dialog  N:Notify  C:Collapse  X:Checkbox  S:Select  +/-:Progress  ESC:Quit
 </code></pre></div>
 <hr />
-<h2 id="quick-install">Quick Install<a class="headerlink" href="#quick-install" title="Permanent link">#</a></h2>
+<h2 id="quick-install">Quick Install</h2>
 <p>Add to your <code>pom.xml</code>:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nt">&lt;dependency&gt;</span>
 <a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">    </span><span class="nt">&lt;groupId&gt;</span>io.github.yehorsyrin<span class="nt">&lt;/groupId&gt;</span>
@@ -885,7 +879,7 @@ Build terminal UIs as component trees — like React, but for the terminal.
 </ul>
 </div>
 <hr />
-<h2 id="hello-world">Hello World<a class="headerlink" href="#hello-world" title="Permanent link">#</a></h2>
+<h2 id="hello-world">Hello World</h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">io.github.yehorsyrin.tui.core.*</span><span class="p">;</span>
 <a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="kn">import</span><span class="w"> </span><span class="nn">io.github.yehorsyrin.tui.node.*</span><span class="p">;</span>
 <a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="kn">import</span><span class="w"> </span><span class="nn">io.github.yehorsyrin.tui.style.Color</span><span class="p">;</span>
@@ -920,7 +914,7 @@ Build terminal UIs as component trees — like React, but for the terminal.
 <a id="__codelineno-2-32" name="__codelineno-2-32" href="#__codelineno-2-32"></a><span class="p">}</span>
 </code></pre></div>
 <hr />
-<h2 id="features-at-a-glance">Features at a Glance<a class="headerlink" href="#features-at-a-glance" title="Permanent link">#</a></h2>
+<h2 id="features-at-a-glance">Features at a Glance</h2>
 <table>
 <thead>
 <tr>
@@ -980,7 +974,7 @@ Build terminal UIs as component trees — like React, but for the terminal.
 </tbody>
 </table>
 <hr />
-<h2 id="where-to-go-next">Where to Go Next<a class="headerlink" href="#where-to-go-next" title="Permanent link">#</a></h2>
+<h2 id="where-to-go-next">Where to Go Next</h2>
 <div class="grid cards">
 <ul>
 <li>
@@ -1091,7 +1085,7 @@ Build terminal UIs as component trees — like React, but for the terminal.
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": ".", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.expand", "navigation.top", "content.code.copy", "content.code.annotate", "search.highlight", "search.suggest", "toc.follow"], "search": "assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": ".", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.expand", "navigation.top", "content.code.copy", "content.code.annotate", "search.highlight", "search.suggest", "toc.follow", "toc.permalink"], "search": "assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
       <script src="assets/javascripts/bundle.79ae519e.min.js"></script>

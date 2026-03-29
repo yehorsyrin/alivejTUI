@@ -1053,10 +1053,10 @@
   
 
 
-<h1 id="getting-started">Getting Started<a class="headerlink" href="#getting-started" title="Permanent link">#</a></h1>
+<h1 id="getting-started">Getting Started</h1>
 <p>This guide takes you from zero to a running AliveJTUI application in a few minutes.</p>
 <hr />
-<h2 id="requirements">Requirements<a class="headerlink" href="#requirements" title="Permanent link">#</a></h2>
+<h2 id="requirements">Requirements</h2>
 <ul>
 <li><strong>Java 17+</strong> — AliveJTUI uses modern Java features (records, sealed classes, pattern matching previews)</li>
 <li><strong>Maven 3.8+</strong> — the library is available on Maven Central</li>
@@ -1066,8 +1066,8 @@
 <p>OpenJDK 21 LTS is recommended. AliveJTUI is tested against JDK 17 and 21.</p>
 </div>
 <hr />
-<h2 id="installation">Installation<a class="headerlink" href="#installation" title="Permanent link">#</a></h2>
-<h3 id="maven">Maven<a class="headerlink" href="#maven" title="Permanent link">#</a></h3>
+<h2 id="installation">Installation</h2>
+<h3 id="maven">Maven</h3>
 <p>Add the dependency to your <code>pom.xml</code>:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="nt">&lt;dependency&gt;</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">    </span><span class="nt">&lt;groupId&gt;</span>io.github.yehorsyrin<span class="nt">&lt;/groupId&gt;</span>
@@ -1075,7 +1075,7 @@
 <a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">    </span><span class="nt">&lt;version&gt;</span>0.1.1<span class="nt">&lt;/version&gt;</span>
 <a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="nt">&lt;/dependency&gt;</span>
 </code></pre></div>
-<h3 id="gradle">Gradle<a class="headerlink" href="#gradle" title="Permanent link">#</a></h3>
+<h3 id="gradle">Gradle</h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">implementation</span><span class="w"> </span><span class="s1">&#39;io.github.yehorsyrin:alivejTUI:0.1.1&#39;</span>
 </code></pre></div>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">implementation</span><span class="p">(</span><span class="s">&quot;io.github.yehorsyrin:alivejTUI:0.1.1&quot;</span><span class="p">)</span>
@@ -1085,8 +1085,8 @@
 <p>Check <a href="https://central.sonatype.com/artifact/io.github.yehorsyrin/alivejTUI">Maven Central</a> for the latest release.</p>
 </div>
 <hr />
-<h2 id="your-first-application">Your First Application<a class="headerlink" href="#your-first-application" title="Permanent link">#</a></h2>
-<h3 id="step-1-create-the-component-class">Step 1 — Create the component class<a class="headerlink" href="#step-1-create-the-component-class" title="Permanent link">#</a></h3>
+<h2 id="your-first-application">Your First Application</h2>
+<h3 id="step-1-create-the-component-class">Step 1 — Create the component class</h3>
 <p>Every AliveJTUI app is a <code>Component</code>. Subclass it, declare your state as fields, register key handlers in <code>mount()</code>, and return a <code>Node</code> tree from <code>render()</code>.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">io.github.yehorsyrin.tui.core.*</span><span class="p">;</span>
 <a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="kn">import</span><span class="w"> </span><span class="nn">io.github.yehorsyrin.tui.event.*</span><span class="p">;</span>
@@ -1121,7 +1121,7 @@
 <a id="__codelineno-3-31" name="__codelineno-3-31" href="#__codelineno-3-31"></a><span class="w">    </span><span class="p">}</span>
 <a id="__codelineno-3-32" name="__codelineno-3-32" href="#__codelineno-3-32"></a><span class="p">}</span>
 </code></pre></div>
-<h3 id="step-2-run-it">Step 2 — Run it<a class="headerlink" href="#step-2-run-it" title="Permanent link">#</a></h3>
+<h3 id="step-2-run-it">Step 2 — Run it</h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>mvn<span class="w"> </span>compile<span class="w"> </span>exec:java<span class="w"> </span>-Dexec.mainClass<span class="o">=</span><span class="s2">&quot;HelloApp&quot;</span>
 </code></pre></div>
 <div class="admonition tip">
@@ -1130,7 +1130,7 @@
 On headless Linux servers it renders directly in the terminal.</p>
 </div>
 <hr />
-<h2 id="a-more-complete-example-counter">A More Complete Example: Counter<a class="headerlink" href="#a-more-complete-example-counter" title="Permanent link">#</a></h2>
+<h2 id="a-more-complete-example-counter">A More Complete Example: Counter</h2>
 <p>This example demonstrates <code>setState</code>, <code>HBox</code> layout, and multiple key bindings:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">CounterApp</span><span class="w"> </span><span class="kd">extends</span><span class="w"> </span><span class="n">Component</span><span class="w"> </span><span class="p">{</span>
 <a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>
@@ -1169,11 +1169,11 @@ On headless Linux servers it renders directly in the terminal.</p>
 <a id="__codelineno-5-35" name="__codelineno-5-35" href="#__codelineno-5-35"></a><span class="p">}</span>
 </code></pre></div>
 <hr />
-<h2 id="running-the-demo-application">Running the Demo Application<a class="headerlink" href="#running-the-demo-application" title="Permanent link">#</a></h2>
+<h2 id="running-the-demo-application">Running the Demo Application</h2>
 <p>The project ships with a fully-featured demo showing all widgets:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>java<span class="w"> </span>-jar<span class="w"> </span>alivejTUI-demo.jar
 </code></pre></div>
-<h3 id="demo-navigation">Demo Navigation<a class="headerlink" href="#demo-navigation" title="Permanent link">#</a></h3>
+<h3 id="demo-navigation">Demo Navigation</h3>
 <table>
 <thead>
 <tr>
@@ -1240,7 +1240,7 @@ On headless Linux servers it renders directly in the terminal.</p>
 </tr>
 </tbody>
 </table>
-<h3 id="demo-tabs">Demo Tabs<a class="headerlink" href="#demo-tabs" title="Permanent link">#</a></h3>
+<h3 id="demo-tabs">Demo Tabs</h3>
 <table>
 <thead>
 <tr>
@@ -1272,7 +1272,7 @@ On headless Linux servers it renders directly in the terminal.</p>
 </tbody>
 </table>
 <hr />
-<h2 id="building-from-source">Building from Source<a class="headerlink" href="#building-from-source" title="Permanent link">#</a></h2>
+<h2 id="building-from-source">Building from Source</h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/yehorsyrin/alivejTUI.git
 <a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="nb">cd</span><span class="w"> </span>alivejTUI
 <a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>
@@ -1284,7 +1284,7 @@ On headless Linux servers it renders directly in the terminal.</p>
 <a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a><span class="c1"># Produces: target/alivejTUI-demo.jar</span>
 </code></pre></div>
 <hr />
-<h2 id="next-steps">Next Steps<a class="headerlink" href="#next-steps" title="Permanent link">#</a></h2>
+<h2 id="next-steps">Next Steps</h2>
 <ul>
 <li><strong><a href="../component-model/">Component Model</a></strong> — learn how <code>setState</code>, async, and lifecycle work</li>
 <li><strong><a href="../nodes/">Node Reference</a></strong> — browse all available UI nodes</li>
@@ -1372,7 +1372,7 @@ On headless Linux servers it renders directly in the terminal.</p>
     
       
       
-      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.expand", "navigation.top", "content.code.copy", "content.code.annotate", "search.highlight", "search.suggest", "toc.follow"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.tabs", "navigation.tabs.sticky", "navigation.sections", "navigation.expand", "navigation.top", "content.code.copy", "content.code.annotate", "search.highlight", "search.suggest", "toc.follow", "toc.permalink"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
     
     
       <script src="../assets/javascripts/bundle.79ae519e.min.js"></script>
