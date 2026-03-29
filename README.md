@@ -716,6 +716,14 @@ src/
 
 ---
 
+## Known Issues
+
+| # | Description | Status |
+|---|-------------|--------|
+| 1 | `InputNode` did not show focus highlight when tabbing between fields — bold style is invisible on empty inputs | Fixed in 0.1.4 (underline style applied on focus) |
+
+---
+
 ## License
 
 MIT

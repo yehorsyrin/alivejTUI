@@ -130,7 +130,7 @@ class TreeFlattener {
     private void flattenInput(InputNode input, Map<String, CellState> cells) {
         String value = input.getValue();
         String placeholder = input.getPlaceholder();
-        Style style = Style.DEFAULT;
+        Style style = input.isFocused() ? input.getFocusedStyle() : input.getStyle();
         int x = input.getX(), y = input.getY(), w = input.getWidth();
 
         String display = value.isEmpty() && !placeholder.isEmpty() ? placeholder : value;
