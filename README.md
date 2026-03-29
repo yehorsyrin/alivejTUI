@@ -16,6 +16,7 @@
 
 # AliveJTUI
 
+[![Maven Central](https://img.shields.io/maven-central/v/io.github.yehorsyrin/alivejTUI)](https://central.sonatype.com/artifact/io.github.yehorsyrin/alivejTUI)
 [![SonarCloud](https://github.com/yehorsyrin/alivejTUI/actions/workflows/sonar.yml/badge.svg)](https://github.com/yehorsyrin/alivejTUI/actions/workflows/sonar.yml)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=yehorsyrin_alivejTUI&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=yehorsyrin_alivejTUI)
 [![Coverage](https://sonarcloud.io/api/project_badges/measure?project=yehorsyrin_alivejTUI&metric=coverage)](https://sonarcloud.io/summary/new_code?id=yehorsyrin_alivejTUI)
@@ -75,7 +76,7 @@ Build terminal UIs as component trees — like React, but for the terminal.
 <dependency>
     <groupId>io.github.yehorsyrin</groupId>
     <artifactId>alivejTUI</artifactId>
-    <version>0.1.0</version>
+    <version>0.1.1</version>
 </dependency>
 ```
 
@@ -696,7 +697,7 @@ mvn package
 
 ```
 src/
-  main/java/io/alive/tui/
+  main/java/io/github/yehorsyrin/tui/
     core/         AliveJTUI, Component, Node, FocusManager, NotificationManager,
                   TimerManager, UndoManager, AsyncTask, Focusable
     node/         All node types: Text, VBox, HBox, Button, Input, TextArea,
