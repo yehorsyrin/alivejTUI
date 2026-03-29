@@ -73,7 +73,7 @@ Build terminal UIs as component trees — like React, but for the terminal.
 
 ```xml
 <dependency>
-    <groupId>io.alive</groupId>
+    <groupId>io.github.yehorsyrin</groupId>
     <artifactId>alivejTUI</artifactId>
     <version>0.1.0</version>
 </dependency>
@@ -82,10 +82,10 @@ Build terminal UIs as component trees — like React, but for the terminal.
 ### 2. Write a component
 
 ```java
-import io.alive.tui.core.*;
-import io.alive.tui.event.*;
-import io.alive.tui.node.*;
-import io.alive.tui.style.Color;
+import io.github.yehorsyrin.tui.core.*;
+import io.github.yehorsyrin.tui.event.*;
+import io.github.yehorsyrin.tui.node.*;
+import io.github.yehorsyrin.tui.style.Color;
 
 public class CounterApp extends Component {
 

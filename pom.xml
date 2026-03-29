@@ -4,7 +4,7 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>io.alive</groupId>
+    <groupId>io.github.yehorsyrin</groupId>
     <artifactId>alivejTUI</artifactId>
     <version>0.1.1</version>
     <packaging>jar</packaging>
@@ -60,7 +60,7 @@
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
-                <version>0.8.10</version>
+                <version>0.8.13</version>
                 <executions>
                     <execution>
                         <goals>
@@ -82,7 +82,7 @@
                 <artifactId>exec-maven-plugin</artifactId>
                 <version>3.1.0</version>
                 <configuration>
-                    <mainClass>io.alive.tui.example.DemoLanterna</mainClass>
+                    <mainClass>io.github.yehorsyrin.tui.example.DemoLanterna</mainClass>
                 </configuration>
             </plugin>
 
@@ -99,7 +99,7 @@
                             <finalName>alivejTUI-demo</finalName>
                             <transformers>
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>io.alive.tui.example.DemoLanterna</mainClass>
+                                    <mainClass>io.github.yehorsyrin.tui.example.DemoLanterna</mainClass>
                                 </transformer>
                             </transformers>
                             <filters>
