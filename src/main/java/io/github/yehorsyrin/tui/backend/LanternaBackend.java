@@ -262,6 +262,7 @@ public class LanternaBackend implements TerminalBackend {
             case Tab        -> shift
                                  ? KeyEvent.of(KeyType.SHIFT_TAB, ctrl, alt, true)
                                  : KeyEvent.of(KeyType.TAB,       ctrl, alt, false);
+            case ReverseTab -> KeyEvent.of(KeyType.SHIFT_TAB, ctrl, alt, true);
             case Home       -> KeyEvent.of(KeyType.HOME,        ctrl, alt, shift);
             case End        -> KeyEvent.of(KeyType.END,         ctrl, alt, shift);
             case PageUp     -> KeyEvent.of(KeyType.PAGE_UP,     ctrl, alt, shift);
