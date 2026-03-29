@@ -1019,10 +1019,10 @@
   
 
 
-<h1 id="component-model">Component Model<a class="headerlink" href="#component-model" title="Permanent link">&para;</a></h1>
+<h1 id="component-model">Component Model<a class="headerlink" href="#component-model" title="Permanent link">#</a></h1>
 <p>AliveJTUI's component model is deliberately close to React. If you've used React class components, you already know 80% of this.</p>
 <hr />
-<h2 id="the-component-class">The Component Class<a class="headerlink" href="#the-component-class" title="Permanent link">&para;</a></h2>
+<h2 id="the-component-class">The Component Class<a class="headerlink" href="#the-component-class" title="Permanent link">#</a></h2>
 <p>Every UI in AliveJTUI is a <code>Component</code>. Subclass it to create your application:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">io.github.yehorsyrin.tui.core.*</span><span class="p">;</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="kn">import</span><span class="w"> </span><span class="nn">io.github.yehorsyrin.tui.event.*</span><span class="p">;</span>
@@ -1063,7 +1063,7 @@
 <p>Unlike React hooks, state in AliveJTUI is just instance fields on your class. There is no special state container — <code>setState()</code> is purely a signal to re-render.</p>
 </div>
 <hr />
-<h2 id="setstate">setState<a class="headerlink" href="#setstate" title="Permanent link">&para;</a></h2>
+<h2 id="setstate">setState<a class="headerlink" href="#setstate" title="Permanent link">#</a></h2>
 <p><code>setState(Runnable mutation)</code> applies the mutation and queues a re-render. Multiple rapid calls within the same event are batched.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1">// Single mutation</span>
 <a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="n">setState</span><span class="p">(()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="na">count</span><span class="o">++</span><span class="p">);</span>
@@ -1080,7 +1080,7 @@
 <p>The <code>Runnable</code> passed to <code>setState</code> runs on the event loop thread. Do not perform blocking I/O or slow computation inside it. For background work, use <code>setStateAsync</code> instead.</p>
 </div>
 <hr />
-<h2 id="async-state">Async State<a class="headerlink" href="#async-state" title="Permanent link">&para;</a></h2>
+<h2 id="async-state">Async State<a class="headerlink" href="#async-state" title="Permanent link">#</a></h2>
 <p>For background work (network calls, file I/O, database queries), use <code>setStateAsync</code>:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">setStateAsync</span><span class="p">(()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="p">{</span>
 <a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="w">    </span><span class="c1">// This lambda runs on a background thread</span>
@@ -1102,7 +1102,7 @@
 <p>AliveJTUI has a single event loop thread. <code>setState</code> and all render callbacks always execute on that thread. You never need explicit synchronization as long as you don't modify state fields directly from background threads — always funnel changes back through <code>setState</code>.</p>
 </div>
 <hr />
-<h2 id="lifecycle">Lifecycle<a class="headerlink" href="#lifecycle" title="Permanent link">&para;</a></h2>
+<h2 id="lifecycle">Lifecycle<a class="headerlink" href="#lifecycle" title="Permanent link">#</a></h2>
 <table>
 <thead>
 <tr>
@@ -1133,7 +1133,7 @@
 </tr>
 </tbody>
 </table>
-<h3 id="mount">mount<a class="headerlink" href="#mount" title="Permanent link">&para;</a></h3>
+<h3 id="mount">mount<a class="headerlink" href="#mount" title="Permanent link">#</a></h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="nd">@Override</span>
 <a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">mount</span><span class="p">(</span><span class="n">Runnable</span><span class="w"> </span><span class="n">onStateChange</span><span class="p">,</span><span class="w"> </span><span class="n">EventBus</span><span class="w"> </span><span class="n">eventBus</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
 <a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="w">    </span><span class="kd">super</span><span class="p">.</span><span class="na">mount</span><span class="p">(</span><span class="n">onStateChange</span><span class="p">,</span><span class="w"> </span><span class="n">eventBus</span><span class="p">);</span><span class="w"> </span><span class="c1">// Always call super first</span>
@@ -1150,7 +1150,7 @@
 <a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a><span class="w">    </span><span class="n">AliveJTUI</span><span class="p">.</span><span class="na">scheduleRepeating</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">setState</span><span class="p">(()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">spin</span><span class="p">.</span><span class="na">nextFrame</span><span class="p">()));</span>
 <a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a><span class="p">}</span>
 </code></pre></div>
-<h3 id="render">render<a class="headerlink" href="#render" title="Permanent link">&para;</a></h3>
+<h3 id="render">render<a class="headerlink" href="#render" title="Permanent link">#</a></h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="nd">@Override</span>
 <a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="kd">public</span><span class="w"> </span><span class="n">Node</span><span class="w"> </span><span class="nf">render</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
 <a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="w">    </span><span class="c1">// Pure function — no side effects, no I/O</span>
@@ -1165,7 +1165,7 @@
 <p class="admonition-title">render() must be pure</p>
 <p>Do not call <code>setState()</code> from inside <code>render()</code> — it will cause an infinite render loop. <code>render()</code> should only read state fields and build a <code>Node</code> tree.</p>
 </div>
-<h3 id="onerror">onError<a class="headerlink" href="#onerror" title="Permanent link">&para;</a></h3>
+<h3 id="onerror">onError<a class="headerlink" href="#onerror" title="Permanent link">#</a></h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="nd">@Override</span>
 <a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="kd">public</span><span class="w"> </span><span class="n">Node</span><span class="w"> </span><span class="nf">onError</span><span class="p">(</span><span class="n">Exception</span><span class="w"> </span><span class="n">e</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
 <a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">VBox</span><span class="p">.</span><span class="na">of</span><span class="p">(</span>
@@ -1174,7 +1174,7 @@
 <a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a><span class="w">    </span><span class="p">);</span>
 <a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a><span class="p">}</span>
 </code></pre></div>
-<h3 id="shouldupdate">shouldUpdate<a class="headerlink" href="#shouldupdate" title="Permanent link">&para;</a></h3>
+<h3 id="shouldupdate">shouldUpdate<a class="headerlink" href="#shouldupdate" title="Permanent link">#</a></h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="nd">@Override</span>
 <a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="kd">public</span><span class="w"> </span><span class="kt">boolean</span><span class="w"> </span><span class="nf">shouldUpdate</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
 <a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="w">    </span><span class="c1">// Only re-render if the data actually changed</span>
@@ -1182,7 +1182,7 @@
 <a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a><span class="p">}</span>
 </code></pre></div>
 <hr />
-<h2 id="key-handling">Key Handling<a class="headerlink" href="#key-handling" title="Permanent link">&para;</a></h2>
+<h2 id="key-handling">Key Handling<a class="headerlink" href="#key-handling" title="Permanent link">#</a></h2>
 <p>Register key handlers in <code>mount()</code>. They are automatically unregistered when the component unmounts.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="nd">@Override</span>
 <a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="kd">public</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">mount</span><span class="p">(</span><span class="n">Runnable</span><span class="w"> </span><span class="n">onStateChange</span><span class="p">,</span><span class="w"> </span><span class="n">EventBus</span><span class="w"> </span><span class="n">eventBus</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
@@ -1210,7 +1210,7 @@
 <a id="__codelineno-8-24" name="__codelineno-8-24" href="#__codelineno-8-24"></a><span class="w">    </span><span class="p">});</span>
 <a id="__codelineno-8-25" name="__codelineno-8-25" href="#__codelineno-8-25"></a><span class="p">}</span>
 </code></pre></div>
-<h3 id="all-key-types">All Key Types<a class="headerlink" href="#all-key-types" title="Permanent link">&para;</a></h3>
+<h3 id="all-key-types">All Key Types<a class="headerlink" href="#all-key-types" title="Permanent link">#</a></h3>
 <table>
 <thead>
 <tr>
@@ -1286,7 +1286,7 @@
 </tbody>
 </table>
 <hr />
-<h2 id="running-the-application">Running the Application<a class="headerlink" href="#running-the-application" title="Permanent link">&para;</a></h2>
+<h2 id="running-the-application">Running the Application<a class="headerlink" href="#running-the-application" title="Permanent link">#</a></h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="c1">// Default backend (Lanterna — opens Swing window or terminal)</span>
 <a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="n">AliveJTUI</span><span class="p">.</span><span class="na">run</span><span class="p">(</span><span class="k">new</span><span class="w"> </span><span class="n">MyApp</span><span class="p">());</span>
 <a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a>
@@ -1297,7 +1297,7 @@
 <a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a><span class="n">AliveJTUI</span><span class="p">.</span><span class="na">stop</span><span class="p">();</span>
 </code></pre></div>
 <hr />
-<h2 id="project-structure">Project Structure<a class="headerlink" href="#project-structure" title="Permanent link">&para;</a></h2>
+<h2 id="project-structure">Project Structure<a class="headerlink" href="#project-structure" title="Permanent link">#</a></h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>src/main/java/io/github/yehorsyrin/tui/
 <a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>  core/      AliveJTUI, Component, Node, FocusManager,
 <a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>             NotificationManager, TimerManager, UndoManager,

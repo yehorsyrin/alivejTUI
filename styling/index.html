@@ -1153,10 +1153,10 @@
   
 
 
-<h1 id="styling">Styling<a class="headerlink" href="#styling" title="Permanent link">&para;</a></h1>
+<h1 id="styling">Styling<a class="headerlink" href="#styling" title="Permanent link">#</a></h1>
 <p>AliveJTUI provides a layered styling system: individual node methods for quick styling, a <code>Style</code> object for reusable styles, a <code>Color</code> enum/factory for colors, a <code>Theme</code> for application-wide semantic colors, and a <code>StyleSheet</code> for CSS-like selector-based styling.</p>
 <hr />
-<h2 id="style">Style<a class="headerlink" href="#style" title="Permanent link">&para;</a></h2>
+<h2 id="style">Style<a class="headerlink" href="#style" title="Permanent link">#</a></h2>
 <p><code>Style</code> is an immutable value object. Build from <code>Style.DEFAULT</code> using <code>with*</code> methods:</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="c1">// Single attribute</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">Style</span><span class="w"> </span><span class="n">bold</span><span class="w">  </span><span class="o">=</span><span class="w"> </span><span class="n">Style</span><span class="p">.</span><span class="na">DEFAULT</span><span class="p">.</span><span class="na">withBold</span><span class="p">(</span><span class="kc">true</span><span class="p">);</span>
@@ -1170,7 +1170,7 @@
 <a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="w">    </span><span class="p">.</span><span class="na">withBold</span><span class="p">(</span><span class="kc">true</span><span class="p">)</span>
 <a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="w">    </span><span class="p">.</span><span class="na">withItalic</span><span class="p">(</span><span class="kc">true</span><span class="p">);</span>
 </code></pre></div>
-<h3 id="applying-a-style-to-a-node">Applying a Style to a Node<a class="headerlink" href="#applying-a-style-to-a-node" title="Permanent link">&para;</a></h3>
+<h3 id="applying-a-style-to-a-node">Applying a Style to a Node<a class="headerlink" href="#applying-a-style-to-a-node" title="Permanent link">#</a></h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1">// Full style object</span>
 <a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="n">Text</span><span class="p">.</span><span class="na">of</span><span class="p">(</span><span class="s">&quot;hello&quot;</span><span class="p">).</span><span class="na">style</span><span class="p">(</span><span class="n">fancy</span><span class="p">);</span>
 <a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
@@ -1186,8 +1186,8 @@
 <p>For one-offs, the shorthand methods are cleaner. For reusable styles shared across many nodes, define a <code>Style</code> constant and apply it with <code>.style(myStyle)</code>.</p>
 </div>
 <hr />
-<h2 id="color">Color<a class="headerlink" href="#color" title="Permanent link">&para;</a></h2>
-<h3 id="standard-ansi-16-colors">Standard ANSI 16 Colors<a class="headerlink" href="#standard-ansi-16-colors" title="Permanent link">&para;</a></h3>
+<h2 id="color">Color<a class="headerlink" href="#color" title="Permanent link">#</a></h2>
+<h3 id="standard-ansi-16-colors">Standard ANSI 16 Colors<a class="headerlink" href="#standard-ansi-16-colors" title="Permanent link">#</a></h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1">// Dark variants</span>
 <a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="n">Color</span><span class="p">.</span><span class="na">BLACK</span><span class="p">,</span><span class="w"> </span><span class="n">Color</span><span class="p">.</span><span class="na">RED</span><span class="p">,</span><span class="w"> </span><span class="n">Color</span><span class="p">.</span><span class="na">GREEN</span><span class="p">,</span><span class="w"> </span><span class="n">Color</span><span class="p">.</span><span class="na">YELLOW</span><span class="p">,</span>
 <a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="n">Color</span><span class="p">.</span><span class="na">BLUE</span><span class="p">,</span><span class="w"> </span><span class="n">Color</span><span class="p">.</span><span class="na">MAGENTA</span><span class="p">,</span><span class="w"> </span><span class="n">Color</span><span class="p">.</span><span class="na">CYAN</span><span class="p">,</span><span class="w"> </span><span class="n">Color</span><span class="p">.</span><span class="na">WHITE</span>
@@ -1197,13 +1197,13 @@
 <a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a><span class="n">Color</span><span class="p">.</span><span class="na">BRIGHT_YELLOW</span><span class="p">,</span><span class="w"> </span><span class="n">Color</span><span class="p">.</span><span class="na">BRIGHT_BLUE</span><span class="p">,</span><span class="w"> </span><span class="n">Color</span><span class="p">.</span><span class="na">BRIGHT_MAGENTA</span><span class="p">,</span>
 <a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a><span class="n">Color</span><span class="p">.</span><span class="na">BRIGHT_CYAN</span><span class="p">,</span><span class="w"> </span><span class="n">Color</span><span class="p">.</span><span class="na">BRIGHT_WHITE</span>
 </code></pre></div>
-<h3 id="256-color-palette">256-Color Palette<a class="headerlink" href="#256-color-palette" title="Permanent link">&para;</a></h3>
+<h3 id="256-color-palette">256-Color Palette<a class="headerlink" href="#256-color-palette" title="Permanent link">#</a></h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">Color</span><span class="p">.</span><span class="na">ansi256</span><span class="p">(</span><span class="mi">202</span><span class="p">)</span><span class="w">   </span><span class="c1">// orange</span>
 <a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="n">Color</span><span class="p">.</span><span class="na">ansi256</span><span class="p">(</span><span class="mi">93</span><span class="p">)</span><span class="w">    </span><span class="c1">// purple</span>
 <a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="n">Color</span><span class="p">.</span><span class="na">ansi256</span><span class="p">(</span><span class="mi">46</span><span class="p">)</span><span class="w">    </span><span class="c1">// bright green</span>
 </code></pre></div>
 <p>256-color indices follow the standard xterm-256color table.</p>
-<h3 id="true-color-24-bit-rgb">True Color (24-bit RGB)<a class="headerlink" href="#true-color-24-bit-rgb" title="Permanent link">&para;</a></h3>
+<h3 id="true-color-24-bit-rgb">True Color (24-bit RGB)<a class="headerlink" href="#true-color-24-bit-rgb" title="Permanent link">#</a></h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">Color</span><span class="p">.</span><span class="na">rgb</span><span class="p">(</span><span class="mi">255</span><span class="p">,</span><span class="w"> </span><span class="mi">128</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w">    </span><span class="c1">// orange</span>
 <a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="n">Color</span><span class="p">.</span><span class="na">rgb</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">200</span><span class="p">,</span><span class="w"> </span><span class="mi">255</span><span class="p">)</span><span class="w">    </span><span class="c1">// sky blue</span>
 <a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a><span class="n">Color</span><span class="p">.</span><span class="na">rgb</span><span class="p">(</span><span class="mi">180</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mi">180</span><span class="p">)</span><span class="w">    </span><span class="c1">// purple</span>
@@ -1213,13 +1213,13 @@
 <p>True color (<code>Color.rgb(...)</code>) requires a terminal that supports 24-bit color (most modern terminals do). On terminals that don't, AliveJTUI falls back gracefully to the nearest ANSI color.</p>
 </div>
 <hr />
-<h2 id="theme">Theme<a class="headerlink" href="#theme" title="Permanent link">&para;</a></h2>
+<h2 id="theme">Theme<a class="headerlink" href="#theme" title="Permanent link">#</a></h2>
 <p>The theme system provides semantic color roles so your UI adapts consistently when the user switches between dark and light modes.</p>
-<h3 id="switching-themes">Switching Themes<a class="headerlink" href="#switching-themes" title="Permanent link">&para;</a></h3>
+<h3 id="switching-themes">Switching Themes<a class="headerlink" href="#switching-themes" title="Permanent link">#</a></h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">AliveJTUI</span><span class="p">.</span><span class="na">setTheme</span><span class="p">(</span><span class="n">Theme</span><span class="p">.</span><span class="na">DARK</span><span class="p">);</span><span class="w">   </span><span class="c1">// default</span>
 <a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="n">AliveJTUI</span><span class="p">.</span><span class="na">setTheme</span><span class="p">(</span><span class="n">Theme</span><span class="p">.</span><span class="na">LIGHT</span><span class="p">);</span>
 </code></pre></div>
-<h3 id="using-theme-colors-in-render">Using Theme Colors in render()<a class="headerlink" href="#using-theme-colors-in-render" title="Permanent link">&para;</a></h3>
+<h3 id="using-theme-colors-in-render">Using Theme Colors in render()<a class="headerlink" href="#using-theme-colors-in-render" title="Permanent link">#</a></h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="nd">@Override</span>
 <a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="kd">public</span><span class="w"> </span><span class="n">Node</span><span class="w"> </span><span class="nf">render</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
 <a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="w">    </span><span class="n">Theme</span><span class="w"> </span><span class="n">t</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">AliveJTUI</span><span class="p">.</span><span class="na">getTheme</span><span class="p">();</span>
@@ -1233,7 +1233,7 @@
 <a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a><span class="w">    </span><span class="p">);</span>
 <a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a><span class="p">}</span>
 </code></pre></div>
-<h3 id="semantic-roles">Semantic Roles<a class="headerlink" href="#semantic-roles" title="Permanent link">&para;</a></h3>
+<h3 id="semantic-roles">Semantic Roles<a class="headerlink" href="#semantic-roles" title="Permanent link">#</a></h3>
 <table>
 <thead>
 <tr>
@@ -1276,7 +1276,7 @@
 </tr>
 </tbody>
 </table>
-<h3 id="custom-theme">Custom Theme<a class="headerlink" href="#custom-theme" title="Permanent link">&para;</a></h3>
+<h3 id="custom-theme">Custom Theme<a class="headerlink" href="#custom-theme" title="Permanent link">#</a></h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="n">Theme</span><span class="w"> </span><span class="n">myTheme</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">Theme</span><span class="p">.</span><span class="na">BuiltinTheme</span><span class="p">(</span>
 <a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="w">    </span><span class="n">Style</span><span class="p">.</span><span class="na">DEFAULT</span><span class="p">,</span><span class="w">                                              </span><span class="c1">// foreground</span>
 <a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="w">    </span><span class="n">Style</span><span class="p">.</span><span class="na">DEFAULT</span><span class="p">.</span><span class="na">withDim</span><span class="p">(</span><span class="kc">true</span><span class="p">),</span><span class="w">                               </span><span class="c1">// muted</span>
@@ -1296,21 +1296,21 @@
 <p>You can call <code>AliveJTUI.setTheme()</code> at any time — for example, in response to a keyboard shortcut or a settings toggle. The next render cycle picks up the new theme automatically.</p>
 </div>
 <hr />
-<h2 id="stylesheet-css-like-selectors">StyleSheet (CSS-like selectors)<a class="headerlink" href="#stylesheet-css-like-selectors" title="Permanent link">&para;</a></h2>
+<h2 id="stylesheet-css-like-selectors">StyleSheet (CSS-like selectors)<a class="headerlink" href="#stylesheet-css-like-selectors" title="Permanent link">#</a></h2>
 <p><code>StyleSheet</code> lets you define styles centrally and apply them to a node tree using selectors — similar to CSS.</p>
-<h3 id="creating-a-stylesheet">Creating a StyleSheet<a class="headerlink" href="#creating-a-stylesheet" title="Permanent link">&para;</a></h3>
+<h3 id="creating-a-stylesheet">Creating a StyleSheet<a class="headerlink" href="#creating-a-stylesheet" title="Permanent link">#</a></h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="n">StyleSheet</span><span class="w"> </span><span class="n">sheet</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">StyleSheet</span><span class="p">()</span>
 <a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="w">    </span><span class="p">.</span><span class="na">add</span><span class="p">(</span><span class="n">Selector</span><span class="p">.</span><span class="na">byId</span><span class="p">(</span><span class="s">&quot;title&quot;</span><span class="p">),</span><span class="w">            </span><span class="n">Style</span><span class="p">.</span><span class="na">DEFAULT</span><span class="p">.</span><span class="na">withForeground</span><span class="p">(</span><span class="n">Color</span><span class="p">.</span><span class="na">CYAN</span><span class="p">).</span><span class="na">withBold</span><span class="p">(</span><span class="kc">true</span><span class="p">))</span>
 <a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="w">    </span><span class="p">.</span><span class="na">add</span><span class="p">(</span><span class="n">Selector</span><span class="p">.</span><span class="na">byClass</span><span class="p">(</span><span class="s">&quot;muted&quot;</span><span class="p">),</span><span class="w">         </span><span class="n">Style</span><span class="p">.</span><span class="na">DEFAULT</span><span class="p">.</span><span class="na">withDim</span><span class="p">(</span><span class="kc">true</span><span class="p">))</span>
 <a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="w">    </span><span class="p">.</span><span class="na">add</span><span class="p">(</span><span class="n">Selector</span><span class="p">.</span><span class="na">byClass</span><span class="p">(</span><span class="s">&quot;danger&quot;</span><span class="p">),</span><span class="w">        </span><span class="n">Style</span><span class="p">.</span><span class="na">DEFAULT</span><span class="p">.</span><span class="na">withForeground</span><span class="p">(</span><span class="n">Color</span><span class="p">.</span><span class="na">RED</span><span class="p">).</span><span class="na">withBold</span><span class="p">(</span><span class="kc">true</span><span class="p">))</span>
 <a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="w">    </span><span class="p">.</span><span class="na">add</span><span class="p">(</span><span class="n">Selector</span><span class="p">.</span><span class="na">byType</span><span class="p">(</span><span class="n">ButtonNode</span><span class="p">.</span><span class="na">class</span><span class="p">),</span><span class="w"> </span><span class="n">Style</span><span class="p">.</span><span class="na">DEFAULT</span><span class="p">.</span><span class="na">withForeground</span><span class="p">(</span><span class="n">Color</span><span class="p">.</span><span class="na">YELLOW</span><span class="p">));</span>
 </code></pre></div>
-<h3 id="tagging-nodes">Tagging Nodes<a class="headerlink" href="#tagging-nodes" title="Permanent link">&para;</a></h3>
+<h3 id="tagging-nodes">Tagging Nodes<a class="headerlink" href="#tagging-nodes" title="Permanent link">#</a></h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="n">Text</span><span class="p">.</span><span class="na">of</span><span class="p">(</span><span class="s">&quot;My App&quot;</span><span class="p">).</span><span class="na">withId</span><span class="p">(</span><span class="s">&quot;title&quot;</span><span class="p">)</span><span class="w">           </span><span class="c1">// matches Selector.byId(&quot;title&quot;)</span>
 <a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="n">Text</span><span class="p">.</span><span class="na">of</span><span class="p">(</span><span class="s">&quot;Press ESC to quit&quot;</span><span class="p">).</span><span class="na">withClassName</span><span class="p">(</span><span class="s">&quot;muted&quot;</span><span class="p">)</span><span class="w">  </span><span class="c1">// matches Selector.byClass(&quot;muted&quot;)</span>
 <a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="n">Button</span><span class="p">.</span><span class="na">of</span><span class="p">(</span><span class="s">&quot;Delete&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">action</span><span class="p">)</span><span class="w">                  </span><span class="c1">// matches Selector.byType(ButtonNode.class)</span>
 </code></pre></div>
-<h3 id="applying-to-a-tree">Applying to a Tree<a class="headerlink" href="#applying-to-a-tree" title="Permanent link">&para;</a></h3>
+<h3 id="applying-to-a-tree">Applying to a Tree<a class="headerlink" href="#applying-to-a-tree" title="Permanent link">#</a></h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="nd">@Override</span>
 <a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="kd">public</span><span class="w"> </span><span class="n">Node</span><span class="w"> </span><span class="nf">render</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
 <a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="w">    </span><span class="n">Node</span><span class="w"> </span><span class="n">root</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">VBox</span><span class="p">.</span><span class="na">of</span><span class="p">(</span>
@@ -1323,7 +1323,7 @@
 <a id="__codelineno-10-10" name="__codelineno-10-10" href="#__codelineno-10-10"></a><span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">root</span><span class="p">;</span>
 <a id="__codelineno-10-11" name="__codelineno-10-11" href="#__codelineno-10-11"></a><span class="p">}</span>
 </code></pre></div>
-<h3 id="selector-types">Selector Types<a class="headerlink" href="#selector-types" title="Permanent link">&para;</a></h3>
+<h3 id="selector-types">Selector Types<a class="headerlink" href="#selector-types" title="Permanent link">#</a></h3>
 <table>
 <thead>
 <tr>
@@ -1351,7 +1351,7 @@
 <p>Styles are applied in declaration order. Later rules override earlier ones, similar to CSS cascade. For important overrides, just add your rule last.</p>
 </div>
 <hr />
-<h2 id="putting-it-all-together">Putting It All Together<a class="headerlink" href="#putting-it-all-together" title="Permanent link">&para;</a></h2>
+<h2 id="putting-it-all-together">Putting It All Together<a class="headerlink" href="#putting-it-all-together" title="Permanent link">#</a></h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="kd">public</span><span class="w"> </span><span class="kd">class</span> <span class="nc">StyledApp</span><span class="w"> </span><span class="kd">extends</span><span class="w"> </span><span class="n">Component</span><span class="w"> </span><span class="p">{</span>
 <a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>
 <a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="w">    </span><span class="kd">private</span><span class="w"> </span><span class="kd">static</span><span class="w"> </span><span class="kd">final</span><span class="w"> </span><span class="n">StyleSheet</span><span class="w"> </span><span class="n">SHEET</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">StyleSheet</span><span class="p">()</span>

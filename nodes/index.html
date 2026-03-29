@@ -1363,15 +1363,15 @@
   
 
 
-<h1 id="node-reference">Node Reference<a class="headerlink" href="#node-reference" title="Permanent link">&para;</a></h1>
+<h1 id="node-reference">Node Reference<a class="headerlink" href="#node-reference" title="Permanent link">#</a></h1>
 <p>All node factory methods return objects with a fluent builder API. Every node can be given an <code>id</code> and <code>className</code> for <a href="../styling/#stylesheet-css-like-selectors">StyleSheet</a> targeting.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">node</span><span class="p">.</span><span class="na">withId</span><span class="p">(</span><span class="s">&quot;title&quot;</span><span class="p">)</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">node</span><span class="p">.</span><span class="na">withClassName</span><span class="p">(</span><span class="s">&quot;muted&quot;</span><span class="p">)</span>
 <a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">node</span><span class="p">.</span><span class="na">withClassName</span><span class="p">(</span><span class="s">&quot;primary&quot;</span><span class="p">)</span>
 </code></pre></div>
 <hr />
-<h2 id="text-display">Text &amp; Display<a class="headerlink" href="#text-display" title="Permanent link">&para;</a></h2>
-<h3 id="text">Text<a class="headerlink" href="#text" title="Permanent link">&para;</a></h3>
+<h2 id="text-display">Text &amp; Display<a class="headerlink" href="#text-display" title="Permanent link">#</a></h2>
+<h3 id="text">Text<a class="headerlink" href="#text" title="Permanent link">#</a></h3>
 <p>Single-line text with inline styling.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="n">Text</span><span class="p">.</span><span class="na">of</span><span class="p">(</span><span class="s">&quot;hello&quot;</span><span class="p">)</span><span class="w">                          </span><span class="c1">// plain text</span>
 <a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="n">Text</span><span class="p">.</span><span class="na">of</span><span class="p">(</span><span class="s">&quot;hello&quot;</span><span class="p">).</span><span class="na">bold</span><span class="p">()</span><span class="w">                   </span><span class="c1">// bold</span>
@@ -1383,33 +1383,33 @@
 <a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="n">Text</span><span class="p">.</span><span class="na">of</span><span class="p">(</span><span class="s">&quot;hello&quot;</span><span class="p">).</span><span class="na">background</span><span class="p">(</span><span class="n">Color</span><span class="p">.</span><span class="na">BLUE</span><span class="p">)</span><span class="w">   </span><span class="c1">// background color</span>
 <a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="n">Text</span><span class="p">.</span><span class="na">of</span><span class="p">(</span><span class="s">&quot;hello&quot;</span><span class="p">).</span><span class="na">style</span><span class="p">(</span><span class="n">myStyle</span><span class="p">)</span><span class="w">           </span><span class="c1">// full Style object</span>
 </code></pre></div>
-<h4 id="inline-markdown">Inline Markdown<a class="headerlink" href="#inline-markdown" title="Permanent link">&para;</a></h4>
+<h4 id="inline-markdown">Inline Markdown<a class="headerlink" href="#inline-markdown" title="Permanent link">#</a></h4>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="n">Text</span><span class="p">.</span><span class="na">ofMarkdown</span><span class="p">(</span><span class="s">&quot;**bold** and *italic* and `code` and ~~strikethrough~~&quot;</span><span class="p">)</span>
 </code></pre></div>
 <p>Supported tokens: <code>**bold**</code>, <code>*italic*</code>, <code>`code`</code>, <code>~~strikethrough~~</code>.</p>
-<h3 id="paragraph">Paragraph<a class="headerlink" href="#paragraph" title="Permanent link">&para;</a></h3>
+<h3 id="paragraph">Paragraph<a class="headerlink" href="#paragraph" title="Permanent link">#</a></h3>
 <p>Word-wrapped multi-line text. Useful for long descriptions that should reflow to the terminal width.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="n">Paragraph</span><span class="p">.</span><span class="na">of</span><span class="p">(</span><span class="s">&quot;This is a long paragraph that will be word-wrapped...&quot;</span><span class="p">)</span>
 <a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="n">Paragraph</span><span class="p">.</span><span class="na">ofMarkdown</span><span class="p">(</span><span class="s">&quot;**Important:** This paragraph supports *inline markdown* too.&quot;</span><span class="p">)</span>
 </code></pre></div>
-<h3 id="divider">Divider<a class="headerlink" href="#divider" title="Permanent link">&para;</a></h3>
+<h3 id="divider">Divider<a class="headerlink" href="#divider" title="Permanent link">#</a></h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">Divider</span><span class="p">.</span><span class="na">horizontal</span><span class="p">()</span><span class="w">   </span><span class="c1">// horizontal rule: ───────────</span>
 <a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="n">Divider</span><span class="p">.</span><span class="na">vertical</span><span class="p">()</span><span class="w">     </span><span class="c1">// vertical rule:  │</span>
 </code></pre></div>
 <hr />
-<h2 id="layout">Layout<a class="headerlink" href="#layout" title="Permanent link">&para;</a></h2>
-<h3 id="vbox">VBox<a class="headerlink" href="#vbox" title="Permanent link">&para;</a></h3>
+<h2 id="layout">Layout<a class="headerlink" href="#layout" title="Permanent link">#</a></h2>
+<h3 id="vbox">VBox<a class="headerlink" href="#vbox" title="Permanent link">#</a></h3>
 <p>Stacks children vertically.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="n">VBox</span><span class="p">.</span><span class="na">of</span><span class="p">(</span><span class="n">node1</span><span class="p">,</span><span class="w"> </span><span class="n">node2</span><span class="p">,</span><span class="w"> </span><span class="n">node3</span><span class="p">)</span>
 <a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="n">VBox</span><span class="p">.</span><span class="na">of</span><span class="p">(</span><span class="n">nodes</span><span class="p">).</span><span class="na">gap</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="w">          </span><span class="c1">// 1 blank line between children</span>
 <a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="n">VBox</span><span class="p">.</span><span class="na">of</span><span class="p">(</span><span class="n">List</span><span class="p">.</span><span class="na">of</span><span class="p">(</span><span class="n">node1</span><span class="p">,</span><span class="w"> </span><span class="n">node2</span><span class="p">))</span><span class="w"> </span><span class="c1">// from a list</span>
 </code></pre></div>
-<h3 id="hbox">HBox<a class="headerlink" href="#hbox" title="Permanent link">&para;</a></h3>
+<h3 id="hbox">HBox<a class="headerlink" href="#hbox" title="Permanent link">#</a></h3>
 <p>Stacks children horizontally.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="n">HBox</span><span class="p">.</span><span class="na">of</span><span class="p">(</span><span class="n">node1</span><span class="p">,</span><span class="w"> </span><span class="n">node2</span><span class="p">,</span><span class="w"> </span><span class="n">node3</span><span class="p">)</span>
 <a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="n">HBox</span><span class="p">.</span><span class="na">of</span><span class="p">(</span><span class="n">nodes</span><span class="p">).</span><span class="na">gap</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span><span class="w">          </span><span class="c1">// 2 spaces between children</span>
 </code></pre></div>
-<h3 id="boxnode-bordered-container">BoxNode (bordered container)<a class="headerlink" href="#boxnode-bordered-container" title="Permanent link">&para;</a></h3>
+<h3 id="boxnode-bordered-container">BoxNode (bordered container)<a class="headerlink" href="#boxnode-bordered-container" title="Permanent link">#</a></h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">io.github.yehorsyrin.tui.node.*</span><span class="p">;</span>
 <a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a>
 <a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="n">Node</span><span class="w"> </span><span class="n">bordered</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">BoxNode</span><span class="p">(</span><span class="n">child</span><span class="p">,</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span><span class="w"> </span><span class="n">borderStyle</span><span class="p">);</span>
@@ -1428,8 +1428,8 @@
 </code></pre></div>
 </div>
 <hr />
-<h2 id="interactive-widgets">Interactive Widgets<a class="headerlink" href="#interactive-widgets" title="Permanent link">&para;</a></h2>
-<h3 id="button">Button<a class="headerlink" href="#button" title="Permanent link">&para;</a></h3>
+<h2 id="interactive-widgets">Interactive Widgets<a class="headerlink" href="#interactive-widgets" title="Permanent link">#</a></h2>
+<h3 id="button">Button<a class="headerlink" href="#button" title="Permanent link">#</a></h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="n">ButtonNode</span><span class="w"> </span><span class="n">btn</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Button</span><span class="p">.</span><span class="na">of</span><span class="p">(</span><span class="s">&quot;[ OK ]&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">handleClick</span><span class="p">());</span>
 <a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="n">registerFocusable</span><span class="p">(</span><span class="n">btn</span><span class="p">);</span><span class="w">   </span><span class="c1">// participate in Tab cycling</span>
 </code></pre></div>
@@ -1437,7 +1437,7 @@
 <li>Press <code>Tab</code> to focus, <code>Enter</code> to activate.</li>
 <li>The callback fires immediately on click or Enter.</li>
 </ul>
-<h3 id="input-single-line">Input (single line)<a class="headerlink" href="#input-single-line" title="Permanent link">&para;</a></h3>
+<h3 id="input-single-line">Input (single line)<a class="headerlink" href="#input-single-line" title="Permanent link">#</a></h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="n">InputNode</span><span class="w"> </span><span class="n">input</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Input</span><span class="p">.</span><span class="na">of</span><span class="p">(</span><span class="s">&quot;initial value&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">value</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">setState</span><span class="p">(()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="k">this</span><span class="p">.</span><span class="na">text</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">value</span><span class="p">));</span>
 <a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="n">registerFocusable</span><span class="p">(</span><span class="n">input</span><span class="p">);</span>
 </code></pre></div>
@@ -1445,7 +1445,7 @@
 <li>When focused, typed characters update the value.</li>
 <li>The callback is invoked on every keystroke.</li>
 </ul>
-<h3 id="textarea-multi-line">TextArea (multi-line)<a class="headerlink" href="#textarea-multi-line" title="Permanent link">&para;</a></h3>
+<h3 id="textarea-multi-line">TextArea (multi-line)<a class="headerlink" href="#textarea-multi-line" title="Permanent link">#</a></h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="n">TextAreaNode</span><span class="w"> </span><span class="n">area</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">TextArea</span><span class="p">.</span><span class="na">of</span><span class="p">(</span><span class="s">&quot;&quot;</span><span class="p">,</span><span class="w"> </span><span class="mi">5</span><span class="p">);</span><span class="w">  </span><span class="c1">// empty, 5 visible rows</span>
 <a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="n">registerFocusable</span><span class="p">(</span><span class="n">area</span><span class="p">);</span>
 <a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>
@@ -1454,7 +1454,7 @@
 <a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a><span class="n">area</span><span class="p">.</span><span class="na">insertChar</span><span class="p">(</span><span class="sc">&#39;i&#39;</span><span class="p">);</span>
 <a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a><span class="n">String</span><span class="w"> </span><span class="n">content</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">area</span><span class="p">.</span><span class="na">getText</span><span class="p">();</span>
 </code></pre></div>
-<h3 id="checkbox">Checkbox<a class="headerlink" href="#checkbox" title="Permanent link">&para;</a></h3>
+<h3 id="checkbox">Checkbox<a class="headerlink" href="#checkbox" title="Permanent link">#</a></h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="n">CheckboxNode</span><span class="w"> </span><span class="n">cb</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Checkbox</span><span class="p">.</span><span class="na">of</span><span class="p">(</span><span class="s">&quot;Enable feature&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">checked</span><span class="p">,</span>
 <a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="w">    </span><span class="p">()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">setState</span><span class="p">(()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">checked</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="o">!</span><span class="n">checked</span><span class="p">));</span>
 </code></pre></div>
@@ -1471,7 +1471,7 @@
 <a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a><span class="c1">// or simply let the checkbox handle it via focus + Enter</span>
 </code></pre></div>
 </div>
-<h3 id="radiogroup">RadioGroup<a class="headerlink" href="#radiogroup" title="Permanent link">&para;</a></h3>
+<h3 id="radiogroup">RadioGroup<a class="headerlink" href="#radiogroup" title="Permanent link">#</a></h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="n">RadioGroupNode</span><span class="w"> </span><span class="n">radio</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">RadioGroup</span><span class="p">.</span><span class="na">of</span><span class="p">(</span><span class="s">&quot;Option A&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Option B&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Option C&quot;</span><span class="p">);</span>
 <a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a>
 <a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a><span class="c1">// Read/write selection</span>
@@ -1481,7 +1481,7 @@
 <a id="__codelineno-14-7" name="__codelineno-14-7" href="#__codelineno-14-7"></a><span class="c1">// Use Up/Down arrows when focused</span>
 <a id="__codelineno-14-8" name="__codelineno-14-8" href="#__codelineno-14-8"></a><span class="n">registerFocusable</span><span class="p">(</span><span class="n">radio</span><span class="p">);</span>
 </code></pre></div>
-<h3 id="select-dropdown-style">Select (dropdown-style)<a class="headerlink" href="#select-dropdown-style" title="Permanent link">&para;</a></h3>
+<h3 id="select-dropdown-style">Select (dropdown-style)<a class="headerlink" href="#select-dropdown-style" title="Permanent link">#</a></h3>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="n">SelectNode</span><span class="w"> </span><span class="n">sel</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Select</span><span class="p">.</span><span class="na">of</span><span class="p">(</span><span class="s">&quot;Red&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Green&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Blue&quot;</span><span class="p">);</span>
 <a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a>
 <a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a><span class="c1">// Navigate with S / arrow keys</span>
@@ -1491,8 +1491,8 @@
 <a id="__codelineno-15-7" name="__codelineno-15-7" href="#__codelineno-15-7"></a><span class="n">registerFocusable</span><span class="p">(</span><span class="n">sel</span><span class="p">);</span>
 </code></pre></div>
 <hr />
-<h2 id="lists-tables">Lists &amp; Tables<a class="headerlink" href="#lists-tables" title="Permanent link">&para;</a></h2>
-<h3 id="table">Table<a class="headerlink" href="#table" title="Permanent link">&para;</a></h3>
+<h2 id="lists-tables">Lists &amp; Tables<a class="headerlink" href="#lists-tables" title="Permanent link">#</a></h2>
+<h3 id="table">Table<a class="headerlink" href="#table" title="Permanent link">#</a></h3>
 <p>Scrollable tabular data with keyboard navigation.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="n">List</span><span class="o">&lt;</span><span class="n">String</span><span class="o">&gt;</span><span class="w"> </span><span class="n">headers</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">List</span><span class="p">.</span><span class="na">of</span><span class="p">(</span><span class="s">&quot;Name&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Role&quot;</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;City&quot;</span><span class="p">);</span>
 <a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a><span class="n">List</span><span class="o">&lt;</span><span class="n">List</span><span class="o">&lt;</span><span class="n">String</span><span class="o">&gt;&gt;</span><span class="w"> </span><span class="n">rows</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">List</span><span class="p">.</span><span class="na">of</span><span class="p">(</span>
@@ -1510,7 +1510,7 @@
 <div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a><span class="n">onKey</span><span class="p">(</span><span class="n">KeyType</span><span class="p">.</span><span class="na">ARROW_DOWN</span><span class="p">,</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">setState</span><span class="p">(()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">table</span><span class="p">.</span><span class="na">selectDown</span><span class="p">()));</span>
 <a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a><span class="n">onKey</span><span class="p">(</span><span class="n">KeyType</span><span class="p">.</span><span class="na">ARROW_UP</span><span class="p">,</span><span class="w">   </span><span class="p">()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">setState</span><span class="p">(()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">table</span><span class="p">.</span><span class="na">selectUp</span><span class="p">()));</span>
 </code></pre></div>
-<h3 id="virtuallist-large-data-sets">VirtualList (large data sets)<a class="headerlink" href="#virtuallist-large-data-sets" title="Permanent link">&para;</a></h3>
+<h3 id="virtuallist-large-data-sets">VirtualList (large data sets)<a class="headerlink" href="#virtuallist-large-data-sets" title="Permanent link">#</a></h3>
 <p>Renders only the visible rows — suitable for lists with thousands of items.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a><span class="n">List</span><span class="o">&lt;</span><span class="n">String</span><span class="o">&gt;</span><span class="w"> </span><span class="n">items</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">IntStream</span><span class="p">.</span><span class="na">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mi">100_001</span><span class="p">)</span>
 <a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a><span class="w">    </span><span class="p">.</span><span class="na">mapToObj</span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="s">&quot;Item &quot;</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">i</span><span class="p">)</span>
@@ -1530,7 +1530,7 @@
 <a id="__codelineno-18-16" name="__codelineno-18-16" href="#__codelineno-18-16"></a>
 <a id="__codelineno-18-17" name="__codelineno-18-17" href="#__codelineno-18-17"></a><span class="n">registerFocusable</span><span class="p">(</span><span class="n">list</span><span class="p">);</span>
 </code></pre></div>
-<h3 id="viewport-scrollable-window">Viewport (scrollable window)<a class="headerlink" href="#viewport-scrollable-window" title="Permanent link">&para;</a></h3>
+<h3 id="viewport-scrollable-window">Viewport (scrollable window)<a class="headerlink" href="#viewport-scrollable-window" title="Permanent link">#</a></h3>
 <p>Wraps any <code>Node</code> tree in a scrollable window showing a fixed number of rows.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a><span class="n">Node</span><span class="w"> </span><span class="n">content</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">VBox</span><span class="p">.</span><span class="na">of</span><span class="p">(</span><span class="cm">/* many nodes */</span><span class="p">);</span>
 <a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a><span class="n">ViewportNode</span><span class="w"> </span><span class="n">vp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Viewport</span><span class="p">.</span><span class="na">of</span><span class="p">(</span><span class="n">content</span><span class="p">,</span><span class="w"> </span><span class="mi">10</span><span class="p">);</span><span class="w"> </span><span class="c1">// 10 visible rows</span>
@@ -1551,7 +1551,7 @@
 <a id="__codelineno-20-4" name="__codelineno-20-4" href="#__codelineno-20-4"></a><span class="n">onKey</span><span class="p">(</span><span class="n">KeyType</span><span class="p">.</span><span class="na">PAGE_UP</span><span class="p">,</span><span class="w">    </span><span class="p">()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">setState</span><span class="p">(()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">vp</span><span class="p">.</span><span class="na">pageUp</span><span class="p">()));</span>
 </code></pre></div>
 <hr />
-<h2 id="progress-bar">Progress Bar<a class="headerlink" href="#progress-bar" title="Permanent link">&para;</a></h2>
+<h2 id="progress-bar">Progress Bar<a class="headerlink" href="#progress-bar" title="Permanent link">#</a></h2>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a><span class="n">ProgressBarNode</span><span class="w"> </span><span class="n">bar</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">ProgressBarNode</span><span class="p">(</span><span class="mf">0.65</span><span class="p">);</span><span class="w">   </span><span class="c1">// 65%</span>
 <a id="__codelineno-21-2" name="__codelineno-21-2" href="#__codelineno-21-2"></a>
 <a id="__codelineno-21-3" name="__codelineno-21-3" href="#__codelineno-21-3"></a><span class="n">bar</span><span class="p">.</span><span class="na">setProgress</span><span class="p">(</span><span class="mf">0.80</span><span class="p">);</span><span class="w">                             </span><span class="c1">// update progress</span>
@@ -1562,7 +1562,7 @@
 </code></pre></div>
 <p>Progress value is a <code>double</code> in the range <code>0.0</code> – <code>1.0</code>.</p>
 <hr />
-<h2 id="spinner">Spinner<a class="headerlink" href="#spinner" title="Permanent link">&para;</a></h2>
+<h2 id="spinner">Spinner<a class="headerlink" href="#spinner" title="Permanent link">#</a></h2>
 <p>An animated spinner that cycles through frames.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a><span class="c1">// Default frames: | / - \</span>
 <a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a><span class="n">SpinnerNode</span><span class="w"> </span><span class="n">spin</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Spinner</span><span class="p">.</span><span class="na">of</span><span class="p">();</span>
@@ -1574,7 +1574,7 @@
 <a id="__codelineno-22-8" name="__codelineno-22-8" href="#__codelineno-22-8"></a><span class="n">AliveJTUI</span><span class="p">.</span><span class="na">scheduleRepeating</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">setState</span><span class="p">(()</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">spin</span><span class="p">.</span><span class="na">nextFrame</span><span class="p">()));</span>
 </code></pre></div>
 <hr />
-<h2 id="collapsible">Collapsible<a class="headerlink" href="#collapsible" title="Permanent link">&para;</a></h2>
+<h2 id="collapsible">Collapsible<a class="headerlink" href="#collapsible" title="Permanent link">#</a></h2>
 <p>An expandable/collapsible section with a title.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a><span class="c1">// Starts collapsed</span>
 <a id="__codelineno-23-2" name="__codelineno-23-2" href="#__codelineno-23-2"></a><span class="n">Node</span><span class="w"> </span><span class="n">section</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Collapsible</span><span class="p">.</span><span class="na">of</span><span class="p">(</span><span class="s">&quot;Settings&quot;</span><span class="p">,</span>
@@ -1597,7 +1597,7 @@
 <a id="__codelineno-23-19" name="__codelineno-23-19" href="#__codelineno-23-19"></a><span class="kt">boolean</span><span class="w"> </span><span class="n">open</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">col</span><span class="p">.</span><span class="na">isExpanded</span><span class="p">();</span>
 </code></pre></div>
 <hr />
-<h2 id="dialog-overlay">Dialog (overlay)<a class="headerlink" href="#dialog-overlay" title="Permanent link">&para;</a></h2>
+<h2 id="dialog-overlay">Dialog (overlay)<a class="headerlink" href="#dialog-overlay" title="Permanent link">#</a></h2>
 <p>Push a dialog on top of the current UI. The dialog is rendered as an overlay; the background UI is still visible but inactive.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a><span class="n">Node</span><span class="w"> </span><span class="n">dialog</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Dialog</span><span class="p">.</span><span class="na">of</span><span class="p">(</span><span class="s">&quot;Confirm Delete&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">VBox</span><span class="p">.</span><span class="na">of</span><span class="p">(</span>
 <a id="__codelineno-24-2" name="__codelineno-24-2" href="#__codelineno-24-2"></a><span class="w">    </span><span class="n">Text</span><span class="p">.</span><span class="na">of</span><span class="p">(</span><span class="s">&quot;  Are you sure you want to delete this file?&quot;</span><span class="p">),</span>
@@ -1621,7 +1621,7 @@
 <p>Buttons inside dialogs that need focus/Enter handling should be registered with <code>registerFocusable()</code> before pushing the overlay.</p>
 </div>
 <hr />
-<h2 id="help-panel">Help Panel<a class="headerlink" href="#help-panel" title="Permanent link">&para;</a></h2>
+<h2 id="help-panel">Help Panel<a class="headerlink" href="#help-panel" title="Permanent link">#</a></h2>
 <p>Display a keyboard shortcut reference at the bottom of the screen.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a><span class="n">Node</span><span class="w"> </span><span class="n">help</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">HelpPanel</span><span class="p">.</span><span class="na">of</span><span class="p">(</span>
 <a id="__codelineno-26-2" name="__codelineno-26-2" href="#__codelineno-26-2"></a><span class="w">    </span><span class="k">new</span><span class="w"> </span><span class="n">KeyBinding</span><span class="p">(</span><span class="s">&quot;Tab&quot;</span><span class="p">,</span><span class="w">     </span><span class="s">&quot;Next field&quot;</span><span class="p">),</span>
@@ -1631,7 +1631,7 @@
 <a id="__codelineno-26-6" name="__codelineno-26-6" href="#__codelineno-26-6"></a><span class="p">);</span>
 </code></pre></div>
 <hr />
-<h2 id="node-quick-reference">Node Quick Reference<a class="headerlink" href="#node-quick-reference" title="Permanent link">&para;</a></h2>
+<h2 id="node-quick-reference">Node Quick Reference<a class="headerlink" href="#node-quick-reference" title="Permanent link">#</a></h2>
 <table>
 <thead>
 <tr>
