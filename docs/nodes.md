@@ -136,46 +136,68 @@ String content = area.getText();
 ### Checkbox
 
 ```java
-CheckboxNode cb = Checkbox.of("Enable feature", checked,
+CheckboxNode cb = Checkbox.of("Enable feature", false,
     () -> setState(() -> checked = !checked));
+registerFocusable(cb);
+
+// Wire Space (and optionally Enter) to toggle when focused
+onKey(KeyType.SPACE, () -> {
+    if (cb.isFocused()) setState(() -> cb.toggle());
+});
 ```
 
-- Displayed as `☑ label` when checked, `☐ label` when unchecked.
-- The toggle callback fires when the user activates it.
-
-!!! tip "Binding X key to toggle"
-    A common pattern is to wire a global key to the checkbox toggle:
-
-    ```java
-    onKey(KeyType.CHARACTER, () -> {
-        // handled elsewhere, or bind a specific character:
-    });
-    // or simply let the checkbox handle it via focus + Enter
-    ```
+- Displayed as `[✓] label` when checked, `[ ] label` when unchecked.
+- `toggle()` flips the state and fires the `onChange` callback.
 
 ### RadioGroup
 
 ```java
 RadioGroupNode radio = RadioGroup.of("Option A", "Option B", "Option C");
+registerFocusable(radio);
+
+// Wire arrow keys to navigate when focused
+onKey(KeyType.ARROW_DOWN, () -> {
+    if (radio.isFocused()) setState(() ->
+        radio.setSelectedIndex(Math.min(
+            radio.getSelectedIndex() + 1, radio.getOptions().size() - 1)));
+});
+onKey(KeyType.ARROW_UP, () -> {
+    if (radio.isFocused()) setState(() ->
+        radio.setSelectedIndex(Math.max(radio.getSelectedIndex() - 1, 0)));
+});
 
 // Read/write selection
 int idx = radio.getSelectedIndex();
 radio.setSelectedIndex(1);
-
-// Use Up/Down arrows when focused
-registerFocusable(radio);
 ```
 
 ### Select (dropdown-style)
 
+Renders as a single-row `[ Option ▾ ]` header. When opened it expands below to show all options with a `›` cursor.
+
 ```java
 SelectNode sel = Select.of("Red", "Green", "Blue");
-
-// Navigate with S / arrow keys
-String current = sel.getSelectedValue();
-sel.setSelectedIndex(2);
-
 registerFocusable(sel);
+
+// Enter opens/closes the dropdown when focused
+onKey(KeyType.ENTER, () -> {
+    if (sel.isFocused()) setState(() -> sel.toggle());
+});
+// Arrow keys navigate when the dropdown is open
+onKey(KeyType.ARROW_DOWN, () -> {
+    if (sel.isOpen()) setState(() -> sel.moveDown());
+});
+onKey(KeyType.ARROW_UP, () -> {
+    if (sel.isOpen()) setState(() -> sel.moveUp());
+});
+// Enter also confirms selection when open; Escape cancels
+onKey(KeyType.ESCAPE, () -> {
+    if (sel.isOpen()) setState(() -> sel.close());
+});
+
+// Read selected value
+String current = sel.getSelectedValue();
+sel.setSelectedIndex(2);  // programmatic selection
 ```
 
 ---

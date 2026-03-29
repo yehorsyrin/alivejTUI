@@ -8,19 +8,51 @@ AliveJTUI provides automatic `Tab` / `Shift+Tab` focus cycling. Register focusab
 
 ### Registering Focusable Nodes
 
+Declare focusable nodes as fields and register them in `mount()` in the order you want Tab to cycle through them:
+
 ```java
-@Override
-public void mount(Runnable onStateChange, EventBus eventBus) {
-    super.mount(onStateChange, eventBus);
+public class LoginForm extends Component {
 
-    // Declare fields
-    // ButtonNode saveBtn = Button.of("[ Save ]", this::save);
-    // InputNode nameInput = Input.of("", v -> setState(() -> name = v));
+    private String username = "";
+    private String password = "";
+    private boolean remember = false;
 
-    // Register in Tab order
-    registerFocusable(nameInput);
-    registerFocusable(saveBtn);
-    registerFocusable(cancelBtn);
+    private final InputNode userInput  = Input.of("", v -> setState(() -> username = v));
+    private final InputNode passInput  = Input.of("", v -> setState(() -> password = v));
+    private final CheckboxNode rememberCb = Checkbox.of("Remember me", false,
+            () -> setState(() -> remember = !remember));
+    private final ButtonNode loginBtn  = Button.of("[ Login ]", this::login);
+    private final ButtonNode cancelBtn = Button.of("[ Cancel ]", this::cancel);
+
+    @Override
+    public void mount(Runnable onStateChange, EventBus eventBus) {
+        super.mount(onStateChange, eventBus);
+
+        // Tab order: top → bottom
+        registerFocusable(userInput);
+        registerFocusable(passInput);
+        registerFocusable(rememberCb);
+        registerFocusable(loginBtn);
+        registerFocusable(cancelBtn);
+
+        // Route typed characters to whichever input is focused
+        eventBus.registerCharacter(c -> {
+            if (c < 32) return;
+            if (userInput.isFocused()) setState(() -> username += c);
+            if (passInput.isFocused()) setState(() -> password += c);
+        });
+        onKey(KeyType.BACKSPACE, () -> {
+            if (userInput.isFocused() && !username.isEmpty())
+                setState(() -> username = username.substring(0, username.length() - 1));
+            if (passInput.isFocused() && !password.isEmpty())
+                setState(() -> password = password.substring(0, password.length() - 1));
+        });
+
+        // Space toggles checkbox when it has focus
+        onKey(KeyType.SPACE, () -> {
+            if (rememberCb.isFocused()) setState(() -> rememberCb.toggle());
+        });
+    }
 }
 ```
 
@@ -30,23 +62,40 @@ public void mount(Runnable onStateChange, EventBus eventBus) {
 |--------|--------|
 | `Tab` | Move focus to the next registered node |
 | `Shift+Tab` | Move focus to the previous registered node |
-| `Enter` | If a `ButtonNode` is focused, its click callback fires |
-| Visual indicator | Focused nodes are styled with `Theme.focused()` automatically |
+| `Enter` | If a `ButtonNode` is focused, its click callback fires automatically |
+| Visual indicator | Focused nodes are highlighted with `Theme.focused()` automatically |
+
+`ButtonNode` is the only widget with built-in key handling. All other focusable nodes — `InputNode`, `CheckboxNode`, `RadioGroupNode`, `SelectNode` — require you to wire their interactions via `onKey()` or `eventBus.registerCharacter()` and guard on `isFocused()`.
 
 ### Focusable Node Types
 
 The following node types implement `Focusable` and can be registered:
 
-- `ButtonNode`
-- `InputNode`
-- `TextAreaNode`
-- `CheckboxNode`
-- `RadioGroupNode`
-- `SelectNode`
-- `VirtualListNode`
+- `ButtonNode` — Enter fires click automatically when focused
+- `InputNode` — wire `registerCharacter` + `BACKSPACE` manually
+- `TextAreaNode` — wire `registerCharacter` + `BACKSPACE` + `ARROW` keys manually
+- `CheckboxNode` — wire `Space` / `Enter` to `toggle()` manually
+- `RadioGroupNode` — wire `Arrow Up` / `Down` to `setSelectedIndex()` manually
+- `SelectNode` — wire `Enter` to `toggle()`, then arrow keys to `moveDown/Up()` and `accept()` manually
+- `VirtualListNode` — wire `Arrow` / `Page` keys to `selectDown/Up()` manually
 
 !!! info "Registration order matters"
     Nodes cycle in the order they were registered. Register them in the logical reading order of your UI (top to bottom, left to right).
+
+### Programmatic Focus
+
+Use `focusById()` to set focus from code — for example, to focus the first error field after validation:
+
+```java
+// Give the node a stable ID
+InputNode emailInput = Input.of("", v -> setState(() -> email = v))
+        .withId("email");
+
+registerFocusable(emailInput);
+
+// Later — jump to it programmatically
+getFocusManager().focusById("email");
+```
 
 ---
 
