@@ -45,3 +45,4 @@ jobs:
              -Dsonar.organization=yehorsyrin
              -Dgpg.skip=true
              -Dcentral.publishing.skip=true
+             "-Dsonar.coverage.exclusions=**/example/**,**/debug/**"
