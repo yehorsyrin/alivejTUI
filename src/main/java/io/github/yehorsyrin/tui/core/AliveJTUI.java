@@ -226,9 +226,17 @@ public class AliveJTUI {
         });
         Runtime.getRuntime().addShutdownHook(shutdownHook);
 
-        // Wire TAB / Shift+TAB to focus cycling
-        eventBus.register(KeyType.TAB,       focusManager::focusNext);
-        eventBus.register(KeyType.SHIFT_TAB, focusManager::focusPrev);
+        // Wire TAB / Shift+TAB to focus cycling; re-render so the focused node is highlighted
+        eventBus.register(KeyType.TAB, () -> {
+            focusManager.focusNext();
+            Runnable cb = activeRerenderCallback;
+            if (cb != null) cb.run();
+        });
+        eventBus.register(KeyType.SHIFT_TAB, () -> {
+            focusManager.focusPrev();
+            Runnable cb = activeRerenderCallback;
+            if (cb != null) cb.run();
+        });
 
         // Wire ENTER to trigger the currently-focused button's onClick
         eventBus.register(KeyType.ENTER, () -> {
