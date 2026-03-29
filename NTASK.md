@@ -1,56 +1,85 @@
 # AliveJTUI — Native Backend Task List
 
-> Goal: replace the Lanterna 3.1.2 dependency with a zero-dependency native terminal backend
-> that talks directly to the OS via JNA (Java Native Access).
+> Goal: replace the Lanterna 3.1.2 dependency with a zero-dependency backend that:
+>   - On Linux headless (no display): talks directly to the OS terminal via JNA (POSIX raw mode + ANSI I/O).
+>   - On all graphical environments (Windows, macOS, Linux with X11/Wayland): opens a Swing
+>     terminal window implemented from scratch — no Lanterna.
+>
+> The dispatch logic mirrors what LanternaBackend already does:
+>   `GraphicsEnvironment.isHeadless()` → headless path; otherwise → Swing path.
 >
 > Reference implementation: `LanternaBackend.java`
-> Target interface:        `TerminalBackend.java`
-> Package (this branch):   `io.alive.tui.backend`
+> Target interface:         `TerminalBackend.java`
+> Package (this branch):    `io.alive.tui.backend`
 >
 > All tasks are independent unless a "Depends on" line says otherwise.
 > Authored by: Jarvis (AI) — 2026-03-29
 
 ---
 
-## Status
+## Architecture overview
 
 ```
-NTASK-01 [ ] JNA dependency + platform detection utility
-NTASK-02 [ ] AnsiWriter — ANSI/VT escape sequence output
-NTASK-03 [ ] POSIX raw mode (Linux / macOS)
-NTASK-04 [ ] Windows raw mode + VT output enable
-NTASK-05 [ ] Terminal size detection (POSIX + Windows)
-NTASK-06 [ ] Resize detection (POSIX SIGWINCH + Windows polling)
-NTASK-07 [ ] ANSI key decoder — stdin bytes → KeyEvent
-NTASK-08 [ ] NativeBackend — assembles NTASK-02..07
-NTASK-09 [ ] Backends factory — platform-aware creation methods
-NTASK-10 [ ] Unit and integration tests
+NativeBackend.init()
+       │
+       ├─ GraphicsEnvironment.isHeadless() == false
+       │       └─► SwingTerminalBackend  (NTASK-08..10)
+       │               SwingTerminalPanel  (renders char grid, captures AWT keys)
+       │               SwingKeyDecoder     (AWT KeyEvent → our KeyEvent)
+       │
+       └─ GraphicsEnvironment.isHeadless() == true   (Linux only)
+               └─► PosixNativeBackend  (NTASK-01..07)
+                       AnsiWriter          (ANSI escape sequences → stdout)
+                       PosixRawMode        (tcgetattr/tcsetattr via JNA)
+                       TerminalSizeDetector (ioctl TIOCGWINSZ via JNA)
+                       PosixResizeDetector  (SIGWINCH via JNA)
+                       AnsiKeyDecoder       (stdin bytes → KeyEvent)
 ```
 
 ---
 
-## NTASK-01 — JNA dependency + platform detection utility
+## Status
+
+```
+NTASK-01 [ ] JNA dependency + OsPlatform utility
+NTASK-02 [ ] AnsiWriter — ANSI/VT escape sequence output          (headless path)
+NTASK-03 [ ] PosixRawMode — tcgetattr/tcsetattr via JNA           (headless path)
+NTASK-04 [ ] TerminalSizeDetector — ioctl TIOCGWINSZ via JNA      (headless path)
+NTASK-05 [ ] PosixResizeDetector — SIGWINCH signal detection      (headless path)
+NTASK-06 [ ] AnsiKeyDecoder — stdin bytes → KeyEvent              (headless path)
+NTASK-07 [ ] PosixNativeBackend — assembles NTASK-01..06          (headless path)
+NTASK-08 [ ] SwingTerminalPanel — Swing character grid UI         (graphical path)
+NTASK-09 [ ] SwingKeyDecoder — AWT KeyEvent → KeyEvent            (graphical path)
+NTASK-10 [ ] SwingTerminalBackend — assembles NTASK-08..09        (graphical path)
+NTASK-11 [ ] Backends factory — dispatch headless vs graphical
+NTASK-12 [ ] Unit and integration tests
+```
+
+---
+
+## NTASK-01 — JNA dependency + OsPlatform utility
 
 ### Goal
-Add JNA to the project and create a utility class that the rest of the native backend
-components use to detect the current OS at runtime.
+Add JNA to the project and create a utility class that detects the current OS at runtime.
+Used only by the headless POSIX path; the Swing path uses standard Java AWT.
 
 ### Background
-Java Native Access (JNA) allows calling native C/Win32 functions without writing JNI glue code.
-We need it to call POSIX `tcgetattr`/`tcsetattr`/`ioctl` on Linux and macOS, and Win32
-`GetConsoleMode`/`SetConsoleMode`/`GetConsoleScreenBufferInfo` on Windows.
+JNA (Java Native Access) allows calling native C functions without JNI. We need it for
+POSIX `tcgetattr`/`tcsetattr`/`ioctl` on Linux/macOS.
 
 JNA comes in two artifacts:
 - `net.java.dev.jna:jna` — core
-- `net.java.dev.jna:jna-platform` — pre-built bindings for Kernel32, Libc, etc.
+- `net.java.dev.jna:jna-platform` — pre-built bindings (Libc, etc.)
 
-Both must be added. Use the latest stable release (≥ 5.14.0).
+Both must be added with `<optional>true</optional>` if possible, since end users on
+graphical environments will never load the native path.
+Use the latest stable release (≥ 5.14.0).
 
 ### Files to create / modify
 - `pom.xml` — add two `<dependency>` entries
 - `src/main/java/io/alive/tui/backend/OsPlatform.java` — new utility class
 
-### Implementation notes
+### Implementation
 
 **pom.xml** — add inside `<dependencies>`:
 ```xml
@@ -77,92 +106,90 @@ public final class OsPlatform {
 
     static {
         String name = System.getProperty("os.name", "").toLowerCase();
-        if (name.contains("win"))    CURRENT = OS.WINDOWS;
-        else if (name.contains("mac")) CURRENT = OS.MACOS;
+        if      (name.contains("win"))                          CURRENT = OS.WINDOWS;
+        else if (name.contains("mac"))                          CURRENT = OS.MACOS;
         else if (name.contains("nux") || name.contains("nix")) CURRENT = OS.LINUX;
-        else CURRENT = OS.OTHER;
+        else                                                    CURRENT = OS.OTHER;
     }
 
-    public static OS get() { return CURRENT; }
+    public static OS  get()       { return CURRENT; }
     public static boolean isWindows() { return CURRENT == OS.WINDOWS; }
-    public static boolean isPosix()   { return CURRENT == OS.LINUX || CURRENT == OS.MACOS; }
+    public static boolean isMac()     { return CURRENT == OS.MACOS;   }
+    public static boolean isLinux()   { return CURRENT == OS.LINUX;   }
+    public static boolean isPosix()   { return isLinux() || isMac();  }
+
     private OsPlatform() {}
 }
 ```
 
 ### Tests
-- `OsPlatformTest` — assert that `get()` returns a non-null value and `isWindows()` /
-  `isPosix()` are mutually exclusive on any given platform (one must be true, not both).
+- `OsPlatformTest`: assert `get()` is non-null; assert `isWindows()` and `isPosix()` are
+  mutually exclusive.
 
 ---
 
 ## NTASK-02 — AnsiWriter — ANSI/VT escape sequence output
 
+> **Headless POSIX path only.**
+
 ### Goal
-Create a class that writes ANSI/VT100 escape sequences to `System.out` (or a provided
-`OutputStream`). This is the only output layer; all rendering goes through it.
+Create a class that writes ANSI/VT100 escape sequences to `System.out`.
+This is the sole output layer for the headless Linux backend.
 
 ### Background
-The terminal is controlled via escape sequences written to stdout. VT100/ANSI sequences are:
-- `ESC[{row};{col}H`   — move cursor to (row, col), 1-based
-- `ESC[?25l`           — hide cursor
-- `ESC[?25h`           — show cursor
-- `ESC[?1049h`         — enter alternate screen buffer
-- `ESC[?1049l`         — exit alternate screen buffer
-- `ESC[2J`             — clear entire screen
-- `ESC[0m`             — reset all SGR attributes
-- `ESC[{...}m`         — set SGR attributes (see implementation notes)
+The terminal is controlled via escape sequences written to stdout. Key sequences needed:
 
-SGR (Select Graphic Rendition) codes for `Style`:
-- Bold:          `1`
-- Italic:        `3`
-- Underline:     `4`
-- Dim (faint):   `2`   ← Lanterna did NOT support this; we do
-- Strikethrough: `9`
-- Foreground color, ANSI 16: `30`–`37` (normal), `90`–`97` (bright)
-- Background color, ANSI 16: `40`–`47` (normal), `100`–`107` (bright)
-- Foreground color, 256: `38;5;{n}`
-- Background color, 256: `48;5;{n}`
-- Foreground color, RGB:  `38;2;{r};{g};{b}`
-- Background color, RGB:  `48;2;{r};{g};{b}`
-- Reset: `0`
+| Sequence               | Meaning                        |
+|------------------------|--------------------------------|
+| `ESC[?1049h`           | Enter alternate screen buffer  |
+| `ESC[?1049l`           | Exit alternate screen buffer   |
+| `ESC[2J`               | Clear entire screen            |
+| `ESC[?25l`             | Hide cursor                    |
+| `ESC[?25h`             | Show cursor                    |
+| `ESC[{row};{col}H`     | Move cursor (1-based)          |
+| `ESC[{sgr}m`           | Set graphic rendition (style)  |
+
+SGR codes for `Style`:
+| Code | Meaning         | Notes                                    |
+|------|-----------------|------------------------------------------|
+| `0`  | Reset all       | Always emit first                        |
+| `1`  | Bold            |                                          |
+| `2`  | Dim/faint       | Lanterna lacked this — we support it     |
+| `3`  | Italic          |                                          |
+| `4`  | Underline       |                                          |
+| `9`  | Strikethrough   |                                          |
+| `30`–`37` | FG ANSI 16 normal  |                                   |
+| `90`–`97` | FG ANSI 16 bright  |                                   |
+| `40`–`47` | BG ANSI 16 normal  |                                   |
+| `100`–`107` | BG ANSI 16 bright |                                  |
+| `38;5;{n}` | FG 256-color   |                                   |
+| `48;5;{n}` | BG 256-color   |                                   |
+| `38;2;{r};{g};{b}` | FG RGB    |                                   |
+| `48;2;{r};{g};{b}` | BG RGB    |                                   |
 
 ### Files to create
 - `src/main/java/io/alive/tui/backend/AnsiWriter.java`
 
-### Implementation notes
+### Implementation
 
 ```java
-package io.alive.tui.backend;
-
-import io.alive.tui.style.Color;
-import io.alive.tui.style.Style;
-
-import java.io.OutputStream;
-import java.io.PrintStream;
-
 public final class AnsiWriter {
-
     private final PrintStream out;
 
-    public AnsiWriter() { this(System.out); }
-    public AnsiWriter(OutputStream out) { this.out = new PrintStream(out, false, java.nio.charset.StandardCharsets.UTF_8); }
+    public AnsiWriter()                 { this(System.out); }
+    public AnsiWriter(OutputStream out) { this.out = new PrintStream(out, false, StandardCharsets.UTF_8); }
 
-    public void enterAlternateScreen() { esc("[?1049h"); }
-    public void exitAlternateScreen()  { esc("[?1049l"); }
-    public void hideCursor()           { esc("[?25l");  }
-    public void showCursor()           { esc("[?25h");  }
-    public void clearScreen()          { esc("[2J");    }
+    public void enterAlternateScreen()  { esc("[?1049h"); }
+    public void exitAlternateScreen()   { esc("[?1049l"); }
+    public void clearScreen()           { esc("[2J");     }
+    public void hideCursor()            { esc("[?25l");   }
+    public void showCursor()            { esc("[?25h");   }
 
-    /** Move cursor to (col, row), both 0-based. Internally converts to 1-based. */
-    public void moveTo(int col, int row) {
-        esc("[" + (row + 1) + ";" + (col + 1) + "H");
-    }
+    /** Move cursor to (col, row), both 0-based. Converts to 1-based internally. */
+    public void moveTo(int col, int row) { esc("[" + (row + 1) + ";" + (col + 1) + "H"); }
 
-    /** Apply style. Call before writing the character. Emit ESC[0m first to reset. */
     public void applyStyle(Style style) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("0");  // reset
+        StringBuilder sb = new StringBuilder("0");  // always reset first
         if (style != null) {
             if (style.isBold())          sb.append(";1");
             if (style.isDim())           sb.append(";2");
@@ -176,18 +203,17 @@ public final class AnsiWriter {
     }
 
     public void writeChar(char c) { out.print(c); }
+    public void flush()           { out.flush();  }
 
-    public void flush() { out.flush(); }
-
-    private void esc(String seq) { out.print('\033' + seq); }
+    private void esc(String seq)  { out.print('\033' + seq); }
 
     private void appendColor(StringBuilder sb, Color c, boolean fg) {
         if (c == null) return;
         switch (c.getType()) {
-            case ANSI_16 -> {
-                int base = fg ? 30 : 40;
+            case ANSI_16  -> {
                 int idx  = c.getAnsiIndex();
-                sb.append(";").append(idx < 8 ? base + idx : (base + 60 + idx - 8));
+                int base = fg ? (idx < 8 ? 30 : 82) : (idx < 8 ? 40 : 92);
+                sb.append(";").append(base + (idx % 8));
             }
             case ANSI_256 -> sb.append(";").append(fg ? "38;5;" : "48;5;").append(c.getAnsiIndex());
             case RGB      -> sb.append(";").append(fg ? "38;2;" : "48;2;")
@@ -197,520 +223,604 @@ public final class AnsiWriter {
 }
 ```
 
-### API contract
-- `enterAlternateScreen()` / `exitAlternateScreen()` — must be called in `NativeBackend.init()`
-  and `shutdown()` respectively.
-- `applyStyle(null)` must emit only `ESC[0m` (reset, no other codes).
+### Contract
+- `applyStyle(null)` must emit only `ESC[0m`.
 - `moveTo(0, 0)` must emit `ESC[1;1H`.
-- `flush()` flushes the underlying stream; call at the end of every render cycle.
+- `flush()` flushes the underlying stream; call once per render cycle, not per character.
 
-### Tests
-- Capture stdout via `ByteArrayOutputStream`.
-- Assert exact escape sequences for: moveTo(0,0), moveTo(5,3), hideCursor, showCursor,
-  clearScreen, enterAlternateScreen, exitAlternateScreen.
-- Assert `applyStyle(null)` emits only `\033[0m`.
-- Assert bold+red foreground emits `\033[0;1;31m`.
-- Assert RGB foreground emits `\033[0;38;2;255;128;0m`.
-- Assert dim/italic/underline/strikethrough map to codes 2/3/4/9.
+### Tests (AnsiWriterTest)
+- Capture stdout via `ByteArrayOutputStream` and assert exact sequences for:
+  `enterAlternateScreen`, `exitAlternateScreen`, `clearScreen`, `hideCursor`, `showCursor`,
+  `moveTo(0,0)`, `moveTo(5,3)`.
+- `applyStyle(null)` → `\033[0m` only.
+- Bold + red FG → `\033[0;1;31m`.
+- RGB FG → `\033[0;38;2;255;128;0m`.
+- Dim → code `2`; italic → `3`; underline → `4`; strikethrough → `9`.
 
 ---
 
-## NTASK-03 — POSIX raw mode (Linux / macOS)
+## NTASK-03 — PosixRawMode — tcgetattr/tcsetattr via JNA
+
+> **Headless POSIX path only.**
 
 ### Goal
-Create a class that puts the terminal into raw mode on POSIX systems (Linux, macOS) using
-JNA to call `tcgetattr` and `tcsetattr` from libc.
+Put the terminal into raw mode on Linux/macOS using JNA to call libc's `tcgetattr`/`tcsetattr`.
 
 ### Background
-By default, the terminal is in "cooked" mode: the OS buffers input line-by-line and echoes
-it back. For a TUI, we need:
-- **No echo**: keystrokes must not appear on screen automatically.
-- **No line buffering (ICANON off)**: each byte is available immediately.
-- **No signal generation (ISIG off)** *(optional but clean)*: Ctrl+C should not kill the JVM;
-  instead it should be delivered as a `KeyEvent(CHARACTER, 'c', ctrl=true)`.
-- **VMIN=1, VTIME=0**: `read()` blocks until at least 1 byte is available.
+Default terminal ("cooked") mode buffers input line-by-line and echoes keystrokes.
+Raw mode configures:
+- `ECHO` off — keystrokes do not auto-appear on screen.
+- `ICANON` off — bytes available immediately, no line buffering.
+- `ISIG` off — Ctrl+C delivered as `KeyEvent(CHARACTER, 'c', ctrl=true)`, not SIGINT.
+- `VMIN=1, VTIME=0` — `read()` blocks until at least 1 byte is available.
 
-The struct `termios` layout used by `tcgetattr`/`tcsetattr` differs between Linux and macOS,
-so use `jna-platform`'s `com.sun.jna.platform.unix.LibC` which provides a cross-platform binding,
-or define a minimal JNA `Structure` manually (safer across JNA versions).
+The `termios` struct layout differs between Linux and macOS. Use `jna-platform`'s
+`com.sun.jna.platform.unix.LibC` if it exposes `tcgetattr`; otherwise define a minimal JNA
+`Structure` manually with fields `c_iflag`, `c_oflag`, `c_cflag`, `c_lflag`, `byte[] c_cc`.
+
+Key flag constants (Linux values; macOS differs — use `OsPlatform.isMac()` to select):
+```
+ECHO    = 0x00000008
+ICANON  = 0x00000002
+ISIG    = 0x00000001
+VMIN    = 6   (index into c_cc)
+VTIME   = 5   (index into c_cc)
+TCSANOW = 0
+STDIN_FD = 0
+```
 
 ### Files to create
 - `src/main/java/io/alive/tui/backend/PosixRawMode.java`
+- Implements the `RawMode` interface defined in NTASK-07.
 
-### Implementation notes
-
-JNA mapping for libc:
-```java
-import com.sun.jna.Library;
-import com.sun.jna.Native;
-import com.sun.jna.Structure;
-
-interface LibC extends Library {
-    LibC INSTANCE = Native.load("c", LibC.class);
-    int tcgetattr(int fd, Termios termios);
-    int tcsetattr(int fd, int action, Termios termios);
-}
-```
-
-`Termios` structure — use `com.sun.jna.platform.unix.LibCUtil.Termios` if available,
-or define manually with fields `c_iflag`, `c_oflag`, `c_cflag`, `c_lflag`, `c_cc[]`.
-
-Key flag constants:
-- `ECHO   = 0x00000008`
-- `ICANON = 0x00000002`
-- `ISIG   = 0x00000001` (optional; disable to handle Ctrl+C as character)
-- `VMIN   = 6`  (index into `c_cc`)
-- `VTIME  = 5`  (index into `c_cc`)
-- `TCSANOW = 0`
-
-Pseudocode for `enter()`:
-```
-save = tcgetattr(STDIN=0, &saved)
-raw = copy of saved
-raw.c_lflag &= ~(ECHO | ICANON | ISIG)
-raw.c_cc[VMIN]  = 1
-raw.c_cc[VTIME] = 0
-tcsetattr(STDIN=0, TCSANOW, &raw)
-```
-
-Register a JVM shutdown hook that calls `restore()` so the terminal is always restored
-even if the application crashes without calling `shutdown()`.
+### Implementation
 
 ```java
-public final class PosixRawMode {
+public final class PosixRawMode implements RawMode {
     private Termios savedState;
-    public void enter() { /* save + configure */ }
-    public void restore() { /* tcsetattr with savedState */ }
+
+    @Override
+    public void enter() {
+        savedState = new Termios();
+        LibC.INSTANCE.tcgetattr(0, savedState);
+        Termios raw = savedState.copy();
+        raw.c_lflag &= ~(ECHO | ICANON | ISIG);
+        raw.c_cc[VMIN]  = 1;
+        raw.c_cc[VTIME] = 0;
+        LibC.INSTANCE.tcsetattr(0, TCSANOW, raw);
+        Runtime.getRuntime().addShutdownHook(new Thread(this::restore));
+    }
+
+    @Override
+    public void restore() {
+        if (savedState != null) LibC.INSTANCE.tcsetattr(0, TCSANOW, savedState);
+    }
 }
 ```
+
+The shutdown hook ensures the terminal is always restored even if the JVM exits without
+calling `shutdown()`.
 
 ### Tests
-- Tests for this class cannot run on Windows CI; annotate with `@DisabledOnOs(OS.WINDOWS)`
-  (JUnit 5) or guard with `Assumptions.assumeTrue(OsPlatform.isPosix())`.
+- Annotate with `@DisabledOnOs(OS.WINDOWS)`.
 - Verify: after `enter()`, `savedState` is non-null.
 - Verify: `restore()` after `enter()` does not throw.
-- Do NOT test actual terminal flags in unit tests (that requires a real PTY); just verify
-  that JNA calls are made without exceptions.
+- Do not assert actual terminal flags in unit tests (requires a real PTY).
 
 ---
 
-## NTASK-04 — Windows raw mode + VT output enable
+## NTASK-04 — TerminalSizeDetector — ioctl TIOCGWINSZ
+
+> **Headless POSIX path only.**
 
 ### Goal
-Create a class that configures Windows console handles for raw input and VT/ANSI output.
+Detect the current terminal width and height on Linux/macOS via `ioctl(TIOCGWINSZ)`.
 
 ### Background
-On Windows, console I/O is controlled via `GetConsoleMode` / `SetConsoleMode` from `Kernel32`.
-Two handles need configuration:
+`ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws)` fills a `struct winsize` with `ws_col` and `ws_row`.
+`TIOCGWINSZ` constant: `0x5413` on Linux, `0x40087468` on macOS.
 
-**stdin** (`STD_INPUT_HANDLE = -10`):
-- Disable: `ENABLE_ECHO_INPUT (0x0004)`, `ENABLE_LINE_INPUT (0x0002)`,
-  `ENABLE_PROCESSED_INPUT (0x0001)` *(prevents Ctrl+C killing JVM)*
-- Enable:  `ENABLE_VIRTUAL_TERMINAL_INPUT (0x0200)` *(receive escape sequences for arrows etc.)*
-
-**stdout** (`STD_OUTPUT_HANDLE = -11`):
-- Enable: `ENABLE_PROCESSED_OUTPUT (0x0001)`, `ENABLE_VIRTUAL_TERMINAL_PROCESSING (0x0004)`
-  *(allows writing ANSI escape sequences)*
-
-Use `com.sun.jna.platform.win32.Kernel32` from `jna-platform`.
-
-### Files to create
-- `src/main/java/io/alive/tui/backend/WindowsRawMode.java`
-
-### Implementation notes
-
-```java
-import com.sun.jna.platform.win32.Kernel32;
-import com.sun.jna.platform.win32.WinNT.HANDLE;
-import com.sun.jna.ptr.IntByReference;
-
-public final class WindowsRawMode {
-
-    private static final int STD_INPUT_HANDLE  = -10;
-    private static final int STD_OUTPUT_HANDLE = -11;
-
-    private static final int ENABLE_ECHO_INPUT                = 0x0004;
-    private static final int ENABLE_LINE_INPUT                = 0x0002;
-    private static final int ENABLE_PROCESSED_INPUT           = 0x0001;
-    private static final int ENABLE_VIRTUAL_TERMINAL_INPUT    = 0x0200;
-    private static final int ENABLE_PROCESSED_OUTPUT          = 0x0001;
-    private static final int ENABLE_VIRTUAL_TERMINAL_PROCESSING = 0x0004;
-
-    private int savedInputMode  = -1;
-    private int savedOutputMode = -1;
-
-    public void enter() {
-        Kernel32 k32 = Kernel32.INSTANCE;
-        HANDLE hIn  = k32.GetStdHandle(STD_INPUT_HANDLE);
-        HANDLE hOut = k32.GetStdHandle(STD_OUTPUT_HANDLE);
-
-        IntByReference inMode  = new IntByReference();
-        IntByReference outMode = new IntByReference();
-        k32.GetConsoleMode(hIn,  inMode);
-        k32.GetConsoleMode(hOut, outMode);
-
-        savedInputMode  = inMode.getValue();
-        savedOutputMode = outMode.getValue();
-
-        int newIn = (savedInputMode
-                & ~ENABLE_ECHO_INPUT & ~ENABLE_LINE_INPUT & ~ENABLE_PROCESSED_INPUT)
-                | ENABLE_VIRTUAL_TERMINAL_INPUT;
-        int newOut = savedOutputMode | ENABLE_PROCESSED_OUTPUT | ENABLE_VIRTUAL_TERMINAL_PROCESSING;
-
-        k32.SetConsoleMode(hIn,  newIn);
-        k32.SetConsoleMode(hOut, newOut);
-    }
-
-    public void restore() {
-        if (savedInputMode < 0) return;
-        Kernel32 k32 = Kernel32.INSTANCE;
-        k32.SetConsoleMode(k32.GetStdHandle(STD_INPUT_HANDLE),  savedInputMode);
-        k32.SetConsoleMode(k32.GetStdHandle(STD_OUTPUT_HANDLE), savedOutputMode);
-    }
-}
-```
-
-Register a JVM shutdown hook in `enter()` that calls `restore()`.
-
-### Tests
-- Annotate with `@EnabledOnOs(OS.WINDOWS)` (JUnit 5).
-- Verify: `enter()` + `restore()` completes without exceptions.
-- Verify: `restore()` before `enter()` is a safe no-op (savedInputMode check).
-
----
-
-## NTASK-05 — Terminal size detection (POSIX + Windows)
-
-### Goal
-Create a class that returns the current terminal width (columns) and height (rows).
-
-### Background
-Terminal dimensions must be read from the OS:
-- **POSIX**: `ioctl(STDOUT_FILENO=1, TIOCGWINSZ=0x5413, struct winsize*)` fills a struct with
-  `ws_col` and `ws_row`.
-- **Windows**: `GetConsoleScreenBufferInfo(hStdOut, &csbi)` → width = `csbi.srWindow.Right -
-  csbi.srWindow.Left + 1`, height = `csbi.srWindow.Bottom - csbi.srWindow.Top + 1`.
-- **Fallback**: read `COLUMNS` and `LINES` environment variables. Default to 80×24 if nothing else works.
+Fallback chain if `ioctl` fails:
+1. Read `COLUMNS` / `LINES` environment variables (parse as int).
+2. Default to `80` columns × `24` rows.
 
 ### Files to create
 - `src/main/java/io/alive/tui/backend/TerminalSizeDetector.java`
 
-### Implementation notes
+### Implementation
 
-POSIX — JNA ioctl mapping:
+JNA interface inside the class (package-private static inner):
 ```java
 interface LibC extends Library {
     LibC INSTANCE = Native.load("c", LibC.class);
-    int ioctl(int fd, long request, WinSize winsize);
+    int ioctl(int fd, long request, WinSize ws);
 }
 
-// WinSize is a JNA Structure with fields: ws_row (short), ws_col (short),
-// ws_xpixel (short), ws_ypixel (short). Field order matters.
-```
-`TIOCGWINSZ` value: `0x5413` on Linux, `0x40087468` on macOS.
-Use `OsPlatform.get()` to pick the right constant.
-
-Windows — use `com.sun.jna.platform.win32.Kernel32`:
-```java
-CONSOLE_SCREEN_BUFFER_INFO csbi = new CONSOLE_SCREEN_BUFFER_INFO();
-Kernel32.INSTANCE.GetConsoleScreenBufferInfo(hStdOut, csbi);
-int w = csbi.srWindow.Right  - csbi.srWindow.Left + 1;
-int h = csbi.srWindow.Bottom - csbi.srWindow.Top  + 1;
+// WinSize: JNA Structure with fields ws_row(short), ws_col(short),
+// ws_xpixel(short), ws_ypixel(short). Field declaration order matters for JNA.
 ```
 
 ```java
 public final class TerminalSizeDetector {
-    public int getWidth()  { /* platform branch */ }
-    public int getHeight() { /* platform branch */ }
+    private static final long TIOCGWINSZ =
+        OsPlatform.isMac() ? 0x40087468L : 0x5413L;
+
+    public int getWidth()  { return query()[0]; }
+    public int getHeight() { return query()[1]; }
+
+    private int[] query() {
+        try {
+            WinSize ws = new WinSize();
+            if (LibC.INSTANCE.ioctl(1, TIOCGWINSZ, ws) == 0
+                    && ws.ws_col > 0 && ws.ws_row > 0) {
+                return new int[]{ws.ws_col, ws.ws_row};
+            }
+        } catch (Throwable ignored) {}
+        return new int[]{parseEnv("COLUMNS", 80), parseEnv("LINES", 24)};
+    }
+
+    private static int parseEnv(String key, int def) {
+        try { return Integer.parseInt(System.getenv(key)); }
+        catch (Exception e) { return def; }
+    }
 }
 ```
 
-Both methods must return ≥ 1. If the OS call fails, fall through to env vars, then to 80/24.
-
 ### Tests
-- `TerminalSizeDetectorTest` — instantiate and call `getWidth()` / `getHeight()`.
-  Assert both return ≥ 1 (do not assert specific values; size varies by terminal).
-- Mock `OsPlatform` or test fallback path: set `COLUMNS=100`, `LINES=30` env variables
-  and assert fallback returns those values.
+- `TerminalSizeDetectorTest`: call `getWidth()` / `getHeight()`, assert both ≥ 1.
+- Fallback test: make `ioctl` unavailable (stub/subclass), set `COLUMNS=100 LINES=40` via
+  a system-property shim, assert values returned correctly.
 
 ---
 
-## NTASK-06 — Resize detection (POSIX SIGWINCH + Windows polling)
+## NTASK-05 — PosixResizeDetector — SIGWINCH signal detection
+
+> **Headless POSIX path only.**
 
 ### Goal
-Detect terminal resize events and notify `NativeBackend` so it can invoke the registered
-resize listener.
+Detect terminal resize events on POSIX by handling the `SIGWINCH` signal.
 
 ### Background
-- **POSIX**: the OS sends `SIGWINCH` to the process when the terminal is resized. Install a
-  signal handler via JNA that sets a volatile flag. `NativeBackend.flush()` checks this flag
-  and, if set, re-reads the terminal size and calls the resize listener.
-- **Windows**: there is no equivalent signal. Instead, run a daemon background thread that
-  polls `TerminalSizeDetector.getWidth()/getHeight()` every 200 ms. If the size changes,
-  set a flag that `NativeBackend.flush()` checks.
+When the user resizes the terminal window, the OS sends `SIGWINCH` to the foreground process.
+We install a handler that sets an `AtomicBoolean`. `PosixNativeBackend.flush()` calls
+`consumeResize()`, and if true, fires the resize listener.
+
+Signal handling options (in order of preference):
+1. `sun.misc.Signal` + `sun.misc.SignalHandler` — available on JDK 17+.
+2. If unavailable (restricted JVM), log a warning and degrade gracefully (no resize detection).
 
 ### Files to create
-- `src/main/java/io/alive/tui/backend/ResizeDetector.java`
+- `src/main/java/io/alive/tui/backend/PosixResizeDetector.java`
 
-### Implementation notes
+### Implementation
 
 ```java
-public interface ResizeDetector {
-    /** Start detection. Must be idempotent. */
-    void start(Runnable onChange);
-    /** Stop detection. Must be idempotent. */
-    void stop();
-    /** Returns true if a resize was detected since the last call to consumeResize(). */
-    boolean consumeResize();
-}
-```
+public final class PosixResizeDetector {
+    private final AtomicBoolean resized = new AtomicBoolean(false);
 
-**PosixResizeDetector** implements `ResizeDetector`:
-- Uses JNA `Signal` or `SignalHandler` from `com.sun.jna.platform.unix` if available.
-- If not available, use `sun.misc.Signal` (internal, but broadly supported on JDK 17+).
-  Guard with a try/catch `Throwable` so it fails gracefully on restricted JVMs.
-- Sets a `volatile boolean resized = true` in the handler.
-- `consumeResize()` returns-and-clears `resized` atomically (use `AtomicBoolean`).
+    public void install() {
+        try {
+            sun.misc.Signal.handle(
+                new sun.misc.Signal("WINCH"),
+                sig -> resized.set(true)
+            );
+        } catch (Throwable t) {
+            // Resize detection unavailable — degrade gracefully
+        }
+    }
 
-**WindowsResizeDetector** implements `ResizeDetector`:
-- Constructor takes a `TerminalSizeDetector`.
-- Stores `lastWidth`, `lastHeight` from `TerminalSizeDetector` at `start()` time.
-- Background daemon thread (Thread.setDaemon(true)) polls every 200 ms.
-  If `getWidth() != lastWidth || getHeight() != lastHeight`, set `AtomicBoolean resized = true`.
-- `stop()` interrupts the thread and joins it with a short timeout.
-
-`ResizeDetectorFactory` (package-private, static factory):
-```java
-static ResizeDetector create(TerminalSizeDetector sizeDetector) {
-    return OsPlatform.isPosix()
-        ? new PosixResizeDetector()
-        : new WindowsResizeDetector(sizeDetector);
+    /** Returns true and clears the flag if a resize was detected since last call. */
+    public boolean consumeResize() {
+        return resized.getAndSet(false);
+    }
 }
 ```
 
 ### Tests
-- `WindowsResizeDetectorTest` — simulate size change by providing a `TerminalSizeDetector`
-  stub that first returns 80×24, then returns 100×30. Assert `consumeResize()` returns true.
-- `PosixResizeDetectorTest` — annotated `@DisabledOnOs(OS.WINDOWS)`. Directly set the
-  `AtomicBoolean` via reflection (or make it package-visible) and assert `consumeResize()`.
+- Annotate with `@DisabledOnOs(OS.WINDOWS)`.
+- Set `resized` to `true` directly (make field package-visible or use reflection).
+- Assert `consumeResize()` returns `true`, then `false` on second call.
 
 ---
 
-## NTASK-07 — ANSI key decoder (stdin bytes → KeyEvent)
+## NTASK-06 — AnsiKeyDecoder — stdin bytes → KeyEvent
+
+> **Headless POSIX path only.**
 
 ### Goal
-Create a class that reads raw bytes from `System.in` and converts them to `KeyEvent` objects,
-parsing ANSI/VT escape sequences for special keys (arrows, function keys, modifiers).
+Read raw bytes from `System.in` and convert them to `KeyEvent` objects by parsing
+ANSI/VT escape sequences.
 
 ### Background
-In raw mode, `System.in` delivers keystrokes as raw bytes:
-- Printable ASCII: single byte (e.g., `'a'` = `0x61`).
-- Ctrl+letter: byte `0x01`–`0x1A` (Ctrl+A=1, Ctrl+C=3, Ctrl+Z=26).
-- Enter: `0x0D` or `0x0A`.
-- Backspace: `0x7F` (most terminals) or `0x08`.
-- Tab: `0x09`.
-- Escape alone: `0x1B` followed by a timeout (no more bytes within ~50 ms).
-- Special keys: ESC sequence, e.g., `ESC [ A` = Arrow Up.
+In raw mode, each keystroke arrives as raw bytes on stdin. Most keys are a single byte;
+special keys are multi-byte ANSI sequences starting with `ESC` (`0x1B`).
 
-ANSI CSI sequences start with `ESC [ ` (`0x1B 0x5B`):
-| Sequence          | KeyType        | Notes                              |
-|-------------------|----------------|------------------------------------|
-| `ESC[A`           | ARROW_UP       |                                    |
-| `ESC[B`           | ARROW_DOWN     |                                    |
-| `ESC[C`           | ARROW_RIGHT    |                                    |
-| `ESC[D`           | ARROW_LEFT     |                                    |
-| `ESC[H`           | HOME           |                                    |
-| `ESC[F`           | END            |                                    |
-| `ESC[Z`           | SHIFT_TAB      |                                    |
-| `ESC[1~`          | HOME           | alternate                          |
-| `ESC[4~`          | END            | alternate                          |
-| `ESC[5~`          | PAGE_UP        |                                    |
-| `ESC[6~`          | PAGE_DOWN      |                                    |
-| `ESC[3~`          | DELETE         |                                    |
-| `ESC OA`          | ARROW_UP       | SS3 (application mode)             |
-| `ESC OB`          | ARROW_DOWN     | SS3                                |
-| `ESC OC`          | ARROW_RIGHT    | SS3                                |
-| `ESC OD`          | ARROW_LEFT     | SS3                                |
-| `ESC[1;2A`        | ARROW_UP       | shift=true                         |
-| `ESC[1;5A`        | ARROW_UP       | ctrl=true                          |
-| `ESC[1;3A`        | ARROW_UP       | alt=true                           |
+| Byte(s)           | KeyType      | Modifiers |
+|-------------------|--------------|-----------|
+| `0x0D` or `0x0A`  | ENTER        |           |
+| `0x7F` or `0x08`  | BACKSPACE    |           |
+| `0x09`            | TAB          |           |
+| `0x01`–`0x1A`     | CHARACTER    | ctrl=true |
+| `0x20`–`0x7E`     | CHARACTER    |           |
+| `ESC[A`           | ARROW_UP     |           |
+| `ESC[B`           | ARROW_DOWN   |           |
+| `ESC[C`           | ARROW_RIGHT  |           |
+| `ESC[D`           | ARROW_LEFT   |           |
+| `ESC[H`           | HOME         |           |
+| `ESC[F`           | END          |           |
+| `ESC[Z`           | SHIFT_TAB    | shift     |
+| `ESC[1~`          | HOME         |           |
+| `ESC[4~`          | END          |           |
+| `ESC[5~`          | PAGE_UP      |           |
+| `ESC[6~`          | PAGE_DOWN    |           |
+| `ESC[3~`          | DELETE       |           |
+| `ESC OA`          | ARROW_UP     |           |
+| `ESC OB`          | ARROW_DOWN   |           |
+| `ESC OC`          | ARROW_RIGHT  |           |
+| `ESC OD`          | ARROW_LEFT   |           |
+| `ESC[1;2A`        | ARROW_UP     | shift     |
+| `ESC[1;5A`        | ARROW_UP     | ctrl      |
+| `ESC[1;3A`        | ARROW_UP     | alt       |
 
-Modifier byte meaning (second parameter after `;`):
+Modifier encoding in the second CSI parameter:
 `1`=none, `2`=shift, `3`=alt, `4`=alt+shift, `5`=ctrl, `6`=ctrl+shift, `7`=ctrl+alt, `8`=all.
 
 ### Files to create
 - `src/main/java/io/alive/tui/backend/AnsiKeyDecoder.java`
 
-### Implementation notes
+### Implementation
 
 ```java
 public final class AnsiKeyDecoder {
-
     private final InputStream in;
 
-    public AnsiKeyDecoder() { this(System.in); }
-    public AnsiKeyDecoder(InputStream in) { this.in = in; }
+    public AnsiKeyDecoder()              { this(System.in); }
+    public AnsiKeyDecoder(InputStream in){ this.in = in;    }
 
-    /**
-     * Blocks until a key event is available.
-     * Returns KeyEvent(EOF) on end-of-stream.
-     */
+    /** Blocks until a key is available. Returns KeyEvent(EOF) on stream end. */
     public KeyEvent readKey() throws InterruptedException { ... }
 
-    /**
-     * Waits up to timeoutMs milliseconds for a key event.
-     * Returns null if no key arrived in time.
-     */
+    /** Waits up to timeoutMs for a key. Returns null on timeout. */
     public KeyEvent readKey(long timeoutMs) throws InterruptedException { ... }
 }
 ```
 
-Internal algorithm for `readKey()`:
-1. Read one byte from `in`. On `IOException`, throw `TerminalRenderException`. On -1, return EOF.
-2. If byte is `0x1B` (ESC):
-   - Attempt to read more bytes with a 50 ms timeout.
-   - If no byte follows: return `KeyEvent(ESCAPE)`.
-   - If next byte is `[` (CSI): read CSI sequence.
-   - If next byte is `O` (SS3): read SS3 sequence.
-   - Otherwise: treat as Alt+character.
-3. CSI sequence reading:
-   - Read bytes until a byte in range `0x40`–`0x7E` (the "final byte").
-   - Collect intermediate bytes as the "parameter string".
-   - Parse parameter string and final byte into a `KeyType` + modifier flags using the table above.
-4. If byte is `0x0D` or `0x0A`: return `KeyEvent(ENTER)`.
-5. If byte is `0x7F` or `0x08`: return `KeyEvent(BACKSPACE)`.
-6. If byte is `0x09`: return `KeyEvent(TAB)`.
-7. If byte is `0x01`–`0x1A`: return `KeyEvent(CHARACTER, (char)('a' + byte - 1), ctrl=true)`.
-8. If byte is printable (`0x20`–`0x7E`): return `KeyEvent(CHARACTER, (char)byte)`.
-9. Fallback: return `KeyEvent(EOF)`.
+Internal algorithm:
+1. Read one byte; if -1 → return `EOF`.
+2. If `0x1B`: try to read the next byte within 50 ms.
+   - No byte → `ESCAPE`.
+   - `[` (CSI) → read bytes until a final byte in `0x40`–`0x7E`; parse params + final byte.
+   - `O` (SS3) → read one more byte, dispatch `A`–`D`.
+   - Other byte `b` → `KeyEvent(CHARACTER, (char)b, alt=true)`.
+3. `0x0D`/`0x0A` → `ENTER`. `0x7F`/`0x08` → `BACKSPACE`. `0x09` → `TAB`.
+4. `0x01`–`0x1A` → `KeyEvent(CHARACTER, (char)('a' + b - 1), ctrl=true)`.
+5. `0x20`–`0x7E` → `KeyEvent(CHARACTER, (char)b)`.
+6. Default → `EOF`.
 
-For timed reads: use `InputStream.available()` + a short sleep loop with deadline check.
-On Windows, `System.in` in raw mode should have `available() > 0` immediately when a byte
-arrives. If `available()` is unreliable, fall back to a dedicated reader thread with a
-blocking queue — see note in code.
+For timed reads use `in.available()` + a short sleep loop with a deadline.
 
-### Tests
-- `AnsiKeyDecoder` accepts an `InputStream`, so pass a `ByteArrayInputStream` with pre-loaded bytes.
-- Test each entry in the table above: feed the exact byte sequence, assert the resulting `KeyEvent`.
-- Test modifier combinations: `ESC[1;2A` → ARROW_UP with shift=true, ctrl=false.
-- Test Ctrl+C: byte `0x03` → `KeyEvent(CHARACTER, 'c', ctrl=true)`.
-- Test bare ESC: single `0x1B` in stream → `KeyEvent(ESCAPE)`.
+### Tests (AnsiKeyDecoderTest)
+- Feed each sequence from the table above via `ByteArrayInputStream`, assert the exact `KeyEvent`.
+- Test Ctrl+C: `0x03` → `KeyEvent(CHARACTER, 'c', ctrl=true)`.
+- Test bare ESC (only `0x1B` in stream) → `KeyEvent(ESCAPE)`.
+- Test `readKey(50)` on empty stream: returns `null` within ~100 ms.
 - Test EOF: empty stream → `KeyEvent(EOF)`.
-- Test `readKey(timeoutMs)` with an empty stream: assert returns null within ~100 ms.
 
 ---
 
-## NTASK-08 — NativeBackend — assembles NTASK-02..07
+## NTASK-07 — PosixNativeBackend — assembles NTASK-01..06
+
+> **Headless POSIX path only.**
 
 ### Goal
-Implement `TerminalBackend` by combining `AnsiWriter`, the platform raw-mode handler,
-`TerminalSizeDetector`, `ResizeDetector`, and `AnsiKeyDecoder`.
+Implement `TerminalBackend` for headless Linux by wiring together all headless components.
 
-### Background
-`NativeBackend` is the main user-facing class. It wires all components together and handles
-the lifecycle (`init` → event loop → `shutdown`).
+### Files to create
+- `src/main/java/io/alive/tui/backend/RawMode.java` — shared interface (used here and in NTASK-03)
+- `src/main/java/io/alive/tui/backend/PosixNativeBackend.java`
 
-The class must use the correct package (`io.alive.tui.backend`) and implement the interface
-`TerminalBackend` exactly as defined in `TerminalBackend.java`.
-
-Note: the existing stub in this branch uses the correct class name and implements the interface;
-the implementation here replaces all `throw new UnsupportedOperationException(...)` bodies.
-
-### Files to modify
-- `src/main/java/io/alive/tui/backend/NativeBackend.java` (replace stub implementation)
-
-### Implementation notes
-
-```java
-public final class NativeBackend implements TerminalBackend {
-
-    private final AnsiWriter         writer;
-    private final TerminalSizeDetector sizeDetector;
-    private final ResizeDetector     resizeDetector;
-    private final AnsiKeyDecoder     keyDecoder;
-
-    // Platform raw mode: one of PosixRawMode or WindowsRawMode
-    private final Object rawMode;
-
-    private Runnable resizeListener;
-    private boolean  initialized = false;
-
-    // Package-private constructor for testing; public factory via Backends.createNative()
-    NativeBackend(AnsiWriter w, TerminalSizeDetector s, ResizeDetector r, AnsiKeyDecoder k, Object rm) { ... }
-}
-```
-
-**`init()`**:
-1. Call `rawMode.enter()` (dispatch by type or use a common interface `RawMode { enter(); restore(); }`).
-2. Call `writer.enterAlternateScreen()`.
-3. Call `writer.hideCursor()`.
-4. Call `writer.clearScreen()`.
-5. Call `writer.flush()`.
-6. Call `resizeDetector.start(this::notifyResize)`.
-7. Set `initialized = true`.
-
-**`shutdown()`**:
-1. Set `initialized = false`.
-2. Call `resizeDetector.stop()`.
-3. Call `writer.showCursor()`.
-4. Call `writer.exitAlternateScreen()`.
-5. Call `writer.flush()`.
-6. Call `rawMode.restore()`.
-
-**`putChar(col, row, char, Style)`**:
-1. Call `writer.moveTo(col, row)`.
-2. Call `writer.applyStyle(style)`.
-3. Call `writer.writeChar(c)`.
-(Do NOT call `writer.flush()` here — flush is deferred to `flush()`.)
-
-**`flush()`**:
-1. Check `resizeDetector.consumeResize()`. If true, call `resizeListener.run()` (if non-null).
-2. Call `writer.flush()`.
-
-**`getWidth()` / `getHeight()`**: delegate to `sizeDetector`.
-
-**`hideCursor()` / `showCursor()` / `setCursor(col, row)`**: delegate to `writer`.
-
-**`clear()`**: delegate to `writer.clearScreen()` + `writer.flush()`.
-
-**`readKey()` / `readKey(long)`**: delegate to `keyDecoder`.
-
-**`setResizeListener(Runnable)`**: store in field.
-
-Create a package-private interface:
+### RawMode interface
 ```java
 interface RawMode {
     void enter();
     void restore();
 }
 ```
-Both `PosixRawMode` and `WindowsRawMode` implement `RawMode`.
+`PosixRawMode` (NTASK-03) implements this interface.
 
-### Tests
-- Use `MockAnsiWriter` (captures escape sequences as strings) and a `MockRawMode` (records calls).
-- Test `init()`: assert raw mode was entered, alternate screen and hide-cursor sequences were emitted.
-- Test `shutdown()`: assert raw mode was restored, alternate screen exit and show-cursor emitted.
-- Test `putChar()`: assert correct sequence of moveTo + applyStyle + writeChar with no flush.
-- Test `flush()` with resize flag set: assert resize listener is called once.
-- Test `flush()` with no resize: assert resize listener is NOT called.
+### PosixNativeBackend implementation
+
+```java
+public final class PosixNativeBackend implements TerminalBackend {
+
+    private final AnsiWriter           writer;
+    private final PosixRawMode         rawMode;
+    private final TerminalSizeDetector sizeDetector;
+    private final PosixResizeDetector  resizeDetector;
+    private final AnsiKeyDecoder       keyDecoder;
+    private Runnable resizeListener;
+
+    // Package-private for testing; use Backends.createNative() in production.
+    PosixNativeBackend(AnsiWriter w, PosixRawMode rm,
+                       TerminalSizeDetector sd, PosixResizeDetector rd,
+                       AnsiKeyDecoder kd) { ... }
+}
+```
+
+**`init()`**:
+1. `rawMode.enter()`
+2. `writer.enterAlternateScreen()`
+3. `writer.hideCursor()`
+4. `writer.clearScreen()`
+5. `writer.flush()`
+6. `resizeDetector.install()`
+
+**`shutdown()`**:
+1. `writer.showCursor()`
+2. `writer.exitAlternateScreen()`
+3. `writer.flush()`
+4. `rawMode.restore()`
+
+**`putChar(col, row, c, style)`**: `moveTo` → `applyStyle` → `writeChar`. Do NOT flush here.
+
+**`flush()`**: If `resizeDetector.consumeResize()` and listener non-null → call listener. Then `writer.flush()`.
+
+**Remaining methods**: delegate to `sizeDetector` (width/height), `writer` (cursor/clear),
+`keyDecoder` (readKey).
+
+### Tests (PosixNativeBackendTest)
+- Skip on Windows: `Assumptions.assumeTrue(OsPlatform.isPosix())`.
+- Use a mock `AnsiWriter` backed by `ByteArrayOutputStream`; stub all other collaborators.
+- Test `init()`: assert alternate-screen + hide-cursor sequences emitted, `rawMode.enter()` called.
+- Test `shutdown()`: assert show-cursor + exit-screen emitted, `rawMode.restore()` called.
+- Test `putChar()`: assert moveTo + applyStyle + writeChar, no flush.
+- Test `flush()` with resize flag set: assert listener called once.
 
 ---
 
-## NTASK-09 — Backends factory
+## NTASK-08 — SwingTerminalPanel — Swing character grid
+
+> **Graphical path (all OSes with a display).**
 
 ### Goal
-Create a static factory class `Backends` that provides convenient creation methods for all
-three backend implementations.
+Create a Swing `JPanel` subclass that renders a fixed-size character grid using a monospaced
+font and delivers keyboard input via a blocking queue.
 
 ### Background
-Currently `LanternaBackend` is instantiated directly (`new LanternaBackend()`). The factory
-standardizes creation and allows the native backend to be selected without knowing its
-internal construction details.
+Mirrors the role of Lanterna's `SwingTerminalFrame` inner canvas, but implemented from
+scratch so Lanterna is no longer a dependency.
+
+Key design decisions:
+- Grid size (cols × rows) is fixed at construction. Default: `120 × 35` (same as LanternaBackend).
+- Each cell stores a `char` and a `Style`.
+- `paintComponent(Graphics g)` paints each cell as: background rect + character glyph.
+- A `KeyListener` pushes decoded `KeyEvent`s into a `LinkedBlockingQueue`.
+- A `ComponentListener` fires a resize callback when the JFrame is resized.
+
+### Files to create
+- `src/main/java/io/alive/tui/backend/SwingTerminalPanel.java`
+
+### Implementation notes
+
+```java
+public final class SwingTerminalPanel extends JPanel {
+    private final int cols;
+    private final int rows;
+    private final char[][]  charGrid;
+    private final Style[][] styleGrid;
+    private final LinkedBlockingQueue<KeyEvent> keyQueue = new LinkedBlockingQueue<>();
+    private final SwingKeyDecoder keyDecoder;
+    private int   cursorCol = -1, cursorRow = -1;
+    private boolean cursorVisible = false;
+    private int cellWidth, cellHeight;
+
+    public SwingTerminalPanel(int cols, int rows, Font font) {
+        this.cols = cols;
+        this.rows = rows;
+        this.charGrid  = new char[rows][cols];
+        this.styleGrid = new Style[rows][cols];
+        this.keyDecoder = new SwingKeyDecoder();
+        setFont(font);
+        FontMetrics fm = getFontMetrics(font);
+        cellWidth  = fm.charWidth('W');
+        cellHeight = fm.getHeight();
+        setPreferredSize(new Dimension(cols * cellWidth, rows * cellHeight));
+        setBackground(java.awt.Color.BLACK);
+        setFocusable(true);
+        addKeyListener(new KeyAdapter() {
+            @Override public void keyPressed(java.awt.event.KeyEvent e) {
+                KeyEvent ke = keyDecoder.decode(e);
+                if (ke != null) keyQueue.offer(ke);
+            }
+        });
+    }
+}
+```
+
+**`putChar(col, row, c, style)`**: store into grid arrays; do not repaint yet.
+
+**`flush()`**: call `repaint()`. For fully synchronous rendering (needed in tests):
+optionally `SwingUtilities.invokeAndWait(this::repaint)`.
+
+**`paintComponent(Graphics g)`**:
+```
+for each row r:
+  for each col c:
+    bg = toAwtColor(styleGrid[r][c].getBackground(), DEFAULT_BG)
+    fg = toAwtColor(styleGrid[r][c].getForeground(), DEFAULT_FG)
+    fill rect (c*cellWidth, r*cellHeight, cellWidth, cellHeight) with bg
+    set font variant (bold/italic) if style requires
+    draw char charGrid[r][c] at baseline position with fg
+if cursorVisible && cursorCol >= 0:
+    draw 2px bottom rect at cursor position with DEFAULT_FG
+```
+
+Default background: `Color.BLACK`. Default foreground: `Color.LIGHT_GRAY`.
+
+**`readKey()` / `readKey(long)`**: delegate to `keyQueue.take()` / `keyQueue.poll(ms, MILLISECONDS)`.
+
+**`hideCursor()` / `showCursor()` / `setCursor(col,row)`**: update fields, call `repaint()`.
+
+**`clear()`**: zero-fill both grids, call `repaint()`.
+
+**Font resolution** (same logic as `LanternaBackend.resolveMonospacedFonts()`):
+Try candidates: `"Consolas"`, `"Courier New"`, `"DejaVu Sans Mono"`, `"Liberation Mono"`,
+`"Ubuntu Mono"`, `"Noto Mono"`, fallback to `Font.MONOSPACED`. Pick the first available.
+
+### Tests (SwingTerminalPanelTest)
+```java
+static boolean isHeadless() { return GraphicsEnvironment.isHeadless(); }
+```
+- Annotate class with `@DisabledIf("isHeadless")`.
+- Create panel, call `putChar(0,0,'A',Style.of())` + `flush()`, assert `charGrid[0][0] == 'A'`.
+- Simulate key: `panel.dispatchEvent(new java.awt.event.KeyEvent(panel, KEY_PRESSED, 0, 0, VK_ENTER, '\n'))`.
+  Assert `readKey(100)` returns `KeyEvent(ENTER)`.
+
+---
+
+## NTASK-09 — SwingKeyDecoder — AWT KeyEvent → KeyEvent
+
+> **Graphical path (all OSes with a display).**
+
+### Goal
+Convert AWT `java.awt.event.KeyEvent` objects (from a Swing `KeyListener`) to our
+`io.alive.tui.event.KeyEvent` records.
+
+### Background
+AWT delivers keyboard events via `VK_*` constants for special keys and `getKeyChar()` for
+printable characters. Modifier flags (`isControlDown()` etc.) are available directly — no
+escape-sequence parsing needed.
+
+### Files to create
+- `src/main/java/io/alive/tui/backend/SwingKeyDecoder.java`
+
+### Implementation
+
+```java
+public final class SwingKeyDecoder {
+
+    /** Returns null if the event should be ignored (modifier-only key, etc.). */
+    public KeyEvent decode(java.awt.event.KeyEvent e) {
+        boolean ctrl  = e.isControlDown();
+        boolean alt   = e.isAltDown();
+        boolean shift = e.isShiftDown();
+
+        return switch (e.getKeyCode()) {
+            case VK_ENTER      -> KeyEvent.of(KeyType.ENTER,       ctrl, alt, shift);
+            case VK_BACK_SPACE -> KeyEvent.of(KeyType.BACKSPACE,   ctrl, alt, shift);
+            case VK_DELETE     -> KeyEvent.of(KeyType.DELETE,      ctrl, alt, shift);
+            case VK_ESCAPE     -> KeyEvent.of(KeyType.ESCAPE,      ctrl, alt, shift);
+            case VK_TAB        -> shift
+                                   ? KeyEvent.of(KeyType.SHIFT_TAB, ctrl, alt, true)
+                                   : KeyEvent.of(KeyType.TAB,       ctrl, alt, false);
+            case VK_UP         -> KeyEvent.of(KeyType.ARROW_UP,    ctrl, alt, shift);
+            case VK_DOWN       -> KeyEvent.of(KeyType.ARROW_DOWN,  ctrl, alt, shift);
+            case VK_LEFT       -> KeyEvent.of(KeyType.ARROW_LEFT,  ctrl, alt, shift);
+            case VK_RIGHT      -> KeyEvent.of(KeyType.ARROW_RIGHT, ctrl, alt, shift);
+            case VK_HOME       -> KeyEvent.of(KeyType.HOME,        ctrl, alt, shift);
+            case VK_END        -> KeyEvent.of(KeyType.END,         ctrl, alt, shift);
+            case VK_PAGE_UP    -> KeyEvent.of(KeyType.PAGE_UP,     ctrl, alt, shift);
+            case VK_PAGE_DOWN  -> KeyEvent.of(KeyType.PAGE_DOWN,   ctrl, alt, shift);
+            default -> {
+                char c = e.getKeyChar();
+                if (c == CHAR_UNDEFINED || (Character.isISOControl(c) && !ctrl)) yield null;
+                yield KeyEvent.ofCharacter(c, ctrl, alt, shift);
+            }
+        };
+    }
+}
+```
+
+### Tests (SwingKeyDecoderTest)
+- Create AWT `KeyEvent` for each `VK_*` constant; assert the resulting `KeyEvent` type and modifiers.
+- Test `VK_TAB` + shift → `SHIFT_TAB`.
+- Test printable char 'a' → `KeyEvent(CHARACTER, 'a')`.
+- Test Ctrl+C (`VK_C` + `isControlDown()`) → `KeyEvent(CHARACTER, 'c', ctrl=true)`.
+- Test modifier-only key (`VK_SHIFT`) → returns `null`.
+
+---
+
+## NTASK-10 — SwingTerminalBackend — assembles NTASK-08..09
+
+> **Graphical path (all OSes with a display).**
+
+### Goal
+Implement `TerminalBackend` for graphical environments by embedding `SwingTerminalPanel`
+in a `JFrame`.
+
+### Background
+Mirrors how `LanternaBackend` uses `SwingTerminalFrame`. Key difference: no Lanterna.
+
+### Files to create
+- `src/main/java/io/alive/tui/backend/SwingTerminalBackend.java`
+
+### Implementation
+
+```java
+public final class SwingTerminalBackend implements TerminalBackend {
+
+    private static final int DEFAULT_COLS = 120;
+    private static final int DEFAULT_ROWS = 35;
+
+    private JFrame             frame;
+    private SwingTerminalPanel panel;
+    private Runnable           resizeListener;
+
+    @Override
+    public void init() {
+        Font font  = resolveFont(16);   // same font resolution as NTASK-08
+        panel = new SwingTerminalPanel(DEFAULT_COLS, DEFAULT_ROWS, font);
+        frame = new JFrame("AliveJTUI");
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.getContentPane().add(panel);
+        frame.pack();
+        frame.setVisible(true);
+        panel.requestFocusInWindow();
+
+        frame.addComponentListener(new ComponentAdapter() {
+            @Override public void componentResized(ComponentEvent e) {
+                if (resizeListener != null) resizeListener.run();
+            }
+        });
+    }
+
+    @Override
+    public void shutdown() {
+        if (frame != null) { frame.setVisible(false); frame.dispose(); }
+    }
+
+    @Override public int getWidth()  { return panel != null ? panel.getCols() : DEFAULT_COLS; }
+    @Override public int getHeight() { return panel != null ? panel.getRows() : DEFAULT_ROWS; }
+
+    @Override public void putChar(int col, int row, char c, Style style) { panel.putChar(col,row,c,style); }
+    @Override public void flush()                                        { panel.flush(); }
+    @Override public void hideCursor()                                   { panel.hideCursor(); }
+    @Override public void showCursor()                                   { panel.showCursor(); }
+    @Override public void setCursor(int col, int row)                    { panel.setCursor(col, row); }
+    @Override public void clear()                                        { panel.clear(); }
+    @Override public KeyEvent readKey() throws InterruptedException      { return panel.readKey(); }
+    @Override public KeyEvent readKey(long ms) throws InterruptedException { return panel.readKey(ms); }
+    @Override public void setResizeListener(Runnable r)                  { this.resizeListener = r; }
+}
+```
+
+### Tests (SwingTerminalBackendTest)
+- Annotate with `@DisabledIf("isHeadless")`.
+- `init()` → assert frame is visible.
+- `shutdown()` → assert frame is not displayable.
+- `putChar(0,0,'X',null)` + `flush()` → assert char stored in panel grid.
+
+---
+
+## NTASK-11 — Backends factory
+
+### Goal
+A static factory class that dispatches to the correct backend based on the runtime environment.
 
 ### Files to create
 - `src/main/java/io/alive/tui/backend/Backends.java`
 
-### Implementation notes
+### Implementation
 
 ```java
 public final class Backends {
@@ -718,82 +828,91 @@ public final class Backends {
     private Backends() {}
 
     /**
-     * Creates a native backend using direct POSIX/Windows I/O.
-     * Does not depend on Lanterna.
-     * Throws {@link UnsupportedOperationException} on unsupported platforms (OS.OTHER).
+     * Creates the appropriate native backend for the current environment:
+     *   - Non-headless (Windows / macOS / Linux+display): SwingTerminalBackend
+     *   - Headless Linux: PosixNativeBackend
+     *
+     * @throws UnsupportedOperationException on headless non-POSIX systems
      */
     public static TerminalBackend createNative() {
-        TerminalSizeDetector sizeDetector = new TerminalSizeDetector();
-        ResizeDetector resizeDetector = ResizeDetectorFactory.create(sizeDetector);
-        AnsiWriter writer = new AnsiWriter();
-        AnsiKeyDecoder keyDecoder = new AnsiKeyDecoder();
-        RawMode rawMode = OsPlatform.isPosix()
-            ? new PosixRawMode()
-            : new WindowsRawMode();
-        return new NativeBackend(writer, sizeDetector, resizeDetector, keyDecoder, rawMode);
+        if (!GraphicsEnvironment.isHeadless()) {
+            return new SwingTerminalBackend();
+        }
+        if (OsPlatform.isPosix()) {
+            return new PosixNativeBackend(
+                new AnsiWriter(),
+                new PosixRawMode(),
+                new TerminalSizeDetector(),
+                new PosixResizeDetector(),
+                new AnsiKeyDecoder()
+            );
+        }
+        throw new UnsupportedOperationException(
+            "NativeBackend not supported on headless non-POSIX systems");
     }
 
-    /**
-     * Creates a Lanterna-based backend (current default).
-     */
+    /** Creates the Lanterna-based backend (current default). */
     public static TerminalBackend createLanterna() {
         return new LanternaBackend();
     }
 
-    /**
-     * Creates an in-memory mock backend for testing.
-     *
-     * @param width  terminal width in columns
-     * @param height terminal height in rows
-     */
+    /** Creates an in-memory mock backend for unit testing. */
     public static TerminalBackend createMock(int width, int height) {
         return new MockBackend(width, height);
     }
 }
 ```
 
-### Tests
-- `BackendsTest`:
-  - `createLanterna()` returns a non-null `LanternaBackend` instance.
-  - `createMock(80, 24)` returns a non-null `MockBackend` with correct dimensions.
-  - `createNative()` returns a non-null `NativeBackend` on the current platform
-    (skip if `OsPlatform.get() == OS.OTHER`).
+### Tests (BackendsTest)
+- `createLanterna()` → non-null `LanternaBackend`.
+- `createMock(80,24)` → `MockBackend` with width=80, height=24.
+- `createNative()` → non-null; is `SwingTerminalBackend` if graphical, `PosixNativeBackend` if headless POSIX.
 
 ---
 
-## NTASK-10 — Unit and integration tests
+## NTASK-12 — Unit and integration tests
 
 ### Goal
-Achieve full unit test coverage of all NTASK-01..09 classes and add one end-to-end
-integration test that runs the AliveJTUI engine against `NativeBackend` on a real terminal.
+Achieve ≥ 90% line coverage on all NTASK-01..11 classes via JaCoCo.
+Add one end-to-end smoke test per path.
 
-### Background
-`LanternaBackend` is currently excluded from SonarCloud coverage because it cannot run
-headless (it opens a Swing window). `NativeBackend` should be fully unit-testable via mocks
-and partially integration-testable in CI with a PTY.
+### Test files
 
-### Files to create
 All under `src/test/java/io/alive/tui/backend/`:
-- `OsPlatformTest.java`                — NTASK-01
-- `AnsiWriterTest.java`                — NTASK-02
-- `PosixRawModeTest.java`              — NTASK-03 (skip on Windows)
-- `WindowsRawModeTest.java`            — NTASK-04 (skip on non-Windows)
-- `TerminalSizeDetectorTest.java`      — NTASK-05
-- `WindowsResizeDetectorTest.java`     — NTASK-06
-- `PosixResizeDetectorTest.java`       — NTASK-06 (skip on Windows)
-- `AnsiKeyDecoderTest.java`            — NTASK-07
-- `NativeBackendTest.java`             — NTASK-08
-- `BackendsTest.java`                  — NTASK-09
-- `NativeBackendIntegrationTest.java`  — integration (annotated @Tag("integration"), skip in CI unless PTY available)
 
-### Integration test notes
-The integration test should:
-1. Detect whether stdin is a real terminal (e.g., `System.console() != null`).
-2. If not, skip with `Assumptions.assumeTrue(false, "Not a real terminal")`.
-3. If yes: create a `NativeBackend`, call `init()`, write a few characters, call `flush()`,
-   call `shutdown()`, and assert no exceptions.
+| File                              | Covers    | Platform guard                        |
+|-----------------------------------|-----------|---------------------------------------|
+| `OsPlatformTest.java`             | NTASK-01  | none                                  |
+| `AnsiWriterTest.java`             | NTASK-02  | none (uses ByteArrayOutputStream)     |
+| `PosixRawModeTest.java`           | NTASK-03  | `@DisabledOnOs(OS.WINDOWS)`           |
+| `TerminalSizeDetectorTest.java`   | NTASK-04  | `@DisabledOnOs(OS.WINDOWS)`           |
+| `PosixResizeDetectorTest.java`    | NTASK-05  | `@DisabledOnOs(OS.WINDOWS)`           |
+| `AnsiKeyDecoderTest.java`         | NTASK-06  | none (uses ByteArrayInputStream)      |
+| `PosixNativeBackendTest.java`     | NTASK-07  | `@DisabledOnOs(OS.WINDOWS)`           |
+| `SwingTerminalPanelTest.java`     | NTASK-08  | `@DisabledIf("isHeadless")`           |
+| `SwingKeyDecoderTest.java`        | NTASK-09  | none (pure Java)                      |
+| `SwingTerminalBackendTest.java`   | NTASK-10  | `@DisabledIf("isHeadless")`           |
+| `BackendsTest.java`               | NTASK-11  | none                                  |
+| `NativeBackendIntegrationTest.java` | smoke   | `@Tag("integration")`                 |
 
-### Coverage requirements
-All new classes (NTASK-01..09) must have ≥ 90% line coverage measured by JaCoCo.
-Classes that contain only JNA calls to native code may be excluded via `@ExcludeFromJacocoGeneratedReport`
-or an explicit exclusion rule in `pom.xml`, with a comment explaining why.
+### Integration smoke tests
+
+**Graphical smoke test** (skip if headless):
+1. `Backends.createNative()` on a graphical host.
+2. `init()` → `putChar(0,0,'X',Style.of())` → `flush()` → `shutdown()`.
+3. Assert no exceptions.
+
+**Headless POSIX smoke test** (skip if not headless POSIX, or `System.console() == null`):
+1. `Backends.createNative()` on headless Linux.
+2. `init()` → `clear()` → `flush()` → `shutdown()`.
+3. Assert no exceptions.
+
+### Coverage exclusions
+Inner `Library` interface declarations and JNA `Structure` subclasses consist entirely of
+native bindings and cannot be meaningfully unit-tested. Exclude them from JaCoCo:
+```xml
+<!-- pom.xml, inside <configuration><excludes> of jacoco-maven-plugin -->
+<exclude>io/alive/tui/backend/PosixRawMode$LibC.class</exclude>
+<exclude>io/alive/tui/backend/TerminalSizeDetector$LibC.class</exclude>
+<exclude>io/alive/tui/backend/TerminalSizeDetector$WinSize.class</exclude>
+```
