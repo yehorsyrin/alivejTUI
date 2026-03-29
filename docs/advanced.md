@@ -35,8 +35,10 @@ public class LoginForm extends Component {
         registerFocusable(loginBtn);
         registerFocusable(cancelBtn);
 
-        // Route typed characters to whichever input is focused
+        // Route typed characters to whichever input is focused;
+        // space (c == ' ') toggles the checkbox when it has focus
         eventBus.registerCharacter(c -> {
+            if (c == ' ' && rememberCb.isFocused()) { setState(() -> rememberCb.toggle()); return; }
             if (c < 32) return;
             if (userInput.isFocused()) setState(() -> username += c);
             if (passInput.isFocused()) setState(() -> password += c);
@@ -46,11 +48,6 @@ public class LoginForm extends Component {
                 setState(() -> username = username.substring(0, username.length() - 1));
             if (passInput.isFocused() && !password.isEmpty())
                 setState(() -> password = password.substring(0, password.length() - 1));
-        });
-
-        // Space toggles checkbox when it has focus
-        onKey(KeyType.SPACE, () -> {
-            if (rememberCb.isFocused()) setState(() -> rememberCb.toggle());
         });
     }
 }

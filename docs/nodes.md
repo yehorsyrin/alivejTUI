@@ -140,9 +140,9 @@ CheckboxNode cb = Checkbox.of("Enable feature", false,
     () -> setState(() -> checked = !checked));
 registerFocusable(cb);
 
-// Wire Space (and optionally Enter) to toggle when focused
-onKey(KeyType.SPACE, () -> {
-    if (cb.isFocused()) setState(() -> cb.toggle());
+// Space (ASCII 32) is a CHARACTER — detect it via registerCharacter
+eventBus.registerCharacter(c -> {
+    if (c == ' ' && cb.isFocused()) setState(() -> cb.toggle());
 });
 ```
 
