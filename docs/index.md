@@ -1,7 +1,5 @@
 # AliveJTUI
 
-<div align="center">
-
 [![Maven Central](https://img.shields.io/maven-central/v/io.github.yehorsyrin/alivejTUI)](https://central.sonatype.com/artifact/io.github.yehorsyrin/alivejTUI)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=yehorsyrin_alivejTUI&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=yehorsyrin_alivejTUI)
 [![Coverage](https://sonarcloud.io/api/project_badges/measure?project=yehorsyrin_alivejTUI&metric=coverage)](https://sonarcloud.io/summary/new_code?id=yehorsyrin_alivejTUI)
@@ -10,8 +8,6 @@
 
 **A declarative TUI (Terminal User Interface) library for Java.**
 Build terminal UIs as component trees — like React, but for the terminal.
-
-</div>
 
 ---
 
