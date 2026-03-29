@@ -8,25 +8,36 @@ AliveJTUI provides automatic `Tab` / `Shift+Tab` focus cycling. Register focusab
 
 ### Registering Focusable Nodes
 
-Declare focusable nodes as fields and register them in `mount()` in the order you want Tab to cycle through them:
+Declare focusable nodes as fields and register them in `mount()` in the order you want Tab to cycle through them.
+
+The example below is a complete, runnable login form:
 
 ```java
+import io.github.yehorsyrin.tui.core.Component;
+import io.github.yehorsyrin.tui.core.Node;
+import io.github.yehorsyrin.tui.event.EventBus;
+import io.github.yehorsyrin.tui.event.KeyType;
+import io.github.yehorsyrin.tui.node.*;
+
 public class LoginForm extends Component {
 
-    private String username = "";
-    private String password = "";
-    private boolean remember = false;
+    // --- State ---
+    private String status = "";
 
-    private final InputNode userInput  = Input.of("", v -> setState(() -> username = v));
-    private final InputNode passInput  = Input.of("", v -> setState(() -> password = v));
-    private final CheckboxNode rememberCb = Checkbox.of("Remember me", false,
-            () -> setState(() -> remember = !remember));
-    private final ButtonNode loginBtn  = Button.of("[ Login ]", this::login);
-    private final ButtonNode cancelBtn = Button.of("[ Cancel ]", this::cancel);
+    // --- Widgets (fields so they survive re-renders) ---
+    private final InputNode    userInput  = Input.of("", null);
+    private final InputNode    passInput  = Input.of("", null);
+    private final CheckboxNode rememberCb = Checkbox.of("Remember me", false, null);
+    private final ButtonNode   loginBtn   = Button.of("[ Login ]",  this::doLogin);
+    private final ButtonNode   cancelBtn  = Button.of("[ Cancel ]", this::doCancel);
 
     @Override
     public void mount(Runnable onStateChange, EventBus eventBus) {
         super.mount(onStateChange, eventBus);
+
+        // Assign stable keys so focusById() can find them later
+        userInput.setKey("user");
+        passInput.setKey("pass");
 
         // Tab order: top → bottom
         registerFocusable(userInput);
@@ -35,19 +46,69 @@ public class LoginForm extends Component {
         registerFocusable(loginBtn);
         registerFocusable(cancelBtn);
 
-        // Route typed characters to whichever input is focused;
-        // space (c == ' ') toggles the checkbox when it has focus
+        // Character input: route to the focused InputNode,
+        // or toggle the checkbox on Space
         eventBus.registerCharacter(c -> {
-            if (c == ' ' && rememberCb.isFocused()) { setState(() -> rememberCb.toggle()); return; }
+            if (c == ' ' && rememberCb.isFocused()) {
+                setState(() -> rememberCb.toggle());
+                return;
+            }
             if (c < 32) return;
-            if (userInput.isFocused()) setState(() -> username += c);
-            if (passInput.isFocused()) setState(() -> password += c);
+            if (userInput.isFocused())
+                setState(() -> userInput.setValue(userInput.getValue() + c));
+            if (passInput.isFocused())
+                setState(() -> passInput.setValue(passInput.getValue() + c));
         });
+
         onKey(KeyType.BACKSPACE, () -> {
-            if (userInput.isFocused() && !username.isEmpty())
-                setState(() -> username = username.substring(0, username.length() - 1));
-            if (passInput.isFocused() && !password.isEmpty())
-                setState(() -> password = password.substring(0, password.length() - 1));
+            if (userInput.isFocused()) {
+                String v = userInput.getValue();
+                if (!v.isEmpty()) setState(() -> userInput.setValue(v.substring(0, v.length() - 1)));
+            }
+            if (passInput.isFocused()) {
+                String v = passInput.getValue();
+                if (!v.isEmpty()) setState(() -> passInput.setValue(v.substring(0, v.length() - 1)));
+            }
+        });
+    }
+
+    @Override
+    public Node render() {
+        return VBox.of(
+            Text.of("  Login").bold(),
+            Divider.horizontal(),
+            Text.of(""),
+            HBox.of(Text.of("  Username : "), userInput),
+            HBox.of(Text.of("  Password : "), passInput),
+            HBox.of(Text.of("  "), rememberCb),
+            Text.of(""),
+            HBox.of(Text.of("  "), loginBtn, Text.of("  "), cancelBtn),
+            Text.of(""),
+            Text.of("  " + status).dim()
+        );
+    }
+
+    private void doLogin() {
+        if (userInput.getValue().isEmpty()) {
+            setState(() -> status = "Username is required.");
+            getFocusManager().focusById("user");
+            return;
+        }
+        if (passInput.getValue().isEmpty()) {
+            setState(() -> status = "Password is required.");
+            getFocusManager().focusById("pass");
+            return;
+        }
+        setState(() -> status = "Logging in as " + userInput.getValue() + " …");
+        // perform actual authentication here
+    }
+
+    private void doCancel() {
+        setState(() -> {
+            userInput.setValue("");
+            passInput.setValue("");
+            if (rememberCb.isChecked()) rememberCb.toggle();
+            status = "";
         });
     }
 }
@@ -81,18 +142,7 @@ The following node types implement `Focusable` and can be registered:
 
 ### Programmatic Focus
 
-Use `focusById()` to set focus from code — for example, to focus the first error field after validation:
-
-```java
-// Give the node a stable ID
-InputNode emailInput = Input.of("", v -> setState(() -> email = v))
-        .withId("email");
-
-registerFocusable(emailInput);
-
-// Later — jump to it programmatically
-getFocusManager().focusById("email");
-```
+`getFocusManager().focusById(key)` jumps focus to a node by its key. Set the key with `node.setKey("...")` before calling `registerFocusable`. The example above uses this to jump back to the empty field after a failed validation.
 
 ---
 
