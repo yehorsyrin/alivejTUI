@@ -27,6 +27,8 @@
 A declarative TUI (Terminal User Interface) library for Java.
 Build terminal UIs as component trees — like React, but for the terminal.
 
+**[Documentation](https://yehorsyrin.github.io/alivejTUI)**
+
 ```
  AliveJTUI Demo v0.1.0  theme: [Dark]
  1:Widgets  2:Table  3:VirtualList  4:Text  5:Layout
