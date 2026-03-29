@@ -43,3 +43,5 @@ jobs:
         run: mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar
              -Dsonar.projectKey=yehorsyrin_alivejTUI
              -Dsonar.organization=yehorsyrin
+             -Dgpg.skip=true
+             -Dcentral.publishing.skip=true
