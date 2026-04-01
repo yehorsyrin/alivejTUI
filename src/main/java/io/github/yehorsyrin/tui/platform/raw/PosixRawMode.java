@@ -90,7 +90,7 @@ public final class PosixRawMode {
      */
     @FieldOrder({"c_iflag", "c_oflag", "c_cflag", "c_lflag",
                  "c_line", "c_cc", "c_ispeed", "c_ospeed"})
-    static class TermiosLinux extends Structure {
+    public static class TermiosLinux extends Structure {
         public int    c_iflag, c_oflag, c_cflag, c_lflag;
         public byte   c_line;
         public byte[] c_cc = new byte[32]; // NCCS = 32 on Linux
@@ -103,7 +103,7 @@ public final class PosixRawMode {
      */
     @FieldOrder({"c_iflag", "c_oflag", "c_cflag", "c_lflag",
                  "c_cc", "c_ispeed", "c_ospeed"})
-    static class TermiosMacOS extends Structure {
+    public static class TermiosMacOS extends Structure {
         public int    c_iflag, c_oflag, c_cflag, c_lflag;
         public byte[] c_cc = new byte[20]; // NCCS = 20 on macOS
         public int    c_ispeed, c_ospeed;
