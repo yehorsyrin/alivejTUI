@@ -2,6 +2,7 @@ package io.github.yehorsyrin.tui.backend;
 
 import io.github.yehorsyrin.tui.event.KeyEvent;
 import io.github.yehorsyrin.tui.style.Style;
+import io.github.yehorsyrin.tui.style.Theme;
 
 /**
  * Abstraction over the underlying terminal library.
@@ -122,4 +123,11 @@ public interface TerminalBackend {
      * Called from within {@link #flush()}, so it runs on the event loop thread.
      */
     void setResizeListener(Runnable onResize);
+
+    /**
+     * Notifies the backend that the active theme has changed.
+     * Backends may update default foreground/background colours in response.
+     * Default implementation is a no-op.
+     */
+    default void applyTheme(Theme theme) {}
 }

@@ -58,6 +58,11 @@ public final class SwingTerminalPanel extends JPanel {
     private int     cursorRow     = 0;
     private boolean cursorVisible = false;
 
+    // ── Default terminal colours (updated via setDefaultColors) ──────────────
+
+    private java.awt.Color defaultForeground = java.awt.Color.WHITE;
+    private java.awt.Color defaultBackground = java.awt.Color.BLACK;
+
     // ── Key listener ──────────────────────────────────────────────────────────
 
     private Consumer<KeyEvent> keyListener;
@@ -85,6 +90,9 @@ public final class SwingTerminalPanel extends JPanel {
         setBackground(java.awt.Color.BLACK);
         setFont(CELL_FONT);
         setFocusable(true);
+        // Prevent Swing from consuming Tab/Shift+Tab for its own focus traversal;
+        // our keyPressed handler translates them to TUI KeyEvents instead.
+        setFocusTraversalKeysEnabled(false);
         setPreferredSize(new Dimension(cols * cellWidth, rows * cellHeight));
 
         addKeyListener(new KeyAdapter() {
@@ -148,6 +156,20 @@ public final class SwingTerminalPanel extends JPanel {
     /** Registers a listener that receives decoded {@link KeyEvent}s. */
     public void setKeyListener(Consumer<KeyEvent> listener) {
         this.keyListener = listener;
+    }
+
+    /**
+     * Updates the default foreground and background colours used for cells that
+     * carry no explicit colour in their {@link io.github.yehorsyrin.tui.style.Style}.
+     * Pass {@code null} for either argument to keep the current value.
+     */
+    public synchronized void setDefaultColors(java.awt.Color fg, java.awt.Color bg) {
+        if (fg != null) defaultForeground = fg;
+        if (bg != null) {
+            defaultBackground = bg;
+            setBackground(bg);
+        }
+        repaint();
     }
 
     /** Returns the cell width in pixels. */
@@ -229,13 +251,13 @@ public final class SwingTerminalPanel extends JPanel {
 
     // ── Style → AWT color helpers ─────────────────────────────────────────────
 
-    private static java.awt.Color foregroundOf(Style s) {
-        if (s == null || s.getForeground() == null) return java.awt.Color.WHITE;
+    private java.awt.Color foregroundOf(Style s) {
+        if (s == null || s.getForeground() == null) return defaultForeground;
         return toAwtColor(s.getForeground());
     }
 
-    private static java.awt.Color backgroundOf(Style s) {
-        if (s == null || s.getBackground() == null) return java.awt.Color.BLACK;
+    private java.awt.Color backgroundOf(Style s) {
+        if (s == null || s.getBackground() == null) return defaultBackground;
         return toAwtColor(s.getBackground());
     }
 

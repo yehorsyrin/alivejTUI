@@ -4,7 +4,9 @@ import io.github.yehorsyrin.tui.backend.TerminalBackend;
 import io.github.yehorsyrin.tui.backend.TerminalInitException;
 import io.github.yehorsyrin.tui.event.KeyEvent;
 import io.github.yehorsyrin.tui.event.KeyType;
+import io.github.yehorsyrin.tui.style.Color;
 import io.github.yehorsyrin.tui.style.Style;
+import io.github.yehorsyrin.tui.style.Theme;
 
 /**
  * Swing-based terminal backend — opens a {@code JFrame} with a monospace
@@ -140,5 +142,60 @@ public final class SwingBackend implements TerminalBackend {
     @Override
     public void setResizeListener(Runnable onResize) {
         this.resizeListener = onResize;
+    }
+
+    @Override
+    public void applyTheme(Theme theme) {
+        if (panel == null) return;
+        Color tuiBg = theme.background();
+        Color tuiFg = theme.foreground().getForeground();
+        java.awt.Color awtBg = tuiBg != null ? toAwtColor(tuiBg) : java.awt.Color.BLACK;
+        java.awt.Color awtFg = tuiFg != null ? toAwtColor(tuiFg) : java.awt.Color.WHITE;
+        javax.swing.SwingUtilities.invokeLater(() -> panel.setDefaultColors(awtFg, awtBg));
+    }
+
+    private static java.awt.Color toAwtColor(Color c) {
+        return switch (c.getType()) {
+            case ANSI_16  -> ansi16ToAwt(c.getAnsiIndex());
+            case ANSI_256 -> ansi256ToAwt(c.getAnsiIndex());
+            case RGB      -> new java.awt.Color(c.getR(), c.getG(), c.getB());
+        };
+    }
+
+    private static java.awt.Color ansi16ToAwt(int index) {
+        return switch (index) {
+            case  0 -> new java.awt.Color(0,   0,   0);
+            case  1 -> new java.awt.Color(170, 0,   0);
+            case  2 -> new java.awt.Color(0,   170, 0);
+            case  3 -> new java.awt.Color(170, 170, 0);
+            case  4 -> new java.awt.Color(0,   0,   170);
+            case  5 -> new java.awt.Color(170, 0,   170);
+            case  6 -> new java.awt.Color(0,   170, 170);
+            case  7 -> new java.awt.Color(170, 170, 170);
+            case  8 -> new java.awt.Color(85,  85,  85);
+            case  9 -> new java.awt.Color(255, 85,  85);
+            case 10 -> new java.awt.Color(85,  255, 85);
+            case 11 -> new java.awt.Color(255, 255, 85);
+            case 12 -> new java.awt.Color(85,  85,  255);
+            case 13 -> new java.awt.Color(255, 85,  255);
+            case 14 -> new java.awt.Color(85,  255, 255);
+            case 15 -> new java.awt.Color(255, 255, 255);
+            default -> java.awt.Color.WHITE;
+        };
+    }
+
+    private static java.awt.Color ansi256ToAwt(int idx) {
+        if (idx < 16) return ansi16ToAwt(idx);
+        if (idx < 232) {
+            int n = idx - 16;
+            int b = n % 6;
+            int g = (n / 6) % 6;
+            int r = n / 36;
+            return new java.awt.Color(r == 0 ? 0 : 55 + r * 40,
+                                       g == 0 ? 0 : 55 + g * 40,
+                                       b == 0 ? 0 : 55 + b * 40);
+        }
+        int v = 8 + (idx - 232) * 10;
+        return new java.awt.Color(v, v, v);
     }
 }

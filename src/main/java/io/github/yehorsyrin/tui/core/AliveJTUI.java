@@ -42,6 +42,7 @@ public class AliveJTUI {
      */
     public static void setTheme(Theme theme) {
         activeTheme = theme != null ? theme : Theme.DARK;
+        if (activeBackend != null) activeBackend.applyTheme(activeTheme);
     }
 
     /** Returns the currently active theme (default: {@link Theme#DARK}). */
@@ -49,8 +50,9 @@ public class AliveJTUI {
 
     // --- Overlay API (single-instance, single-threaded) ---
 
-    private static Renderer      activeRenderer;
-    private static Runnable      activeRerenderCallback;
+    private static Renderer         activeRenderer;
+    private static Runnable         activeRerenderCallback;
+    private static TerminalBackend  activeBackend;
 
     // --- Timer API ---
 
@@ -252,6 +254,10 @@ public class AliveJTUI {
         activeRenderer         = renderer;
         activeRerenderCallback = () -> renderer.render(root.renderAndCache());
         activeTimerManager     = new TimerManager();
+        activeBackend          = backend;
+
+        // Apply initial theme to backend (e.g. sets default fg/bg on SwingBackend)
+        backend.applyTheme(activeTheme);
 
         // Mount root component
         root.mount(activeRerenderCallback, eventBus, focusManager);
@@ -266,6 +272,7 @@ public class AliveJTUI {
         } finally {
             activeRenderer         = null;
             activeRerenderCallback = null;
+            activeBackend          = null;
             activeTimerManager.clear();
             activeTimerManager     = null;
             root.unmount();
