@@ -2,17 +2,16 @@ package io.github.yehorsyrin.tui.backend;
 
 import io.github.yehorsyrin.tui.event.KeyEvent;
 import io.github.yehorsyrin.tui.style.Style;
+import io.github.yehorsyrin.tui.style.Theme;
 
 /**
  * Abstraction over the underlying terminal library.
  * All rendering and input operations go through this interface.
  *
- * <p>The built-in implementation is {@link LanternaBackend}.
- * {@link MockBackend} is provided for unit testing.
- * Custom backends can be created by implementing this interface directly —
- * pass the instance to {@code AliveJTUI.run(component, backend)}.
- *
- * TODO: native backend — direct POSIX/Windows terminal I/O without Lanterna
+ * <p>Built-in implementations: {@code NativeTerminalBackend} (ANSI/VT terminal),
+ * {@code SwingBackend} (Swing window).  {@link MockBackend} is provided for unit
+ * testing.  Use {@code Backends.createAuto()} to select the right one automatically,
+ * or pass a custom instance to {@code AliveJTUI.run(component, backend)}.
  *
  * <h2>Error handling contract</h2>
  * <ul>
@@ -122,4 +121,11 @@ public interface TerminalBackend {
      * Called from within {@link #flush()}, so it runs on the event loop thread.
      */
     void setResizeListener(Runnable onResize);
+
+    /**
+     * Notifies the backend that the active theme has changed.
+     * Backends may update default foreground/background colours in response.
+     * Default implementation is a no-op.
+     */
+    default void applyTheme(Theme theme) {}
 }

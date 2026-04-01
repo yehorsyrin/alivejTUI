@@ -14,13 +14,13 @@ public final class TerminalCapabilities {
     /**
      * Returns {@code true} if the current backend supports the dim (faint) text decoration.
      *
-     * <p>Lanterna 3.1.x does not expose {@code SGR.FAINT}, so this method currently returns
-     * {@code false}. Check this flag before using {@code Style.withDim(true)} if rendering
-     * fidelity is important.
+     * <p>Currently returns {@code true} — both the native ANSI backend and the Swing
+     * backend render dim via SGR 2 / reduced opacity. Override in a custom backend if
+     * dim is not supported.
      *
-     * @return {@code false} — dim is not supported by the default Lanterna backend
+     * @return {@code true} — dim is supported by the built-in backends
      */
     public static boolean supportsDim() {
-        return false;
+        return true;
     }
 }

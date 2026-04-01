@@ -6,7 +6,7 @@
 
     <groupId>io.github.yehorsyrin</groupId>
     <artifactId>alivejTUI</artifactId>
-    <version>0.1.3</version>
+    <version>0.2.0</version>
     <packaging>jar</packaging>
 
     <name>AliveJTUI</name>
@@ -42,9 +42,9 @@
 
     <dependencies>
         <dependency>
-            <groupId>com.googlecode.lanterna</groupId>
-            <artifactId>lanterna</artifactId>
-            <version>3.1.2</version>
+            <groupId>net.java.dev.jna</groupId>
+            <artifactId>jna-platform</artifactId>
+            <version>5.14.0</version>
         </dependency>
 
         <dependency>
@@ -88,6 +88,11 @@
                         <goals>
                             <goal>prepare-agent</goal>
                         </goals>
+                        <configuration>
+                            <includes>
+                                <include>io/github/yehorsyrin/tui/**</include>
+                            </includes>
+                        </configuration>
                     </execution>
                     <execution>
                         <id>report</id>
@@ -164,7 +169,7 @@
                 <artifactId>exec-maven-plugin</artifactId>
                 <version>3.1.0</version>
                 <configuration>
-                    <mainClass>io.github.yehorsyrin.tui.example.DemoLanterna</mainClass>
+                    <mainClass>io.github.yehorsyrin.tui.example.DemoNative</mainClass>
                 </configuration>
             </plugin>
 
@@ -174,7 +179,7 @@
                 <version>3.5.1</version>
                 <executions>
                     <execution>
-                        <id>demo-lanterna</id>
+                        <id>demo</id>
                         <phase>package</phase>
                         <goals><goal>shade</goal></goals>
                         <configuration>
@@ -182,7 +187,7 @@
                             <finalName>alivejTUI-demo</finalName>
                             <transformers>
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>io.github.yehorsyrin.tui.example.DemoLanterna</mainClass>
+                                    <mainClass>io.github.yehorsyrin.tui.example.DemoNative</mainClass>
                                 </transformer>
                             </transformers>
                             <filters>

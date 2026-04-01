@@ -235,40 +235,90 @@ public final class Backends {
 
 ---
 
+---
+
+## Пріоритет: GUI-вікно (замінює SwingTerminalFrame з Lanterna)
+
+### STASK-01: SwingTerminalPanel
+**Суть:** `JPanel` що рендерить сітку символів (char + Style → колір/жирний/курсив).
+Monospace шрифт, відступи, мигаючий курсор.
+**Файли:** `swing/SwingTerminalPanel.java`
+**Тести:** `SwingTerminalPanelTest` (headless AWT)
+**Пріоритет:** HIGH | **Складність:** HIGH
+
+---
+
+### STASK-02: SwingBackend
+**Суть:** `SwingBackend implements TerminalBackend` — обгортає `SwingTerminalPanel`,
+відкриває `JFrame`, реалізує `drawCell`, `clear`, `flush`, `readKey` (KeyListener),
+`getSize`, resize listener.
+**Файли:** `swing/SwingBackend.java`
+**Тести:** `SwingBackendTest` (headless mode з mock panel)
+**Пріоритет:** HIGH | **Складність:** MED
+
+---
+
+### STASK-03: Headless detection + factory update
+**Суть:** `GraphicsEnvironment.isHeadless()` → `NativeBackend`, інакше → `SwingBackend`.
+macOS: `System.setProperty("apple.awt.UIElement", "true")` щоб не показувати іконку в Dock.
+**Файли:** `backend/Backends.java` (оновлення)
+**Тести:** `BackendsFactoryTest`
+**Пріоритет:** MED | **Складність:** LOW
+
+---
+
+### STASK-04: Shutdown hook
+**Суть:** `Runtime.getRuntime().addShutdownHook(...)` — відновити стан терміналу
+при `Ctrl+C` / краші JVM. Без цього термінал залишається в raw mode після виходу.
+**Файли:** `backend/NativeBackend.java` (оновлення)
+**Тести:** `ShutdownHookTest`
+**Пріоритет:** HIGH | **Складність:** LOW
+
+---
+
 ## Порядок виконання
 
 ```
-NTASK-08 (Windows VT — швидко, без цього Windows не починає)
+NTASK-08 (Windows VT — без цього Windows не починає)
 NTASK-03 (ANSI output writer — основа для всього)
-NTASK-01 (POSIX raw mode)
+STASK-04 (Shutdown hook — безпека)
 NTASK-02 (Windows raw mode)
+NTASK-01 (POSIX raw mode)
+NTASK-05 (resize detection)
 NTASK-04 (terminal size)
 NTASK-06 (key decoder)
-NTASK-09 (NativeBackend — збирає 01..06)
-NTASK-05 (resize detection — можна після 09)
-NTASK-07 (mouse — optional, після 09)
-NTASK-10 (factory — фінал)
+NTASK-09 (NativeBackend — збирає 01..06 + STASK-04)
+NTASK-10 (factory — початковий)
+STASK-01 (SwingTerminalPanel — GUI вікно)
+STASK-02 (SwingBackend — GUI бекенд)
+STASK-03 (Headless detection — фінал factory)
 ```
 
 **Мінімально робочий результат** (запускається на Windows Terminal):
 NTASK-08 → NTASK-03 → NTASK-02 → NTASK-04 → NTASK-06 → NTASK-09
 
+**Повний результат** (GUI вікно + headless):
++ STASK-01 → STASK-02 → STASK-03
+
 ---
 
 ## Оцінка обсягу
 
-| Задача   | Складність | ~LOC |
-|----------|-----------|------|
-| NTASK-01 | MED       | 120  |
-| NTASK-02 | MED       | 100  |
-| NTASK-03 | LOW       |  80  |
-| NTASK-04 | MED       | 150  |
-| NTASK-05 | MED       | 100  |
-| NTASK-06 | MED       | 200  |
-| NTASK-07 | MED       | 120  |
-| NTASK-08 | LOW       |  60  |
-| NTASK-09 | MED       | 180  |
-| NTASK-10 | LOW       |  50  |
-| **Total**|           |**~1160** |
+| Задача   | Опис | Складність | ~LOC | ~Токени | ~Час |
+|----------|------|-----------|-----:|--------:|-----:|
+| NTASK-08 | Windows VT enable | LOW | 60 | 3k | 5 хв |
+| NTASK-03 | AnsiWriter | LOW | 80 | 4k | 7 хв |
+| STASK-04 | Shutdown hook | LOW | 30 | 2k | 3 хв |
+| NTASK-02 | Windows raw mode | MED | 100 | 7k | 12 хв |
+| NTASK-01 | POSIX raw mode | MED | 120 | 8k | 15 хв |
+| NTASK-05 | Resize polling | MED | 100 | 7k | 12 хв |
+| NTASK-04 | Terminal size | MED | 150 | 10k | 20 хв |
+| NTASK-06 | ANSI key decoder | MED | 200 | 15k | 25 хв |
+| NTASK-09 | NativeBackend | MED | 180 | 12k | 20 хв |
+| NTASK-10 | Backends factory | LOW | 50 | 3k | 5 хв |
+| STASK-01 | SwingTerminalPanel | HIGH | 300 | 20k | 35 хв |
+| STASK-02 | SwingBackend | MED | 200 | 13k | 22 хв |
+| STASK-03 | Headless detection | LOW | 50 | 3k | 5 хв |
+| **Total** | | | **~1620** | **~107k** | **~3.2 год** |
 
-**Тести:** ~150 unit тестів (key sequence vectors, size detection, mock I/O).
+**Тести:** ~160 unit тестів.
