@@ -63,9 +63,20 @@ public final class AnsiWriter {
     private final OutputStream out;
     /** Internal write buffer — built up per frame, flushed on flush(). */
     private final StringBuilder buf = new StringBuilder(4096);
+    /** Default background color applied to cells with no explicit background style. */
+    private Color defaultBackground = null;
 
     public AnsiWriter(OutputStream out) {
         this.out = out;
+    }
+
+    /**
+     * Sets the default background color used for cells that carry no explicit
+     * background in their {@link Style}.  Pass {@code null} to use the terminal
+     * default (usually black).
+     */
+    public void setDefaultBackground(Color bg) {
+        this.defaultBackground = bg;
     }
 
     // ── Screen / cursor helpers ──────────────────────────────────────────────
@@ -91,7 +102,16 @@ public final class AnsiWriter {
     }
 
     /** Clears the screen and resets cursor to home. */
-    public void clearScreen() { buf.append(CLEAR_SCREEN); }
+    public void clearScreen() {
+        // Fill the cleared screen with the default background if one is set.
+        if (defaultBackground != null) {
+            buf.append("\033[");
+            appendColor(defaultBackground, true);
+            buf.append('m');
+        }
+        buf.append(CLEAR_SCREEN);
+        buf.append(SGR_RESET);
+    }
 
     // ── Character rendering ──────────────────────────────────────────────────
 
@@ -107,6 +127,12 @@ public final class AnsiWriter {
     public void putChar(int col, int row, char c, Style style) {
         moveCursor(col, row);
         buf.append(SGR_RESET);
+        // Apply default background for cells with no explicit background style.
+        if (defaultBackground != null && (style == null || style.getBackground() == null)) {
+            buf.append("\033[");
+            appendColor(defaultBackground, true);
+            buf.append('m');
+        }
         if (style != null) {
             appendStyle(style);
         }

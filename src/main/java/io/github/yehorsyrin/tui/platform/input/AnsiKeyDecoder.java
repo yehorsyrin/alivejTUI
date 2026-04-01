@@ -102,7 +102,7 @@ public final class AnsiKeyDecoder {
                     char ch = (char) ('a' + b - 1);
                     yield KeyEvent.ofCharacter(ch, true, false, false);
                 }
-                if (b >= 0x20) {
+                if ((b & 0xFF) >= 0x20) {
                     yield KeyEvent.ofCharacter((char) (b & 0xFF));
                 }
                 yield KeyEvent.of(KeyType.EOF);

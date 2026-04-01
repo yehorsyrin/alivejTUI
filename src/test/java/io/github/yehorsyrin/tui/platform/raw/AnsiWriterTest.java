@@ -83,7 +83,7 @@ class AnsiWriterTest {
     @Test
     void clearScreenEmitsCorrectSequence() {
         writer.clearScreen();
-        assertEquals(AnsiWriter.CLEAR_SCREEN, bufStr());
+        assertEquals(AnsiWriter.CLEAR_SCREEN + AnsiWriter.SGR_RESET, bufStr());
     }
 
     @Test

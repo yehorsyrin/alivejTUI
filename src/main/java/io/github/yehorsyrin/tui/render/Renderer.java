@@ -115,6 +115,15 @@ public class Renderer {
     }
 
     /**
+     * Invalidates the previous frame so the next {@link #render(Node)} call performs
+     * a full redraw.  Does not render immediately — useful when the caller will
+     * trigger a render via {@code setState} directly after (e.g. on theme change).
+     */
+    public void invalidate() {
+        previousCells = Collections.emptyMap();
+    }
+
+    /**
      * Called when the terminal is resized. Forces a full redraw using the last tree.
      */
     public void onResize() {

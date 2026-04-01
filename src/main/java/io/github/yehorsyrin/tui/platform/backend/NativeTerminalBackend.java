@@ -16,10 +16,13 @@ import io.github.yehorsyrin.tui.platform.size.TerminalSize;
 import io.github.yehorsyrin.tui.platform.size.TerminalSizeDetector;
 import io.github.yehorsyrin.tui.style.Style;
 
+import io.github.yehorsyrin.tui.style.Theme;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
 
 /**
  * Native terminal backend — direct POSIX/Windows I/O without Lanterna.
@@ -223,6 +226,15 @@ public final class NativeTerminalBackend implements TerminalBackend {
         this.resizeListener = onResize;
     }
 
+    @Override
+    public void applyTheme(Theme theme) {
+        writer.setDefaultBackground(theme != null ? theme.background() : null);
+        // Buffer a clear so the next render frame fills empty terminal areas with
+        // the new background color.  Not flushed here — sent atomically with the
+        // putChar calls that follow in the same render pass, avoiding any flicker.
+        writer.clearScreen();
+    }
+
     // ── Internal ─────────────────────────────────────────────────────────────
 
     private KeyEvent readKeyInternal() throws IOException, InterruptedException {
@@ -234,11 +246,42 @@ public final class NativeTerminalBackend implements TerminalBackend {
         if (first == 0x1B) {
             // ESC — try to read more bytes for CSI/SS3 sequences
             seq = readEscapeSequence(first);
+        } else if ((first & 0x80) != 0) {
+            // UTF-8 multi-byte lead byte — read continuation bytes and decode
+            return decodeUtf8(first);
         } else {
             seq = new byte[]{(byte) first};
         }
 
         return AnsiKeyDecoder.decode(seq);
+    }
+
+    /**
+     * Reads a complete UTF-8 multi-byte sequence starting with {@code leadByte}
+     * and returns the decoded character as a {@link KeyEvent}.
+     * Handles 2-, 3-, and 4-byte sequences (Cyrillic, CJK, emoji, etc.).
+     */
+    private KeyEvent decodeUtf8(int leadByte) throws IOException {
+        int extraBytes;
+        if      ((leadByte & 0xE0) == 0xC0) extraBytes = 1; // 110xxxxx — U+0080..U+07FF
+        else if ((leadByte & 0xF0) == 0xE0) extraBytes = 2; // 1110xxxx — U+0800..U+FFFF
+        else if ((leadByte & 0xF8) == 0xF0) extraBytes = 3; // 11110xxx — U+10000..U+10FFFF
+        else return AnsiKeyDecoder.decode(new byte[]{(byte) leadByte}); // lone continuation / invalid
+
+        byte[] utf8 = new byte[1 + extraBytes];
+        utf8[0] = (byte) leadByte;
+        for (int i = 1; i <= extraBytes; i++) {
+            int b = in.read();
+            if (b == -1 || (b & 0xC0) != 0x80) {
+                // Truncated or invalid sequence — skip silently
+                return AnsiKeyDecoder.decode(new byte[]{(byte) leadByte});
+            }
+            utf8[i] = (byte) b;
+        }
+
+        String s = new String(utf8, StandardCharsets.UTF_8);
+        if (s.isEmpty()) return AnsiKeyDecoder.decode(new byte[]{(byte) leadByte});
+        return KeyEvent.ofCharacter(s.charAt(0));
     }
 
     /**

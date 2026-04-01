@@ -218,6 +218,19 @@ public final class SwingTerminalPanel extends JPanel {
                     g2.drawString(String.valueOf(c), x, y + ascent);
                     g2.setFont(CELL_FONT); // reset after bold/italic variant
                 }
+
+                // Underline / strikethrough (drawn over everything)
+                if (s != null) {
+                    java.awt.Color lineColor = foregroundOf(s);
+                    if (s.isUnderline()) {
+                        g2.setColor(lineColor);
+                        g2.drawLine(x, y + cellHeight - 1, x + cellWidth - 1, y + cellHeight - 1);
+                    }
+                    if (s.isStrikethrough()) {
+                        g2.setColor(lineColor);
+                        g2.drawLine(x, y + cellHeight / 2, x + cellWidth - 1, y + cellHeight / 2);
+                    }
+                }
             }
         }
     }

@@ -1,7 +1,7 @@
 package io.github.yehorsyrin.tui.core;
 
-import io.github.yehorsyrin.tui.backend.LanternaBackend;
 import io.github.yehorsyrin.tui.backend.TerminalBackend;
+import io.github.yehorsyrin.tui.platform.backend.Backends;
 import io.github.yehorsyrin.tui.event.EventBus;
 import io.github.yehorsyrin.tui.event.KeyEvent;
 import io.github.yehorsyrin.tui.event.KeyType;
@@ -42,7 +42,8 @@ public class AliveJTUI {
      */
     public static void setTheme(Theme theme) {
         activeTheme = theme != null ? theme : Theme.DARK;
-        if (activeBackend != null) activeBackend.applyTheme(activeTheme);
+        if (activeBackend  != null) activeBackend.applyTheme(activeTheme);
+        if (activeRenderer != null) activeRenderer.invalidate();
     }
 
     /** Returns the currently active theme (default: {@link Theme#DARK}). */
@@ -195,11 +196,13 @@ public class AliveJTUI {
     }
 
     /**
-     * Starts the application with the given root component using the default Lanterna backend.
+     * Starts the application with the given root component.
+     * Auto-selects the best backend: {@code SwingBackend} on GUI desktops,
+     * {@code NativeTerminalBackend} in headless / server environments.
      * Blocks until the user presses ESC or the terminal signals EOF.
      */
     public static void run(Component root) {
-        run(root, new LanternaBackend());
+        run(root, Backends.createAuto());
     }
 
     /**
@@ -228,7 +231,21 @@ public class AliveJTUI {
         });
         Runtime.getRuntime().addShutdownHook(shutdownHook);
 
-        // Wire TAB / Shift+TAB to focus cycling; re-render so the focused node is highlighted
+        // Expose overlay and timer APIs
+        activeRenderer         = renderer;
+        activeRerenderCallback = () -> renderer.render(root.renderAndCache());
+        activeTimerManager     = new TimerManager();
+        activeBackend          = backend;
+
+        // Apply initial theme to backend (e.g. sets default fg/bg on SwingBackend)
+        backend.applyTheme(activeTheme);
+
+        // Mount root component BEFORE wiring system keys so that component
+        // handlers registered in mount() fire first and can consume events.
+        root.mount(activeRerenderCallback, eventBus, focusManager);
+
+        // Wire TAB / Shift+TAB to focus cycling (non-consuming fallback —
+        // components may register consuming handlers during mount() to override).
         eventBus.register(KeyType.TAB, () -> {
             focusManager.focusNext();
             Runnable cb = activeRerenderCallback;
@@ -249,18 +266,6 @@ public class AliveJTUI {
             }
             return false; // don't consume — let other ENTER handlers run
         });
-
-        // Expose overlay and timer APIs
-        activeRenderer         = renderer;
-        activeRerenderCallback = () -> renderer.render(root.renderAndCache());
-        activeTimerManager     = new TimerManager();
-        activeBackend          = backend;
-
-        // Apply initial theme to backend (e.g. sets default fg/bg on SwingBackend)
-        backend.applyTheme(activeTheme);
-
-        // Mount root component
-        root.mount(activeRerenderCallback, eventBus, focusManager);
 
         // Initial render
         renderer.render(root.renderAndCache());

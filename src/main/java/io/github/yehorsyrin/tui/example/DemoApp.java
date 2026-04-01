@@ -2,6 +2,7 @@ package io.github.yehorsyrin.tui.example;
 
 import io.github.yehorsyrin.tui.core.*;
 import io.github.yehorsyrin.tui.event.EventBus;
+import io.github.yehorsyrin.tui.event.KeyHandler;
 import io.github.yehorsyrin.tui.event.KeyType;
 import io.github.yehorsyrin.tui.node.*;
 import io.github.yehorsyrin.tui.style.Color;
@@ -120,22 +121,29 @@ public class DemoApp extends Component {
     public void mount(Runnable onStateChange, EventBus eventBus) {
         super.mount(onStateChange, eventBus);
 
-        // Focus — tab 1
+        // Focus — register only tab 1 focusables initially.
+        // Login tab focusables are registered/unregistered dynamically on tab switch.
         registerFocusable(clickBtn);
-
-        // Focus — tab 6: Login
         loginUserInput.setKey("loginUser");
         loginPassInput.setKey("loginPass");
-        registerFocusable(loginUserInput);
-        registerFocusable(loginPassInput);
-        registerFocusable(loginRememberCb);
-        registerFocusable(loginLoginBtn);
-        registerFocusable(loginCancelBtn);
 
-        // Tab switching 1-6
+        // Tab switching 1-6: swap focusables to match the newly active tab.
         eventBus.registerCharacter(c -> {
-            if (c >= '1' && c <= '6') setState(() -> activeTab = c - '1');
+            if (c >= '1' && c <= '6') {
+                int newTab = c - '1';
+                if (newTab != activeTab) {
+                    FocusManager fm = getFocusManager();
+                    for (Focusable f : tabFocusables(activeTab)) fm.unregister(f);
+                    for (Focusable f : tabFocusables(newTab))    fm.register(f);
+                    setState(() -> activeTab = newTab);
+                }
+            }
         });
+
+        // TAB / SHIFT+TAB: consuming handlers registered during mount() run before
+        // AliveJTUI's non-consuming fallback, so this controls cycling per active tab.
+        onKey(KeyType.TAB,       (KeyHandler)() -> { cycleFocus(+1); return true; });
+        onKey(KeyType.SHIFT_TAB, (KeyHandler)() -> { cycleFocus(-1); return true; });
 
         // Theme toggle
         eventBus.registerCharacter(c -> {
@@ -567,6 +575,26 @@ public class DemoApp extends Component {
             if (loginRememberCb.isChecked()) loginRememberCb.toggle();
             loginStatus = "";
         });
+    }
+
+    // --- Focus helpers ---
+
+    /** Returns the focusable nodes that belong to the given tab. */
+    private List<Focusable> tabFocusables(int tab) {
+        return switch (tab) {
+            case 0 -> List.of(clickBtn);
+            case 5 -> List.of(loginUserInput, loginPassInput,
+                              loginRememberCb, loginLoginBtn, loginCancelBtn);
+            default -> List.of();
+        };
+    }
+
+    /** Cycles focus forward (+1) or backward (-1) within the active tab. */
+    private void cycleFocus(int dir) {
+        FocusManager fm = getFocusManager();
+        if (fm == null || fm.size() == 0) return;
+        if (dir > 0) fm.focusNext(); else fm.focusPrev();
+        setState(() -> {});
     }
 
     // --- Confirm dialog ---
