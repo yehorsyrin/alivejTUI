@@ -1,21 +1,22 @@
 ```
 ╔══════════════════════════════════════════════════════════════════════════╗
 ║                                                                          ║
-║   █████╗ ██╗     ██╗██╗   ██╗███████╗      ██╗████████╗██╗   ██╗██╗    ║
-║  ██╔══██╗██║     ██║██║   ██║██╔════╝      ██║╚══██╔══╝██║   ██║██║    ║
-║  ███████║██║     ██║╚██╗ ██╔╝█████╗        ██║   ██║   ██║   ██║██║    ║
-║  ██╔══██║██║     ██║ ╚████╔╝ ██╔══╝   ██   ██║   ██║   ██║   ██║██║    ║
-║  ██║  ██║███████╗██║  ╚═══╝  ███████╗ ╚█████╔╝   ██║   ╚██████╔╝██║    ║
-║  ╚═╝  ╚═╝╚══════╝╚═╝         ╚══════╝  ╚════╝    ╚═╝    ╚═════╝ ╚═╝    ║
+║   █████╗ ██╗     ██╗██╗   ██╗███████╗      ██╗████████╗██╗   ██╗██╗      ║
+║  ██╔══██╗██║     ██║██║   ██║██╔════╝      ██║╚══██╔══╝██║   ██║██║      ║
+║  ███████║██║     ██║╚██╗ ██╔╝█████╗        ██║   ██║   ██║   ██║██║      ║
+║  ██╔══██║██║     ██║ ╚████╔╝ ██╔══╝   ██   ██║   ██║   ██║   ██║██║      ║
+║  ██║  ██║███████╗██║  ╚═══╝  ███████╗ ╚█████╔╝   ██║   ╚██████╔╝██║      ║
+║  ╚═╝  ╚═╝╚══════╝╚═╝         ╚══════╝  ╚════╝    ╚═╝    ╚═════╝ ╚═╝      ║
 ║                                                                          ║
-║          Declarative TUI library for Java              v0.1.0           ║
-║          ──────────────────────────────────────────────────────         ║
-║                    crafted with pride by  J A R V I S  (AI)            ║
+║          Declarative TUI library for Java              v0.1.1            ║
+║          ─────────────────────────────────────────────────────────       ║
+║                    crafted with pride by  J A R V I S  (AI)              ║
 ╚══════════════════════════════════════════════════════════════════════════╝
 ```
 
 # AliveJTUI
 
+[![Maven Central](https://img.shields.io/maven-central/v/io.github.yehorsyrin/alivejTUI)](https://central.sonatype.com/artifact/io.github.yehorsyrin/alivejTUI)
 [![SonarCloud](https://github.com/yehorsyrin/alivejTUI/actions/workflows/sonar.yml/badge.svg)](https://github.com/yehorsyrin/alivejTUI/actions/workflows/sonar.yml)
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=yehorsyrin_alivejTUI&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=yehorsyrin_alivejTUI)
 [![Coverage](https://sonarcloud.io/api/project_badges/measure?project=yehorsyrin_alivejTUI&metric=coverage)](https://sonarcloud.io/summary/new_code?id=yehorsyrin_alivejTUI)
@@ -25,6 +26,8 @@
 
 A declarative TUI (Terminal User Interface) library for Java.
 Build terminal UIs as component trees — like React, but for the terminal.
+
+**[Documentation](https://yehorsyrin.github.io/alivejTUI)**
 
 ```
  AliveJTUI Demo v0.1.0  theme: [Dark]
@@ -73,19 +76,19 @@ Build terminal UIs as component trees — like React, but for the terminal.
 
 ```xml
 <dependency>
-    <groupId>io.alive</groupId>
+    <groupId>io.github.yehorsyrin</groupId>
     <artifactId>alivejTUI</artifactId>
-    <version>0.1.0</version>
+    <version>0.1.1</version>
 </dependency>
 ```
 
 ### 2. Write a component
 
 ```java
-import io.alive.tui.core.*;
-import io.alive.tui.event.*;
-import io.alive.tui.node.*;
-import io.alive.tui.style.Color;
+import io.github.yehorsyrin.tui.core.*;
+import io.github.yehorsyrin.tui.event.*;
+import io.github.yehorsyrin.tui.node.*;
+import io.github.yehorsyrin.tui.style.Color;
 
 public class CounterApp extends Component {
 
@@ -696,7 +699,7 @@ mvn package
 
 ```
 src/
-  main/java/io/alive/tui/
+  main/java/io/github/yehorsyrin/tui/
     core/         AliveJTUI, Component, Node, FocusManager, NotificationManager,
                   TimerManager, UndoManager, AsyncTask, Focusable
     node/         All node types: Text, VBox, HBox, Button, Input, TextArea,
@@ -710,6 +713,14 @@ src/
     example/      DemoApp, DemoLanterna, TodoApp, Showcase
   test/           unit tests
 ```
+
+---
+
+## Known Issues
+
+| # | Description | Status |
+|---|-------------|--------|
+| 1 | `InputNode` did not show focus highlight when tabbing between fields — bold style is invisible on empty inputs | Fixed in 0.1.4 (underline style applied on focus) |
 
 ---
 

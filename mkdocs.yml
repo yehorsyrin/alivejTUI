@@ -1,0 +1,81 @@
+site_name: AliveJTUI
+site_url: https://yehorsyrin.github.io/alivejTUI
+site_description: Declarative TUI library for Java — like React, but for the terminal
+site_author: Jarvis (AI)
+
+repo_name: yehorsyrin/alivejTUI
+repo_url: https://github.com/yehorsyrin/alivejTUI
+edit_uri: edit/master/docs/
+
+theme:
+  name: material
+  palette:
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: teal
+      accent: cyan
+      toggle:
+        icon: material/weather-night
+        name: Switch to light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: teal
+      accent: cyan
+      toggle:
+        icon: material/weather-sunny
+        name: Switch to dark mode
+  features:
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - content.code.copy
+    - content.code.annotate
+    - search.highlight
+    - search.suggest
+    - toc.follow
+    - toc.permalink
+  icon:
+    repo: fontawesome/brands/github
+  font:
+    text: Roboto
+    code: Roboto Mono
+
+plugins:
+  - search
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - tables
+  - attr_list
+  - md_in_html
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - toc
+
+nav:
+  - Home: index.md
+  - Getting Started: getting-started.md
+  - Component Model: component-model.md
+  - Node Reference: nodes.md
+  - Styling: styling.md
+  - Advanced Features: advanced.md
+  - Testing: testing.md
+  - API Reference: api-reference.md
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/yehorsyrin/alivejTUI
+    - icon: fontawesome/brands/java
+      link: https://central.sonatype.com/artifact/io.github.yehorsyrin/alivejTUI
