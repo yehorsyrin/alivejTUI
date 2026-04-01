@@ -6,7 +6,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class TerminalCapabilitiesTest {
 
     @Test
-    void supportsDim_returnsFalse() {
-        assertFalse(TerminalCapabilities.supportsDim());
+    void supportsDim_returnsTrue() {
+        assertTrue(TerminalCapabilities.supportsDim());
     }
 }

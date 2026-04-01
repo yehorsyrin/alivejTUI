@@ -1,6 +1,5 @@
 package io.github.yehorsyrin.tui.platform.backend;
 
-import io.github.yehorsyrin.tui.backend.LanternaBackend;
 import io.github.yehorsyrin.tui.backend.MockBackend;
 import io.github.yehorsyrin.tui.backend.TerminalBackend;
 
@@ -56,14 +55,6 @@ public final class Backends {
             return createNative();
         }
         return createSwing();
-    }
-
-    /**
-     * Creates the Lanterna-based backend (the original implementation).
-     * Kept for backwards compatibility and migration path.
-     */
-    public static TerminalBackend createLanterna() {
-        return new LanternaBackend();
     }
 
     /**

@@ -39,11 +39,6 @@ class BackendsTest {
     }
 
     @Test
-    void createLanternaReturnsNonNull() {
-        assertNotNull(Backends.createLanterna());
-    }
-
-    @Test
     void createSwingThrowsInHeadlessEnvironment() {
         // pom.xml configures -Djava.awt.headless=true for Surefire
         if (java.awt.GraphicsEnvironment.isHeadless()) {

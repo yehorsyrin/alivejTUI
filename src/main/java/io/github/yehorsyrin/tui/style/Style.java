@@ -60,9 +60,9 @@ public final class Style {
     /**
      * Returns a copy of this style with the dim (faint) decoration set.
      *
-     * @apiNote Dim is silently ignored by the default Lanterna backend.
-     *          Check {@link io.github.yehorsyrin.tui.backend.TerminalCapabilities#supportsDim()} before use
-     *          if rendering fidelity matters.
+     * @apiNote Supported by the built-in backends. Check
+     *          {@link io.github.yehorsyrin.tui.backend.TerminalCapabilities#supportsDim()} before use
+     *          if rendering fidelity matters on a custom backend.
      * @param dim {@code true} to enable dim
      * @return new {@link Style} with updated dim flag
      */
