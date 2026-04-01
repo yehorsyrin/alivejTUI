@@ -18,13 +18,14 @@ import static java.util.stream.Collectors.toList;
  *
  * <h2>Navigation</h2>
  * <pre>
- *   1-5   Switch tab
- *   T     Toggle Dark/Light theme
- *   D     Show dialog
- *   N     Show notification
+ *   1-6      Switch tab
+ *   Tab      Move focus (tab 6: Login form)
+ *   T        Toggle Dark/Light theme
+ *   D        Show dialog
+ *   N        Show notification
  *   Up/Down  Navigate lists / tables
- *   +/-   Progress bar
- *   ESC   Quit
+ *   +/-      Progress bar
+ *   ESC      Quit
  * </pre>
  *
  * @author Jarvis (AI)
@@ -33,7 +34,7 @@ public class DemoApp extends Component {
 
     // --- Tabs ---
     private static final String[] TAB_NAMES = {
-        "1:Widgets", "2:Table", "3:VirtualList", "4:Text", "5:Layout"
+        "1:Widgets", "2:Table", "3:VirtualList", "4:Text", "5:Layout", "6:Login"
     };
     private int activeTab = 0;
 
@@ -74,12 +75,19 @@ public class DemoApp extends Component {
     // --- Tab 1: Button ---
     private final ButtonNode clickBtn;
 
+    // --- Tab 6: Login form ---
+    private String loginStatus = "";
+    private final InputNode    loginUserInput  = Input.of("", null);
+    private final InputNode    loginPassInput  = Input.of("", null);
+    private final CheckboxNode loginRememberCb = Checkbox.of("Remember me", false, null);
+    private final ButtonNode   loginLoginBtn   = Button.of("[ Login ]",  this::doLogin);
+    private final ButtonNode   loginCancelBtn  = Button.of("[ Cancel ]", this::doCancel);
+
     // --- Notifications ---
     private final NotificationManager notifications;
 
     // --- Overlay management ---
-    // dialogNode != null means dialog is showing; notification overlay is separate
-    private Node dialogNode   = null;
+    private Node    dialogNode   = null;
     private boolean notifShowing = false;
 
     // --- Layout collapsible ---
@@ -100,16 +108,33 @@ public class DemoApp extends Component {
         );
     }
 
+    /** Shorthand for the active theme. */
+    private Theme t() { return AliveJTUI.getTheme(); }
+
+    /** Creates a TextNode with the given full Style from the theme. */
+    private TextNode styled(String text, Style style) {
+        return new TextNode(text, style);
+    }
+
     @Override
     public void mount(Runnable onStateChange, EventBus eventBus) {
         super.mount(onStateChange, eventBus);
 
-        // Focus
+        // Focus — tab 1
         registerFocusable(clickBtn);
 
-        // Tab switching
+        // Focus — tab 6: Login
+        loginUserInput.setKey("loginUser");
+        loginPassInput.setKey("loginPass");
+        registerFocusable(loginUserInput);
+        registerFocusable(loginPassInput);
+        registerFocusable(loginRememberCb);
+        registerFocusable(loginLoginBtn);
+        registerFocusable(loginCancelBtn);
+
+        // Tab switching 1-6
         eventBus.registerCharacter(c -> {
-            if (c >= '1' && c <= '5') setState(() -> activeTab = c - '1');
+            if (c >= '1' && c <= '6') setState(() -> activeTab = c - '1');
         });
 
         // Theme toggle
@@ -142,7 +167,7 @@ public class DemoApp extends Component {
             if (c == '-') setState(() -> progress = Math.max(0.0, progress - 0.05));
         });
 
-        // Input (tab 1 only, ignore reserved keys)
+        // Input — tab 1 only
         eventBus.registerCharacter(c -> {
             if (activeTab == 0 && c >= 32
                     && c != '+' && c != '-'
@@ -158,6 +183,33 @@ public class DemoApp extends Component {
         onKey(KeyType.BACKSPACE, () -> {
             if (activeTab == 0 && !inputText.isEmpty())
                 setState(() -> inputText = inputText.substring(0, inputText.length() - 1));
+        });
+
+        // Input — tab 6: Login form
+        eventBus.registerCharacter(c -> {
+            if (activeTab != 5) return;
+            if (c == ' ' && loginRememberCb.isFocused()) {
+                setState(() -> loginRememberCb.toggle());
+                return;
+            }
+            if (c < 32) return;
+            // Let global shortcuts (T/D/N) still fire; don't also type them into inputs
+            if (c == 't' || c == 'T' || c == 'd' || c == 'D' || c == 'n' || c == 'N') return;
+            if (loginUserInput.isFocused())
+                setState(() -> loginUserInput.setValue(loginUserInput.getValue() + c));
+            if (loginPassInput.isFocused())
+                setState(() -> loginPassInput.setValue(loginPassInput.getValue() + c));
+        });
+        onKey(KeyType.BACKSPACE, () -> {
+            if (activeTab != 5) return;
+            if (loginUserInput.isFocused()) {
+                String v = loginUserInput.getValue();
+                if (!v.isEmpty()) setState(() -> loginUserInput.setValue(v.substring(0, v.length() - 1)));
+            }
+            if (loginPassInput.isFocused()) {
+                String v = loginPassInput.getValue();
+                if (!v.isEmpty()) setState(() -> loginPassInput.setValue(v.substring(0, v.length() - 1)));
+            }
         });
 
         // Navigation
@@ -215,18 +267,15 @@ public class DemoApp extends Component {
 
     @Override
     public Node render() {
-        // ---- Overlay management ----
         Node notifOverlay = notifications.buildOverlay();
 
         if (dialogNode != null) {
-            // Dialog takes priority
             AliveJTUI.pushOverlay(dialogNode);
             notifShowing = false;
         } else if (notifOverlay != null) {
             AliveJTUI.pushOverlay(notifOverlay);
             notifShowing = true;
         } else if (notifShowing) {
-            // Notification just expired — clear overlay
             AliveJTUI.popOverlay();
             notifShowing = false;
         }
@@ -243,26 +292,18 @@ public class DemoApp extends Component {
 
     // --- Header ---
     private Node renderHeader() {
-        boolean dark = AliveJTUI.getTheme() == Theme.DARK;
-        String themeLabel = dark ? "[Dark]" : "[Light]";
-        Color titleColor = dark ? Color.CYAN : Color.BLUE;
+        String themeLabel = t() == Theme.DARK ? "[Dark]" : "[Light]";
         return HBox.of(
-            Text.of("  AliveJTUI Demo v0.1.0").bold().color(titleColor),
-            Text.of("  theme: " + themeLabel).dim()
+            styled("  AliveJTUI Demo v0.1.0", t().primary()),
+            styled("  theme: " + themeLabel, t().muted())
         );
     }
 
     // --- Tab bar ---
     private Node renderTabBar() {
-        boolean dark = AliveJTUI.getTheme() == Theme.DARK;
-        Color activeColor = dark ? Color.BRIGHT_CYAN : Color.BLUE;
         Node[] tabs = new Node[TAB_NAMES.length];
         for (int i = 0; i < TAB_NAMES.length; i++) {
-            boolean active = i == activeTab;
-            TextNode t = Text.of(" " + TAB_NAMES[i] + " ")
-                    .color(active ? activeColor : Color.BRIGHT_BLACK);
-            if (active) t = t.bold();
-            tabs[i] = t;
+            tabs[i] = styled(" " + TAB_NAMES[i] + " ", i == activeTab ? t().primary() : t().muted());
         }
         return HBox.of(tabs);
     }
@@ -275,6 +316,7 @@ public class DemoApp extends Component {
             case 2 -> renderVirtualListTab();
             case 3 -> renderTextTab();
             case 4 -> renderLayoutTab();
+            case 5 -> renderLoginTab();
             default -> Text.of("Unknown tab");
         };
     }
@@ -284,39 +326,38 @@ public class DemoApp extends Component {
     // ==========================================================================
     private Node renderWidgetsTab() {
         int pct = (int) Math.round(progress * 100);
-        Color pctColor = pct >= 80 ? Color.GREEN : pct <= 20 ? Color.RED : Color.YELLOW;
+        Style pctStyle = pct >= 80 ? t().success() : pct <= 20 ? t().error() : t().warning();
 
         return VBox.of(
             Text.of(""),
             HBox.of(
                 Text.of("  "),
                 clickBtn,
-                Text.of("  Clicked: ").dim(),
-                Text.of(String.valueOf(clickCount)).bold().color(Color.GREEN),
-                Text.of("  Spin: " + SPIN[spinFrame]).color(Color.CYAN)
+                styled("  Clicked: ", t().muted()),
+                styled(String.valueOf(clickCount), t().success()),
+                styled("  Spin: " + SPIN[spinFrame], t().secondary())
             ),
             Text.of(""),
             HBox.of(
                 Text.of("  Progress "),
-                Text.of("[+][-]").dim()
+                styled("[+][-]", t().muted())
             ),
             HBox.of(
                 Text.of("  "),
                 new ProgressBarNode(progress),
-                Text.of("  " + pct + "%").bold().color(pctColor)
+                styled("  " + pct + "%", pctStyle)
             ),
             Text.of(""),
             HBox.of(
                 Text.of("  "),
                 Checkbox.of("Notifications enabled [X]", cbChecked, () -> {}),
-                Text.of("    Input: ").dim(),
-                Text.of("[" + inputText + "_]").color(Color.YELLOW)
+                styled("    Input: ", t().muted()),
+                styled("[" + inputText + "_]", t().primary())
             ),
             Text.of(""),
             HBox.of(
                 Text.of("  Theme radio [Up/Down]:  "),
-                Text.of(radioIdx == 0 ? "(x) Dark  ( ) Light" : "( ) Dark  (x) Light")
-                    .color(Color.BRIGHT_CYAN)
+                styled(radioIdx == 0 ? "(x) Dark  ( ) Light" : "( ) Dark  (x) Light", t().primary())
             ),
             HBox.of(
                 Text.of("  Color select [S]:  "),
@@ -351,14 +392,14 @@ public class DemoApp extends Component {
 
         return VBox.of(
             Text.of(""),
-            Text.of("  Up/Down: Navigate  |  8 employees").dim(),
+            styled("  Up/Down: Navigate  |  8 employees", t().muted()),
             Text.of(""),
             table,
             Text.of(""),
             HBox.of(
-                Text.of("  Selected: ").dim(),
-                Text.of(TABLE_DATA.get(tableRow).get(0) + "  -  "
-                        + TABLE_DATA.get(tableRow).get(1)).bold().color(Color.BRIGHT_CYAN)
+                styled("  Selected: ", t().muted()),
+                styled(TABLE_DATA.get(tableRow).get(0) + "  -  "
+                        + TABLE_DATA.get(tableRow).get(1), t().primary())
             )
         );
     }
@@ -370,16 +411,16 @@ public class DemoApp extends Component {
         return VBox.of(
             Text.of(""),
             HBox.of(
-                Text.of("  10,000 items — only visible rows rendered  ").dim(),
-                Text.of("Up/Down  PgUp/PgDn  Home/End").color(Color.BRIGHT_BLACK)
+                styled("  10,000 items — only visible rows rendered  ", t().muted()),
+                styled("Up/Down  PgUp/PgDn  Home/End", t().muted())
             ),
             Text.of(""),
             vList,
             Text.of(""),
             HBox.of(
-                Text.of("  Item ").dim(),
-                Text.of(String.valueOf(vList.getSelectedIndex() + 1)).bold().color(Color.CYAN),
-                Text.of(" / " + vList.itemCount()).dim()
+                styled("  Item ", t().muted()),
+                styled(String.valueOf(vList.getSelectedIndex() + 1), t().primary()),
+                styled(" / " + vList.itemCount(), t().muted())
             )
         );
     }
@@ -390,7 +431,7 @@ public class DemoApp extends Component {
     private Node renderTextTab() {
         return VBox.of(
             Text.of(""),
-            Text.of("  STYLED TEXT").bold().color(Color.YELLOW),
+            styled("  STYLED TEXT", t().primary()),
             HBox.of(
                 Text.of("  "),
                 Text.of("Bold ").bold(),
@@ -412,7 +453,7 @@ public class DemoApp extends Component {
             Text.of(""),
             Divider.horizontal(),
             Text.of(""),
-            Text.of("  MARKDOWN").bold().color(Color.YELLOW),
+            styled("  MARKDOWN", t().primary()),
             Text.of("  "),
             Paragraph.ofMarkdown(
                 "**AliveJTUI** is a *declarative* TUI library for Java. " +
@@ -422,13 +463,13 @@ public class DemoApp extends Component {
             Text.of(""),
             Divider.horizontal(),
             Text.of(""),
-            Text.of("  WORD-WRAPPED").bold().color(Color.YELLOW),
+            styled("  WORD-WRAPPED", t().primary()),
             Text.of("  "),
             new TextNode(
                 "Word wrapping automatically breaks long lines to fit the terminal width. " +
                 "This is useful for descriptions, help text, and any prose content " +
                 "that should reflow when the window is resized.",
-                Style.DEFAULT.withForeground(Color.BRIGHT_BLACK)
+                t().muted()
             ).wrap()
         );
     }
@@ -439,32 +480,32 @@ public class DemoApp extends Component {
     private Node renderLayoutTab() {
         return VBox.of(
             Text.of(""),
-            Text.of("  BOX LAYOUT").bold().color(Color.YELLOW),
+            styled("  BOX LAYOUT", t().primary()),
             HBox.of(
                 new BoxNode(VBox.of(
-                    Text.of(" Panel A ").bold().color(Color.BLUE),
-                    Text.of(" alpha   ").dim(),
-                    Text.of(" beta    ").dim()
-                ), true, Style.DEFAULT.withForeground(Color.BLUE)),
+                    styled(" Panel A ", t().secondary().withBold(true)),
+                    styled(" alpha   ", t().muted()),
+                    styled(" beta    ", t().muted())
+                ), true, t().secondary()),
                 Text.of(" "),
                 new BoxNode(VBox.of(
-                    Text.of(" Panel B ").bold().color(Color.CYAN),
-                    Text.of(" gamma   ").dim(),
-                    Text.of(" delta   ").dim()
-                ), true, Style.DEFAULT.withForeground(Color.CYAN)),
+                    styled(" Panel B ", t().primary()),
+                    styled(" gamma   ", t().muted()),
+                    styled(" delta   ", t().muted())
+                ), true, t().primary()),
                 Text.of(" "),
                 new BoxNode(VBox.of(
-                    Text.of(" Panel C ").bold().color(Color.MAGENTA),
-                    Text.of(" epsilon ").dim(),
-                    Text.of(" zeta    ").dim()
-                ), true, Style.DEFAULT.withForeground(Color.MAGENTA))
+                    styled(" Panel C ", t().warning().withBold(true)),
+                    styled(" epsilon ", t().muted()),
+                    styled(" zeta    ", t().muted())
+                ), true, t().warning())
             ),
             Text.of(""),
             Divider.horizontal(),
             Text.of(""),
             HBox.of(
-                Text.of("  COLLAPSIBLE [C] ").bold().color(Color.YELLOW),
-                Text.of(colExpanded ? "v expanded" : "> collapsed").color(Color.BRIGHT_BLACK)
+                styled("  COLLAPSIBLE [C] ", t().primary()),
+                styled(colExpanded ? "v expanded" : "> collapsed", t().muted())
             ),
             colExpanded
                 ? VBox.of(
@@ -473,16 +514,62 @@ public class DemoApp extends Component {
                     Text.of("  * Logging level overrides"),
                     Text.of("  * Performance tuning knobs")
                   )
-                : Text.of("  (hidden -- press C to expand)").dim(),
+                : styled("  (hidden -- press C to expand)", t().muted()),
             Text.of(""),
             Divider.horizontal(),
             Text.of(""),
-            Text.of("  VIEWPORT (scrollable) — Up/Down PgUp/PgDn").bold().color(Color.YELLOW),
+            styled("  VIEWPORT (scrollable) — Up/Down PgUp/PgDn", t().primary()),
             viewport
         );
     }
 
-    // --- Confirm dialog (built inline so callbacks can capture `this`) ---
+    // ==========================================================================
+    //  TAB 6 — Login
+    // ==========================================================================
+    private Node renderLoginTab() {
+        Style statusStyle = loginStatus.startsWith("Logging") ? t().success()
+                          : loginStatus.isEmpty()             ? t().muted()
+                                                              : t().error();
+        return VBox.of(
+            Text.of(""),
+            styled("  Login Form", t().primary()),
+            styled("  Use Tab / Shift+Tab to move focus, Enter to activate buttons.", t().muted()),
+            Divider.horizontal(),
+            Text.of(""),
+            HBox.of(Text.of("  Username : "), loginUserInput),
+            HBox.of(Text.of("  Password : "), loginPassInput),
+            HBox.of(Text.of("  "), loginRememberCb),
+            Text.of(""),
+            HBox.of(Text.of("  "), loginLoginBtn, Text.of("  "), loginCancelBtn),
+            Text.of(""),
+            styled("  " + loginStatus, statusStyle)
+        );
+    }
+
+    private void doLogin() {
+        if (loginUserInput.getValue().isEmpty()) {
+            setState(() -> loginStatus = "Username is required.");
+            getFocusManager().focusById("loginUser");
+            return;
+        }
+        if (loginPassInput.getValue().isEmpty()) {
+            setState(() -> loginStatus = "Password is required.");
+            getFocusManager().focusById("loginPass");
+            return;
+        }
+        setState(() -> loginStatus = "Logging in as " + loginUserInput.getValue() + " \u2026");
+    }
+
+    private void doCancel() {
+        setState(() -> {
+            loginUserInput.setValue("");
+            loginPassInput.setValue("");
+            if (loginRememberCb.isChecked()) loginRememberCb.toggle();
+            loginStatus = "";
+        });
+    }
+
+    // --- Confirm dialog ---
     private Node buildConfirmDialog() {
         return Dialog.of("Confirm Action",
             VBox.of(
@@ -502,16 +589,18 @@ public class DemoApp extends Component {
 
     // --- Footer ---
     private Node renderFooter() {
+        Style s = t().muted();
         return HBox.of(
-            Text.of("  1-5:Tab ").dim(),
-            Text.of("T:Theme ").dim(),
-            Text.of("D:Dialog ").dim(),
-            Text.of("N:Notify ").dim(),
-            Text.of("C:Collapse ").dim(),
-            Text.of("X:Checkbox ").dim(),
-            Text.of("S:Select ").dim(),
-            Text.of("+/-:Progress ").dim(),
-            Text.of("ESC:Quit").dim()
+            styled("  1-6:Tab ", s),
+            styled("Tab:Focus ", s),
+            styled("T:Theme ", s),
+            styled("D:Dialog ", s),
+            styled("N:Notify ", s),
+            styled("C:Collapse ", s),
+            styled("X:Checkbox ", s),
+            styled("S:Select ", s),
+            styled("+/-:Progress ", s),
+            styled("ESC:Quit", s)
         );
     }
 
