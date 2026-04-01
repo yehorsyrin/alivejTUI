@@ -18,6 +18,12 @@ import com.sun.jna.Structure.FieldOrder;
  * a {@link ShutdownHook}) — leaving the terminal in raw mode makes the shell
  * unusable until the user runs {@code reset}.
  *
+ * <h2>Platform struct layouts</h2>
+ * <pre>
+ *  Linux x86-64   : c_iflag c_oflag c_cflag c_lflag c_line c_cc[32] c_ispeed c_ospeed → 60 bytes
+ *  macOS arm64/x86: c_iflag c_oflag c_cflag c_lflag c_cc[20] c_ispeed c_ospeed        → 44 bytes
+ * </pre>
+ *
  * @author Jarvis (AI)
  */
 public final class PosixRawMode {
@@ -52,39 +58,72 @@ public final class PosixRawMode {
     // STDIN file descriptor
     private static final int STDIN_FD = 0;
 
-    // ── JNA interfaces ───────────────────────────────────────────────────────
+    // ── c_cc indices (platform-specific) ────────────────────────────────────
+
+    // Linux: VTIME=5, VMIN=6   |   macOS: VTIME=17, VMIN=16
+    private static final int VTIME_IDX = isLinux() ? 5  : 17;
+    private static final int VMIN_IDX  = isLinux() ? 6  : 16;
+
+    // ── JNA interface ────────────────────────────────────────────────────────
 
     interface LibC extends Library {
         LibC INSTANCE = loadLibC();
 
-        int tcgetattr(int fd, Termios termios);
-        int tcsetattr(int fd, int action, Termios termios);
+        int tcgetattr(int fd, Structure termios);
+        int tcsetattr(int fd, int action, Structure termios);
 
         @SuppressWarnings("unused")
         private static LibC loadLibC() {
             try {
                 return Native.load("c", LibC.class);
             } catch (UnsatisfiedLinkError e) {
-                return null; // Windows or JNA unavailable
+                return null;
             }
         }
     }
 
-    /**
-     * Portable {@code struct termios}.  The layout matches both Linux x86-64
-     * and macOS (arm64 / x86-64): 4 ints for flags + 20-byte c_cc array.
-     * The struct is intentionally larger than required on some platforms —
-     * extra bytes are ignored by the kernel.
-     */
-    @FieldOrder({"c_iflag", "c_oflag", "c_cflag", "c_lflag", "c_cc"})
-    public static class Termios extends Structure {
-        public int c_iflag;
-        public int c_oflag;
-        public int c_cflag;
-        public int c_lflag;
-        public byte[] c_cc = new byte[20];
+    // ── Platform-specific JNA structs ────────────────────────────────────────
 
-        public Termios() { super(); }
+    /**
+     * Linux x86-64 {@code struct termios}: 4 flag ints + c_line byte
+     * + c_cc[32] + c_ispeed + c_ospeed = 60 bytes.
+     */
+    @FieldOrder({"c_iflag", "c_oflag", "c_cflag", "c_lflag",
+                 "c_line", "c_cc", "c_ispeed", "c_ospeed"})
+    static class TermiosLinux extends Structure {
+        public int    c_iflag, c_oflag, c_cflag, c_lflag;
+        public byte   c_line;
+        public byte[] c_cc = new byte[32]; // NCCS = 32 on Linux
+        public int    c_ispeed, c_ospeed;
+    }
+
+    /**
+     * macOS {@code struct termios}: 4 flag ints + c_cc[20]
+     * + c_ispeed + c_ospeed = 44 bytes (no c_line).
+     */
+    @FieldOrder({"c_iflag", "c_oflag", "c_cflag", "c_lflag",
+                 "c_cc", "c_ispeed", "c_ospeed"})
+    static class TermiosMacOS extends Structure {
+        public int    c_iflag, c_oflag, c_cflag, c_lflag;
+        public byte[] c_cc = new byte[20]; // NCCS = 20 on macOS
+        public int    c_ispeed, c_ospeed;
+    }
+
+    // ── Public API struct (used by tests and deep-copy) ──────────────────────
+
+    /**
+     * Platform-neutral view of the terminal attributes used by this class.
+     * Not a JNA struct — conversion to/from the JNA structs happens inside
+     * {@link #enable()} and {@link #disable()}.
+     */
+    public static class Termios {
+        public int    c_iflag;
+        public int    c_oflag;
+        public int    c_cflag;
+        public int    c_lflag;
+        public byte[] c_cc = new byte[32]; // sized for Linux; macOS uses [0..19]
+
+        public Termios() {}
 
         /** Deep copy constructor. */
         public Termios(Termios src) {
@@ -92,7 +131,7 @@ public final class PosixRawMode {
             this.c_oflag = src.c_oflag;
             this.c_cflag = src.c_cflag;
             this.c_lflag = src.c_lflag;
-            this.c_cc = src.c_cc.clone();
+            this.c_cc    = src.c_cc.clone();
         }
     }
 
@@ -116,25 +155,45 @@ public final class PosixRawMode {
         LibC libc = LibC.INSTANCE;
         if (libc == null) return false;
 
-        Termios current = new Termios();
-        if (libc.tcgetattr(STDIN_FD, current) != 0) return false;
+        if (isLinux()) {
+            TermiosLinux raw = new TermiosLinux();
+            if (libc.tcgetattr(STDIN_FD, raw) != 0) return false;
+            raw.read();
 
-        savedTermios = new Termios(current);
+            savedTermios = fromLinux(raw);
 
-        // Apply POSIX "cfmakeraw" equivalent
-        current.c_iflag &= ~(IGNBRK | BRKINT | PARMRK | ISTRIP | INLCR | IGNCR | ICRNL | IXON);
-        current.c_lflag &= ~(ECHO | ECHONL | ICANON | ISIG | IEXTEN);
-        current.c_cflag &= ~(CSIZE | PARENB);
-        current.c_cflag |= CS8;
-        // Read returns after 1 byte with no timeout
-        if (current.c_cc.length > 6) {
-            current.c_cc[6] = 1; // VMIN  = 1
-            current.c_cc[5] = 0; // VTIME = 0
-        }
+            raw.c_iflag &= ~(IGNBRK | BRKINT | PARMRK | ISTRIP | INLCR | IGNCR | ICRNL | IXON);
+            raw.c_lflag &= ~(ECHO | ECHONL | ICANON | ISIG | IEXTEN);
+            raw.c_cflag &= ~(CSIZE | PARENB);
+            raw.c_cflag |= CS8;
+            raw.c_cc[VMIN_IDX]  = 1;
+            raw.c_cc[VTIME_IDX] = 0;
+            raw.write();
 
-        if (libc.tcsetattr(STDIN_FD, TCSANOW, current) != 0) {
-            savedTermios = null;
-            return false;
+            if (libc.tcsetattr(STDIN_FD, TCSANOW, raw) != 0) {
+                savedTermios = null;
+                return false;
+            }
+        } else {
+            // macOS
+            TermiosMacOS raw = new TermiosMacOS();
+            if (libc.tcgetattr(STDIN_FD, raw) != 0) return false;
+            raw.read();
+
+            savedTermios = fromMacOS(raw);
+
+            raw.c_iflag &= ~(IGNBRK | BRKINT | PARMRK | ISTRIP | INLCR | IGNCR | ICRNL | IXON);
+            raw.c_lflag &= ~(ECHO | ECHONL | ICANON | ISIG | IEXTEN);
+            raw.c_cflag &= ~(CSIZE | PARENB);
+            raw.c_cflag |= CS8;
+            if (VMIN_IDX < raw.c_cc.length)  raw.c_cc[VMIN_IDX]  = 1;
+            if (VTIME_IDX < raw.c_cc.length) raw.c_cc[VTIME_IDX] = 0;
+            raw.write();
+
+            if (libc.tcsetattr(STDIN_FD, TCSANOW, raw) != 0) {
+                savedTermios = null;
+                return false;
+            }
         }
         return true;
     }
@@ -146,20 +205,62 @@ public final class PosixRawMode {
     public static void disable() {
         if (!isSupported() || savedTermios == null) return;
         LibC libc = LibC.INSTANCE;
-        if (libc != null) {
-            libc.tcsetattr(STDIN_FD, TCSANOW, savedTermios);
+        if (libc == null) return;
+
+        if (isLinux()) {
+            TermiosLinux restore = toLinux(savedTermios);
+            libc.tcsetattr(STDIN_FD, TCSANOW, restore);
+        } else {
+            TermiosMacOS restore = toMacOS(savedTermios);
+            libc.tcsetattr(STDIN_FD, TCSANOW, restore);
         }
         savedTermios = null;
     }
 
-    /**
-     * Returns {@code true} on non-Windows platforms where POSIX raw mode applies.
-     */
+    /** Returns {@code true} on non-Windows platforms where POSIX raw mode applies. */
     public static boolean isSupported() {
         return !isWindows();
     }
 
     static boolean isWindows() {
         return System.getProperty("os.name", "").toLowerCase().contains("windows");
+    }
+
+    static boolean isLinux() {
+        return System.getProperty("os.name", "").toLowerCase().contains("linux");
+    }
+
+    // ── Conversion helpers ───────────────────────────────────────────────────
+
+    private static Termios fromLinux(TermiosLinux s) {
+        Termios t = new Termios();
+        t.c_iflag = s.c_iflag; t.c_oflag = s.c_oflag;
+        t.c_cflag = s.c_cflag; t.c_lflag = s.c_lflag;
+        System.arraycopy(s.c_cc, 0, t.c_cc, 0, Math.min(s.c_cc.length, t.c_cc.length));
+        return t;
+    }
+
+    private static TermiosLinux toLinux(Termios t) {
+        TermiosLinux s = new TermiosLinux();
+        s.c_iflag = t.c_iflag; s.c_oflag = t.c_oflag;
+        s.c_cflag = t.c_cflag; s.c_lflag = t.c_lflag;
+        System.arraycopy(t.c_cc, 0, s.c_cc, 0, Math.min(t.c_cc.length, s.c_cc.length));
+        return s;
+    }
+
+    private static Termios fromMacOS(TermiosMacOS s) {
+        Termios t = new Termios();
+        t.c_iflag = s.c_iflag; t.c_oflag = s.c_oflag;
+        t.c_cflag = s.c_cflag; t.c_lflag = s.c_lflag;
+        System.arraycopy(s.c_cc, 0, t.c_cc, 0, Math.min(s.c_cc.length, t.c_cc.length));
+        return t;
+    }
+
+    private static TermiosMacOS toMacOS(Termios t) {
+        TermiosMacOS s = new TermiosMacOS();
+        s.c_iflag = t.c_iflag; s.c_oflag = t.c_oflag;
+        s.c_cflag = t.c_cflag; s.c_lflag = t.c_lflag;
+        System.arraycopy(t.c_cc, 0, s.c_cc, 0, Math.min(t.c_cc.length, s.c_cc.length));
+        return s;
     }
 }
