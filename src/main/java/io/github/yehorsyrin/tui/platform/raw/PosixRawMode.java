@@ -1,5 +1,7 @@
 package io.github.yehorsyrin.tui.platform.raw;
 
+import java.util.concurrent.atomic.AtomicReference;
+
 import com.sun.jna.Library;
 import com.sun.jna.Native;
 import com.sun.jna.Structure;
@@ -137,7 +139,7 @@ public final class PosixRawMode {
 
     // ── State ────────────────────────────────────────────────────────────────
 
-    private static volatile Termios savedTermios = null;
+    private static final AtomicReference<Termios> savedTermios = new AtomicReference<>();
 
     private PosixRawMode() {}
 
@@ -160,7 +162,7 @@ public final class PosixRawMode {
             if (libc.tcgetattr(STDIN_FD, raw) != 0) return false;
             raw.read();
 
-            savedTermios = fromLinux(raw);
+            savedTermios.set(fromLinux(raw));
 
             raw.c_iflag &= ~(IGNBRK | BRKINT | PARMRK | ISTRIP | INLCR | IGNCR | ICRNL | IXON);
             raw.c_lflag &= ~(ECHO | ECHONL | ICANON | ISIG | IEXTEN);
@@ -171,16 +173,15 @@ public final class PosixRawMode {
             raw.write();
 
             if (libc.tcsetattr(STDIN_FD, TCSANOW, raw) != 0) {
-                savedTermios = null;
+                savedTermios.set(null);
                 return false;
             }
-        } else {
-            // macOS
+        } else { // macOS
             TermiosMacOS raw = new TermiosMacOS();
             if (libc.tcgetattr(STDIN_FD, raw) != 0) return false;
             raw.read();
 
-            savedTermios = fromMacOS(raw);
+            savedTermios.set(fromMacOS(raw));
 
             raw.c_iflag &= ~(IGNBRK | BRKINT | PARMRK | ISTRIP | INLCR | IGNCR | ICRNL | IXON);
             raw.c_lflag &= ~(ECHO | ECHONL | ICANON | ISIG | IEXTEN);
@@ -191,7 +192,7 @@ public final class PosixRawMode {
             raw.write();
 
             if (libc.tcsetattr(STDIN_FD, TCSANOW, raw) != 0) {
-                savedTermios = null;
+                savedTermios.set(null);
                 return false;
             }
         }
@@ -203,18 +204,19 @@ public final class PosixRawMode {
      * No-op if {@link #enable()} was not called or failed.
      */
     public static void disable() {
-        if (!isSupported() || savedTermios == null) return;
+        Termios saved = savedTermios.get();
+        if (!isSupported() || saved == null) return;
         LibC libc = LibC.INSTANCE;
         if (libc == null) return;
 
         if (isLinux()) {
-            TermiosLinux restore = toLinux(savedTermios);
+            TermiosLinux restore = toLinux(saved);
             libc.tcsetattr(STDIN_FD, TCSANOW, restore);
         } else {
-            TermiosMacOS restore = toMacOS(savedTermios);
+            TermiosMacOS restore = toMacOS(saved);
             libc.tcsetattr(STDIN_FD, TCSANOW, restore);
         }
-        savedTermios = null;
+        savedTermios.set(null);
     }
 
     /** Returns {@code true} on non-Windows platforms where POSIX raw mode applies. */

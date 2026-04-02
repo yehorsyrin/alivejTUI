@@ -8,7 +8,7 @@
 ║  ██║  ██║███████╗██║  ╚═══╝  ███████╗ ╚█████╔╝   ██║   ╚██████╔╝██║      ║
 ║  ╚═╝  ╚═╝╚══════╝╚═╝         ╚══════╝  ╚════╝    ╚═╝    ╚═════╝ ╚═╝      ║
 ║                                                                          ║
-║          Declarative TUI library for Java              v0.1.1            ║
+║          Declarative TUI library for Java              v0.2.0            ║
 ║          ─────────────────────────────────────────────────────────       ║
 ║                    crafted with pride by  J A R V I S  (AI)              ║
 ╚══════════════════════════════════════════════════════════════════════════╝
@@ -30,17 +30,17 @@ Build terminal UIs as component trees — like React, but for the terminal.
 **[Documentation](https://yehorsyrin.github.io/alivejTUI)**
 
 ```
- AliveJTUI Demo v0.1.0  theme: [Dark]
- 1:Widgets  2:Table  3:VirtualList  4:Text  5:Layout
-──────────────────────────────────────────────────────
+ AliveJTUI Demo v0.2.0  theme: [Dark]
+ 1:Widgets  2:Table  3:VirtualList  4:Text  5:Layout  6:Login
+──────────────────────────────────────────────────────────────
   [ Click Me! ]  Clicked: 3  Spin: |
   Progress [+][-]
   [████████████░░░░░░░░]  60%
   ☑ Notifications enabled    Input: [hello_]
   Theme radio [Up/Down]:  (x) Dark  ( ) Light
   Color select [S]:  << Cyan >>
-──────────────────────────────────────────────────────
-  1-5:Tab  T:Theme  D:Dialog  N:Notify  C:Collapse  X:Checkbox  S:Select  +/-:Progress  ESC:Quit
+──────────────────────────────────────────────────────────────
+  1-6:Tab  T:Theme  D:Dialog  N:Notify  C:Collapse  X:Checkbox  S:Select  +/-:Progress  ESC:Quit
 ```
 
 ---
@@ -78,7 +78,7 @@ Build terminal UIs as component trees — like React, but for the terminal.
 <dependency>
     <groupId>io.github.yehorsyrin</groupId>
     <artifactId>alivejTUI</artifactId>
-    <version>0.1.1</version>
+    <version>0.2.0</version>
 </dependency>
 ```
 
@@ -127,8 +127,8 @@ public class CounterApp extends Component {
 java -jar alivejTUI-demo.jar
 ```
 
-On systems with a graphical display (X11/Wayland/macOS/Windows) a Swing window opens.
-On headless Linux the app runs directly in the terminal.
+On GUI desktops (macOS/Windows/X11/Wayland) a Swing window opens.
+On headless servers and CI the app runs directly in the terminal via the native backend.
 
 ---
 
@@ -609,18 +609,24 @@ public void mount(Runnable onStateChange, EventBus eventBus) {
 
 | Backend | Use case |
 |---------|----------|
-| `LanternaBackend` | Default. Cross-platform. Opens a Swing window when a display is available; falls back to in-terminal mode on headless Linux. |
-| `MockBackend` | Unit testing — no real terminal required. |
+| `Backends.createAuto()` | Default. Opens a Swing window on GUI desktops; uses native terminal on headless/server environments. |
+| `Backends.createSwing()` | Swing window — for GUI desktop environments. |
+| `Backends.createNative()` | Raw ANSI/POSIX or Windows VT — for terminal emulators and headless servers. |
+| `Backends.createMock(w, h)` | Unit testing — no real terminal required. |
 
 ```java
-// Default (LanternaBackend)
+// Default (auto-selects Swing or native)
 AliveJTUI.run(new MyApp());
+
+// Explicit backend
+AliveJTUI.run(new MyApp(), Backends.createNative());
+AliveJTUI.run(new MyApp(), Backends.createSwing());
 
 // Custom backend — implement TerminalBackend
 AliveJTUI.run(new MyApp(), new MyCustomBackend());
 
 // Testing
-AliveJTUI.run(new MyApp(), new MockBackend(80, 24));
+AliveJTUI.run(new MyApp(), Backends.createMock(80, 24));
 ```
 
 `TerminalBackend` is a plain interface — implement it to integrate any other rendering layer (ncurses, raw ANSI, WebSocket, etc.).
@@ -632,7 +638,7 @@ AliveJTUI.run(new MyApp(), new MockBackend(80, 24));
 Use `MockBackend` to test components without a real terminal:
 
 ```java
-MockBackend backend = new MockBackend(80, 24);
+MockBackend backend = (MockBackend) Backends.createMock(80, 24);
 AliveJTUI.run(new MyApp(), backend);
 
 // Simulate key presses
@@ -655,7 +661,7 @@ java -jar alivejTUI-demo.jar
 
 | Key | Action |
 |-----|--------|
-| `1` – `5` | Switch tab |
+| `1` – `6` | Switch tab |
 | `T` | Toggle Dark / Light theme |
 | `D` | Open confirmation dialog |
 | `N` | Show notification toast |
@@ -679,6 +685,7 @@ java -jar alivejTUI-demo.jar
 | `3:VirtualList` | 10,000 items — only visible rows rendered |
 | `4:Text` | All text styles, inline markdown, word wrapping |
 | `5:Layout` | BoxNode panels, collapsible section, scrollable viewport |
+| `6:Login` | Login form demonstrating focus management, inputs, and validation |
 
 ---
 
@@ -707,10 +714,12 @@ src/
                   ProgressBar, Spinner, Dialog, Collapsible, HelpPanel, ...
     style/        Color, Style, Theme, StyleSheet, Selector
     event/        EventBus, KeyEvent, KeyType
-    backend/      TerminalBackend (interface), LanternaBackend, MockBackend,
-                  TerminalCapabilities
+    backend/      TerminalBackend (interface), MockBackend, TerminalCapabilities
+    platform/     Backends (factory), NativeTerminalBackend, SwingBackend,
+                  AnsiKeyDecoder, AnsiWriter, PosixRawMode, WindowsRawMode,
+                  ResizePoller, TerminalSizeDetector
     render/       Renderer, LayoutEngine, Differ, TreeFlattener
-    example/      DemoApp, DemoLanterna, TodoApp, Showcase
+    example/      DemoNative, DemoApp, TodoApp, Showcase
   test/           unit tests
 ```
 
@@ -720,7 +729,7 @@ src/
 
 | # | Description | Status |
 |---|-------------|--------|
-| 1 | `InputNode` did not show focus highlight when tabbing between fields — bold style is invisible on empty inputs | Fixed in 0.1.4 (underline style applied on focus) |
+| 1 | `InputNode` did not show focus highlight when tabbing between fields — bold style is invisible on empty inputs | Fixed in 0.2.0 (underline style applied on focus) |
 
 ---
 

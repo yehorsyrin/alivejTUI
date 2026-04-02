@@ -58,7 +58,8 @@ public final class NativeTerminalBackend implements TerminalBackend {
     // ── Resize ────────────────────────────────────────────────────────────────
 
     private final ResizePoller resizePoller;
-    private volatile Runnable  resizeListener;
+    private final java.util.concurrent.atomic.AtomicReference<Runnable> resizeListener =
+            new java.util.concurrent.atomic.AtomicReference<>();
 
     // ── Lifecycle ──────────────────────────────────────────────────────────────
 
@@ -223,7 +224,7 @@ public final class NativeTerminalBackend implements TerminalBackend {
 
     @Override
     public void setResizeListener(Runnable onResize) {
-        this.resizeListener = onResize;
+        this.resizeListener.set(onResize);
     }
 
     @Override
@@ -314,7 +315,7 @@ public final class NativeTerminalBackend implements TerminalBackend {
     private void onResize(TerminalSize newSize) {
         width  = newSize.cols();
         height = newSize.rows();
-        Runnable listener = resizeListener;
+        Runnable listener = resizeListener.get();
         if (listener != null) {
             try {
                 listener.run();

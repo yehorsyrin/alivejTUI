@@ -3,6 +3,7 @@ package io.github.yehorsyrin.tui.platform.signal;
 import io.github.yehorsyrin.tui.platform.size.TerminalSize;
 import io.github.yehorsyrin.tui.platform.size.TerminalSizeDetector;
 
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
 /**
@@ -33,7 +34,7 @@ public final class ResizePoller {
     private final long intervalMs;
     private volatile boolean running = false;
     private Thread thread;
-    private volatile TerminalSize lastSize;
+    private final AtomicReference<TerminalSize> lastSize = new AtomicReference<>();
 
     /**
      * Creates a poller with the {@link #DEFAULT_INTERVAL_MS default interval}.
@@ -55,7 +56,7 @@ public final class ResizePoller {
         if (intervalMs <= 0) throw new IllegalArgumentException("intervalMs must be > 0");
         this.listener   = listener;
         this.intervalMs = intervalMs;
-        this.lastSize   = TerminalSizeDetector.detect();
+        this.lastSize.set(TerminalSizeDetector.detect());
     }
 
     /**
@@ -94,7 +95,7 @@ public final class ResizePoller {
      * Updated on every successful poll regardless of whether the size changed.
      */
     public TerminalSize getLastSize() {
-        return lastSize;
+        return lastSize.get();
     }
 
     // ── Internal ─────────────────────────────────────────────────────────────
@@ -110,8 +111,8 @@ public final class ResizePoller {
             if (!running) break;
 
             TerminalSize current = TerminalSizeDetector.detect();
-            if (!current.equals(lastSize)) {
-                lastSize = current;
+            if (!current.equals(lastSize.get())) {
+                lastSize.set(current);
                 try {
                     listener.accept(current);
                 } catch (Exception ignored) {

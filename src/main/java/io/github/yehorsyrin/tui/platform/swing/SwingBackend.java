@@ -29,7 +29,8 @@ public final class SwingBackend implements TerminalBackend {
     private javax.swing.JFrame frame;
     private volatile int width;
     private volatile int height;
-    private volatile Runnable resizeListener;
+    private final java.util.concurrent.atomic.AtomicReference<Runnable> resizeListener =
+            new java.util.concurrent.atomic.AtomicReference<>();
     private final java.util.concurrent.LinkedBlockingQueue<KeyEvent> keyQueue =
             new java.util.concurrent.LinkedBlockingQueue<>();
 
@@ -76,7 +77,7 @@ public final class SwingBackend implements TerminalBackend {
                     width  = newCols;
                     height = newRows;
                     panel.resize(width, height);
-                    Runnable l = resizeListener;
+                    Runnable l = resizeListener.get();
                     if (l != null) l.run();
                 }
             }
@@ -141,7 +142,7 @@ public final class SwingBackend implements TerminalBackend {
 
     @Override
     public void setResizeListener(Runnable onResize) {
-        this.resizeListener = onResize;
+        this.resizeListener.set(onResize);
     }
 
     @Override
