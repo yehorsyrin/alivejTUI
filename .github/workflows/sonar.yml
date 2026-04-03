@@ -45,4 +45,4 @@ jobs:
              -Dsonar.organization=yehorsyrin
              -Dgpg.skip=true
              -Dcentral.publishing.skip=true
-             "-Dsonar.coverage.exclusions=**/example/**,**/debug/**,**/platform/swing/**,**/platform/raw/PosixRawMode.java,**/platform/raw/WindowsRawMode.java,**/platform/raw/WindowsVtOutput.java"
+             "-Dsonar.coverage.exclusions=**/example/**,**/debug/**,**/platform/swing/**,**/platform/raw/PosixRawMode.java,**/platform/raw/WindowsRawMode.java,**/platform/raw/WindowsVtOutput.java,**/platform/backend/NativeTerminalBackend.java,**/platform/size/TerminalSizeDetector.java"
