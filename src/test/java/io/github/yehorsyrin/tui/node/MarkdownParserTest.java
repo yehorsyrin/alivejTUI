@@ -164,4 +164,26 @@ class MarkdownParserTest {
         assertTrue(backend.cells.contains("2,0= "));
         assertTrue(backend.cells.contains("3,0=!"));
     }
+
+    // ── StyledSegment null-safety ─────────────────────────────────────────────
+
+    @Test
+    void styledSegment_nullText_defaultsToEmpty() {
+        StyledSegment seg = new StyledSegment(null, Style.DEFAULT);
+        assertEquals("", seg.text());
+    }
+
+    @Test
+    void styledSegment_nullStyle_defaultsToDefault() {
+        StyledSegment seg = new StyledSegment("hello", null);
+        assertEquals(Style.DEFAULT, seg.style());
+    }
+
+    @Test
+    void styledSegment_bothNonNull_storesValues() {
+        Style bold = Style.DEFAULT.withBold(true);
+        StyledSegment seg = new StyledSegment("hi", bold);
+        assertEquals("hi", seg.text());
+        assertEquals(bold, seg.style());
+    }
 }

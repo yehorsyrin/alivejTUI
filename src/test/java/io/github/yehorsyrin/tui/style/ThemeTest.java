@@ -1,6 +1,7 @@
 package io.github.yehorsyrin.tui.style;
 
 import io.github.yehorsyrin.tui.core.AliveJTUI;
+import io.github.yehorsyrin.tui.style.Color;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -101,5 +102,43 @@ class ThemeTest {
                 Style.DEFAULT, Style.DEFAULT, Style.DEFAULT, Style.DEFAULT
         );
         assertEquals(fg, t.foreground());
+    }
+
+    // --- background() ---
+
+    @Test
+    void darkTheme_background_isNull() {
+        assertNull(Theme.DARK.background());
+    }
+
+    @Test
+    void lightTheme_background_isNotNull() {
+        assertNotNull(Theme.LIGHT.background());
+    }
+
+    @Test
+    void builtinTheme_9argConstructor_storesBackground() {
+        Theme.BuiltinTheme t = new Theme.BuiltinTheme(
+                Style.DEFAULT, Style.DEFAULT, Style.DEFAULT, Style.DEFAULT,
+                Style.DEFAULT, Style.DEFAULT, Style.DEFAULT, Style.DEFAULT,
+                Color.CYAN
+        );
+        assertEquals(Color.CYAN, t.background());
+    }
+
+    @Test
+    void themeInterface_defaultBackground_isNull() {
+        // Anonymous implementation that uses the default background() method
+        Theme minimal = new Theme() {
+            @Override public Style foreground() { return Style.DEFAULT; }
+            @Override public Style muted()      { return Style.DEFAULT; }
+            @Override public Style primary()    { return Style.DEFAULT; }
+            @Override public Style secondary()  { return Style.DEFAULT; }
+            @Override public Style success()    { return Style.DEFAULT; }
+            @Override public Style warning()    { return Style.DEFAULT; }
+            @Override public Style error()      { return Style.DEFAULT; }
+            @Override public Style focused()    { return Style.DEFAULT; }
+        };
+        assertNull(minimal.background());
     }
 }
